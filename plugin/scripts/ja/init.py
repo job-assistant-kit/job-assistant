@@ -9,6 +9,7 @@ from __future__ import annotations
 import errno
 import os
 import shutil
+import subprocess
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -102,6 +103,42 @@ def _fill(folder: Path, name: str) -> None:
     (folder / MARKER).write_text(MARKER_TEXT, encoding="utf-8")
 
 
+NO_GIT = "Saved without version history because git is not installed."
+GIT_FAILED = "Saved without version history because git could not set it up here."
+FALLBACK_IDENTITY = ("-c", "user.name=Job Assistant", "-c", "user.email=assistant@localhost")
+
+
+def _git(folder: Path, *args: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(["git", "-C", str(folder), *args], capture_output=True, text=True,
+                          stdin=subprocess.DEVNULL, timeout=60)
+
+
+def _has_identity(folder: Path) -> bool:
+    return all(_git(folder, "config", key).stdout.strip() for key in ("user.name", "user.email"))
+
+
+def start_history(folder: Path) -> str | None:
+    """Start version history with one commit of the non-data files. Returns a note when it could not."""
+    if shutil.which("git") is None:
+        return NO_GIT
+    try:
+        if _git(folder, "init", "-q", "-b", "main").returncode != 0:
+            if _git(folder, "init", "-q").returncode != 0:
+                raise OSError("git init failed")
+            _git(folder, "symbolic-ref", "HEAD", "refs/heads/main")
+        identity = () if _has_identity(folder) else FALLBACK_IDENTITY
+        if _git(folder, "add", "-A").returncode != 0:
+            raise OSError("git add failed")
+        commit = _git(folder, *identity, "-c", "commit.gpgsign=false", "commit", "-q", "--no-verify",
+                      "-m", "Set up assistant folder")
+        if commit.returncode != 0:
+            raise OSError("git commit failed")
+    except (OSError, subprocess.SubprocessError):
+        shutil.rmtree(folder / ".git", ignore_errors=True)
+        return GIT_FAILED
+    return None
+
+
 def _move_into_place(tmp: Path, root: Path) -> None:
     try:
         os.rename(tmp, root)
@@ -126,7 +163,7 @@ def create(path: Path, name: str | None = None) -> Created:
         root.parent.mkdir(parents=True, exist_ok=True)
         tmp = Path(tempfile.mkdtemp(prefix=f".{root.name}.", suffix=".setup", dir=root.parent))
         _fill(tmp, name)
-        note = None
+        note = start_history(tmp)
         _move_into_place(tmp, root)
         tmp = None
     except OSError as exc:

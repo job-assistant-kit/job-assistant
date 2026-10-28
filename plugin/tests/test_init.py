@@ -106,3 +106,57 @@ def test_every_text_read_and_write_names_utf8():
             if re.search(r"\bopen\([^)]*\"[rwa]\+?\"", line) and "encoding=" not in line:
                 bad.append(f"{path.name}:{n}")
     assert bad == []
+
+
+# Knowledge file and version history.
+
+import subprocess
+
+
+def _git(root, *args):
+    return subprocess.run(["git", "-C", str(root), *args], capture_output=True, text=True, check=True).stdout
+
+
+def _isolated_git(monkeypatch, tmp_path, config_text=""):
+    cfg = tmp_path / "gitconfig"
+    cfg.write_text(config_text, encoding="utf-8")
+    monkeypatch.setenv("GIT_CONFIG_GLOBAL", str(cfg))
+    monkeypatch.setenv("GIT_CONFIG_NOSYSTEM", "1")
+    for name in ("GIT_AUTHOR_NAME", "GIT_AUTHOR_EMAIL", "GIT_COMMITTER_NAME", "GIT_COMMITTER_EMAIL", "EMAIL"):
+        monkeypatch.delenv(name, raising=False)
+
+
+def test_knowledge_file(tmp_path):
+    root = init.create(tmp_path / "a").root
+    text = (root / "assistant" / "knowledge.md").read_text(encoding="utf-8")
+    assert text.startswith("# What I have been taught\n")
+    assert "Each entry: the fact, then its source or 'per <name>, <date>'." in text
+
+
+def test_history_started_without_data(tmp_path, monkeypatch):
+    _isolated_git(monkeypatch, tmp_path)
+    created = init.create(tmp_path / "a")
+    root = created.root
+    assert created.note is None
+    files = _git(root, "ls-files").splitlines()
+    assert "CLAUDE.md" in files and "assistant/.job-assistant" in files and "assistant/knowledge.md" in files
+    assert not [f for f in files if f.startswith(("inbox/", "data/", "dashboard/"))]
+    assert _git(root, "rev-parse", "--abbrev-ref", "HEAD").strip() == "main"
+    assert _git(root, "log", "-1", "--format=%s|%an|%ae").strip() == \
+        "Set up assistant folder|Job Assistant|assistant@localhost"
+    assert _git(root, "remote").strip() == ""
+    assert _git(root, "status", "--porcelain").strip() == ""
+
+
+def test_history_uses_own_identity_when_set(tmp_path, monkeypatch):
+    _isolated_git(monkeypatch, tmp_path, "[user]\n\tname = Dana Smith\n\temail = dana@example.com\n")
+    root = init.create(tmp_path / "a").root
+    assert _git(root, "log", "-1", "--format=%an|%ae").strip() == "Dana Smith|dana@example.com"
+
+
+def test_no_git_still_works(tmp_path, monkeypatch):
+    monkeypatch.setattr(init.shutil, "which", lambda name: None)
+    created = init.create(tmp_path / "a")
+    assert created.note == "Saved without version history because git is not installed."
+    assert not (created.root / ".git").exists()
+    assert (created.root / "CLAUDE.md").is_file()
