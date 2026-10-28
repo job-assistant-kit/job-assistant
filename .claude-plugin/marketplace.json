@@ -1,0 +1,21 @@
+{
+  "name": "job-assistant",
+  "owner": {
+    "name": "eparenti"
+  },
+  "metadata": {
+    "description": "Build and keep the automations your job needs, from plain requests."
+  },
+  "plugins": [
+    {
+      "name": "job-assistant",
+      "description": "Build and keep the automations your job needs, from plain requests.",
+      "source": "./plugin",
+      "category": "productivity",
+      "tags": [
+        "automation",
+        "assistant"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "name": "job-assistant",
+  "description": "Build and keep the automations your job needs, from plain requests.",
+  "version": "0.1.0",
+  "author": {
+    "name": "eparenti"
+  }
+}
