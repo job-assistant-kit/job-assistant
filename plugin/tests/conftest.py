@@ -46,3 +46,8 @@ def _write_tool(ws: Path, folder: str = ".claude/skills", **fields: Any) -> Path
 @pytest.fixture
 def write_tool() -> Callable[..., Path]:
     return _write_tool
+
+
+@pytest.fixture(autouse=True)
+def _no_workspace_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("JA_WORKSPACE", raising=False)
