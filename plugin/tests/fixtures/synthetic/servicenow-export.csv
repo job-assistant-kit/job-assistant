@@ -1,0 +1,41 @@
+Number,Offering,Stage,Opened,Governance Completed
+OFR1001,Atlas Data Hub,Intake,2026-01-01,2026-01-02
+OFR1002,Atlas Billing,Review,2026-02-02,2026-02-03
+OFR1003,Atlas Insights,Approved,2026-03-03,
+OFR1004,atlas connect,Launched,2026-04-04,2026-04-05
+OFR1005,Beacon Data Hub,Intake,2026-05-05,2026-05-06
+OFR1006,Beacon Billing,Review,2026-06-06,2026-06-07
+OFR1007,Beacon Insights,Approved,2026-07-07,2026-07-08
+OFR1008,Beacon Connect,Launched,2026-08-08,
+OFR1009,Cobalt Data Hub,Intake,2026-09-09,2026-09-10
+OFR1010,Cobalt Billing,Review,2026-01-10,2026-01-11
+OFR1011,COBALT INSIGHTS,Approved,2026-02-11,2026-02-12
+OFR1012,Cobalt Connect,Launched,2026-03-12,2026-03-13
+OFR1013,Delta Data Hub,Intake,2026-04-13,2026-04-14
+OFR1014,Delta Billing,Review,2026-05-14,
+OFR1015,Delta Insights,Approved,2026-06-15,2026-06-16
+OFR1016,Delta Connect,Launched,2026-07-16,2026-07-17
+OFR1017,Ember Data Hub,Intake,2026-08-17,2026-08-18
+OFR1018,Ember Billing,Review,2026-09-18,2026-09-19
+OFR1019,Ember Insights,Approved,2026-01-19,2026-01-20
+OFR1020,Ember Connect,Launched,2026-02-20,2026-02-21
+OFR1021,Falcon Data Hub ,Intake,2026-03-21,2026-03-22
+OFR1022,Falcon Billing,Review,2026-04-22,
+OFR1023,Falcon Insights,Approved,2026-05-23,2026-05-24
+OFR1024,Falcon Connect,Launched,2026-06-24,2026-06-25
+OFR1025,Granite Data Hub,Intake,2026-07-25,2026-07-26
+OFR1026,Granite Billing,Review,2026-08-26,2026-08-27
+OFR1027,Granite Insights,Approved,2026-09-27,2026-09-28
+OFR1028,Granite Connect,Launched,2026-01-01,2026-01-02
+OFR1029,Harbor Data Hub,Intake,2026-02-02,2026-02-03
+OFR1030,Harbor Billing,Review,2026-03-03,2026-03-04
+OFR1031,Harbor Insights,Approved,2026-04-04,
+OFR1032,Harbor Connect,Launched,2026-05-05,2026-05-06
+OFR1033,Iris Data Hub,Intake,2026-06-06,2026-06-07
+OFR1034,Iris Billing,Review,2026-07-07,2026-07-08
+OFR1035,Iris Insights,Approved,2026-08-08,2026-08-09
+OFR1036,Iris Connect,Launched,2026-09-09,2026-09-10
+OFR1037,Juniper Data Hub,Intake,2026-01-10,2026-01-11
+OFR1038,Juniper Billing,Review,2026-02-11,2026-02-12
+OFR1039,Keystone Insights,Approved,2026-03-12,2026-03-13
+OFR1040,Keystone Connect,Launched,2026-04-13,

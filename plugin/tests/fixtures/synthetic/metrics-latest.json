@@ -1,0 +1,39 @@
+{
+  "note": "Synthetic data for tests. Not real.",
+  "generated": "2026-10-20",
+  "quarters": {
+    "2026-Q2": {
+      "BR-1": 42,
+      "BR-2": 17,
+      "BR-3": 0.81,
+      "BR-4": 9,
+      "BR-5": 128,
+      "BR-6": 3
+    },
+    "2026-Q3": {
+      "BR-1": 47,
+      "BR-2": 15,
+      "BR-3": 0.86,
+      "BR-4": 11,
+      "BR-5": 131,
+      "BR-6": 2
+    }
+  },
+  "labels": {
+    "BR-1": "Offerings in review",
+    "BR-2": "Offerings waiting on governance",
+    "BR-3": "Share of briefs complete",
+    "BR-4": "Launches this quarter",
+    "BR-5": "Open requests",
+    "BR-6": "Escalations"
+  },
+  "ttm": {
+    "period": "2026-Q3",
+    "metric": "ttm-days",
+    "median_days": 94,
+    "unit": "days",
+    "count": 40,
+    "excluded_count": 6,
+    "excluded_reason": "No awareness date"
+  }
+}
