@@ -119,3 +119,14 @@ def test_role_set_cli(tmp_path, cli):
     assert r.stderr.strip() == "The role description is too long. Keep it under about 250 words."
     r = cli("role", "set", "--file", str(tmp_path / "missing.md"), cwd=root)
     assert r.returncode == 1 and "could not read" in r.stderr
+
+
+def test_settings_cli(ws, cli):
+    r = cli("settings", "deny", "mcp__x__send", "mcp__x__post", cwd=ws)
+    assert r.returncode == 0 and r.stdout.strip() == "Blocked: 2 new write actions."
+    r = cli("settings", "deny", "mcp__x__send", cwd=ws)
+    assert r.stdout.strip() == "Blocked: 0 new write actions."
+    r = cli("settings", "deny", "post_message", cwd=ws)
+    assert r.returncode == 1 and "post_message" in r.stderr
+    r = cli("settings", "show", cwd=ws)
+    assert r.returncode == 0 and "mcp__x__send" in r.stdout and "mcp__x__post" in r.stdout

@@ -118,5 +118,9 @@ class Paths:
         return self.root / "dashboard" / "index.html"
 
     @property
+    def settings(self) -> Path:
+        return self.root / ".claude" / "settings.json"
+
+    @property
     def claude_md(self) -> Path:
         return self.root / "CLAUDE.md"

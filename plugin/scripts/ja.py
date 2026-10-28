@@ -137,6 +137,14 @@ def build_parser() -> argparse.ArgumentParser:
     rp.add_argument("--file", required=True, metavar="PATH")
     rp.set_defaults(func=commands.cmd_role_set)
 
+    p = sub.add_parser("settings", parents=[common], help="write protection for connector actions")
+    ssub = p.add_subparsers(dest="action", metavar="action", required=True)
+    sp = ssub.add_parser("deny", parents=[common], help="block connector actions by name")
+    sp.add_argument("names", nargs="+", metavar="NAME")
+    sp.set_defaults(func=commands.cmd_settings_deny)
+    sp = ssub.add_parser("show", parents=[common], help="list blocked and allowed actions")
+    sp.set_defaults(func=commands.cmd_settings_show)
+
     return parser
 
 

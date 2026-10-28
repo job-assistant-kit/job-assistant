@@ -14,7 +14,7 @@ import sys
 from datetime import date
 from pathlib import Path
 
-from ja import index, init, ledger, records, registry, role, sources, status, workspace
+from ja import index, init, ledger, records, registry, role, settings, sources, status, workspace
 from ja.registry import is_date
 from ja.workspace import Paths
 
@@ -238,4 +238,31 @@ def cmd_role_set(args: argparse.Namespace) -> int:
     except role.RoleProblem as exc:
         raise Stop(str(exc)) from None
     _say("Saved the role description in your assistant notes.")
+    return 0
+
+
+@_guard
+def cmd_settings_deny(args: argparse.Namespace) -> int:
+    paths = _paths(args)
+    try:
+        added = settings.deny(paths, args.names)
+    except settings.SettingsProblem as exc:
+        raise Stop(str(exc)) from None
+    _say(f"Blocked: {added} new write actions.")
+    return 0
+
+
+@_guard
+def cmd_settings_show(args: argparse.Namespace) -> int:
+    paths = _paths(args)
+    try:
+        blocked, allowed = settings.show(paths)
+    except settings.SettingsProblem as exc:
+        raise Stop(str(exc)) from None
+    _say(f"Blocked write actions ({len(blocked)}):")
+    for name in blocked:
+        _say(f"  {name}")
+    _say(f"Allowed without asking ({len(allowed)}):")
+    for name in allowed:
+        _say(f"  {name}")
     return 0
