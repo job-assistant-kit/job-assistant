@@ -100,6 +100,24 @@ def _warn(text: str) -> None:
     print(text, file=sys.stderr)
 
 
+def _in_inbox(paths: Paths, target: Path) -> bool:
+    try:
+        target.resolve().relative_to(paths.inbox.resolve())
+    except (ValueError, OSError):
+        return False
+    return True
+
+
+def _tidy_inbox(paths: Paths, file: Path) -> None:
+    """Remove a working file the setup or building steps left in the inbox. Other files stay."""
+    target = Path(file).expanduser()
+    if target.is_file() and _in_inbox(paths, target):
+        try:
+            target.unlink()
+        except OSError:
+            pass
+
+
 @_guard
 def cmd_init(args: argparse.Namespace) -> int:
     try:
@@ -268,6 +286,7 @@ def cmd_role_set(args: argparse.Namespace) -> int:
         role.set_role(paths, text)
     except role.RoleProblem as exc:
         raise Stop(str(exc)) from None
+    _tidy_inbox(paths, Path(args.file))
     _say("Saved the role description in your assistant notes.")
     return 0
 
@@ -368,6 +387,7 @@ def _tool_change(func):
 @_tool_change
 def cmd_tool_add(args: argparse.Namespace, paths: Paths, today: date) -> str:
     tool, notes = tools.add_from_file(paths, Path(args.file), today=today)
+    _tidy_inbox(paths, Path(args.file))
     return "\n".join([f'Added {tool.name} ({_shows_as(paths, tool, today)}). Say "{tool.examples[0]}" to use it.', *notes])
 
 
@@ -412,4 +432,19 @@ def cmd_launcher(args: argparse.Namespace) -> int:
     except launcher.LauncherProblem as exc:
         raise Stop(str(exc)) from None
     _say(text)
+    return 0
+
+
+PROGRAMS = ("git", "python3", "uv", "claude")
+
+
+@_guard
+def cmd_env(args: argparse.Namespace) -> int:
+    """Which programs the assistant relies on are installed. Changes nothing."""
+    found = {name: shutil.which(name) is not None for name in PROGRAMS}
+    if args.json:
+        print(json.dumps(found, indent=2))
+        return 0
+    for name in PROGRAMS:
+        _say(f"{name}: {'installed' if found[name] else 'not installed'}")
     return 0

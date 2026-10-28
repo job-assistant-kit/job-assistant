@@ -195,3 +195,45 @@ def test_launcher_cli_preview_and_yes(ws, tmp_path, cli):
     assert not (tmp_path / "b").exists()
     r = cli("launcher", "--yes", *args, cwd=ws)
     assert r.returncode == 0 and (tmp_path / "b/job-assistant").is_file()
+
+
+ROLE_MD = "# A\n<!-- role:start -->\nx\n<!-- role:end -->\n<!-- tool-index:start -->\n<!-- tool-index:end -->\n"
+
+
+def test_inbox_files_removed_after_use(ws, cli):
+    (ws / "CLAUDE.md").write_text(ROLE_MD, encoding="utf-8")
+    (ws / "inbox").mkdir(exist_ok=True)
+    rec = ws / "inbox/setup-brief.yaml"
+    rec.write_text(yaml.safe_dump({"id": "brief", "name": "Check a brief", "does": "Lists gaps.",
+                                   "examples": ["check this brief"], "kind": "built", "status": "draft-not-checked",
+                                   "rhythm": "on-demand", "data_path": "Files you drop in"}), encoding="utf-8")
+    assert cli("tool", "add", "--from", str(rec), *TODAY, cwd=ws).returncode == 0
+    assert not rec.exists()
+    role_file = ws / "inbox/role.md"
+    role_file.write_text("A short role.\n", encoding="utf-8")
+    assert cli("role", "set", "--file", "inbox/role.md", cwd=ws).returncode == 0
+    assert not role_file.exists()
+
+
+def test_files_outside_inbox_kept(ws, tmp_path, cli):
+    (ws / "CLAUDE.md").write_text(ROLE_MD, encoding="utf-8")
+    role_file = tmp_path / "role.md"
+    role_file.write_text("A short role.\n", encoding="utf-8")
+    assert cli("role", "set", "--file", str(role_file), cwd=ws).returncode == 0
+    assert role_file.exists()
+    (ws / "inbox").mkdir(exist_ok=True)
+    bad = ws / "inbox/bad.yaml"
+    bad.write_text("id: [", encoding="utf-8")
+    assert cli("tool", "add", "--from", str(bad), cwd=ws).returncode == 1
+    assert bad.exists()
+
+
+def test_env_reports_programs(ws, cli, monkeypatch):
+    import shutil
+    real = shutil.which
+    monkeypatch.setattr(shutil, "which", lambda name: None if name == "uv" else real(name) or "/x/" + name)
+    r = cli("env", cwd=ws)
+    assert r.returncode == 0
+    assert "git: installed" in r.stdout and "uv: not installed" in r.stdout
+    data = json.loads(cli("env", "--json", cwd=ws).stdout)
+    assert data["uv"] is False and data["claude"] is True

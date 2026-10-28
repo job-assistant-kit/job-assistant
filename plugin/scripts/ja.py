@@ -196,6 +196,10 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--desktop-dir", dest="desktop_dir", default=None, metavar="D")
     p.set_defaults(func=commands.cmd_launcher)
 
+    p = sub.add_parser("env", parents=[common], help="check which needed programs are installed")
+    p.add_argument("--json", action="store_true", help="output for code")
+    p.set_defaults(func=commands.cmd_env)
+
     return parser
 
 

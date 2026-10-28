@@ -26,7 +26,9 @@ def frontmatter(path):
 
 
 def prose(text):
-    """Text with fenced blocks and code spans removed."""
+    """Text with frontmatter, fenced blocks, and code spans removed."""
+    if text.startswith("---\n"):
+        text = text.split("---\n", 2)[2]
     text = re.sub(r"```.*?```", "", text, flags=re.S)
     return re.sub(r"`[^`\n]*`", "", text)
 
@@ -53,8 +55,10 @@ def test_set_me_up_triggers():
 def test_helper_path_resolves():
     for path in SKILLS:
         text = path.read_text(encoding="utf-8")
-        for rel in re.findall(r"\$\{CLAUDE_SKILL_DIR\}/([^\"\s]+)", text):
+        for rel in re.findall(r"\$\{CLAUDE_SKILL_DIR\}/([^\"\s`)]+)", text):
             assert (path.parent / rel).resolve().is_file(), rel
+        for rel in re.findall(r"\$\{CLAUDE_PLUGIN_ROOT\}/([^\"\s`)]+)", text):
+            assert (PLUGIN / rel).resolve().exists(), rel
 
 
 def test_no_em_dashes_anywhere():
@@ -86,3 +90,11 @@ def test_quoted_phrases_use_plain_words():
 def test_banned_word_check_catches_problems():
     phrase = "Run the script from the terminal"
     assert [w for w in BANNED if w in re.findall(r"[a-z]+", phrase.lower())] == ["script", "terminal"]
+
+
+def test_set_me_up_flow():
+    text = (PLUGIN / "skills/set-me-up/SKILL.md").read_text(encoding="utf-8")
+    assert "command -v" not in text and "ja env" in text
+    assert not re.search(r"\brm\b", text) and "delete the file" not in text
+    assert "close this window" in text and "whenever you open the assistant from its shortcut" in text
+    assert "${CLAUDE_PLUGIN_ROOT}/scripts/ja.py" in text
