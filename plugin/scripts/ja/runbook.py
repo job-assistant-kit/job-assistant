@@ -23,7 +23,10 @@ def _check(tool: Tool) -> str:
         return "Not checked yet"
     word = "Passed" if check.get("result") == "pass" else "Failed"
     detail = _one_line(check.get("detail") or "")
-    return f"{word} on {check['date']}" + (f": {detail}" if detail else "")
+    text = f"{word} on {check['date']}" + (f": {detail}" if detail else "")
+    if status.check_outdated(tool):
+        text += ". The tool changed after that check, so check it again"
+    return text
 
 
 def _source_names(tool: Tool, by_id: dict[str, Source]) -> str:

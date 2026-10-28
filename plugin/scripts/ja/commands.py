@@ -365,8 +365,8 @@ def _tool_change(func):
 
 @_tool_change
 def cmd_tool_add(args: argparse.Namespace, paths: Paths, today: date) -> str:
-    tool = tools.add_from_file(paths, Path(args.file), today=today)
-    return f'Added {tool.name} ({_shows_as(paths, tool, today)}). Say "{tool.examples[0]}" to use it.'
+    tool, notes = tools.add_from_file(paths, Path(args.file), today=today)
+    return "\n".join([f'Added {tool.name} ({_shows_as(paths, tool, today)}). Say "{tool.examples[0]}" to use it.', *notes])
 
 
 @_tool_change

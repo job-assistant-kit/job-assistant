@@ -128,7 +128,7 @@ def test_duplicate_source_ids(ws, write_tool):
     assert problems == ["faq: id is used by more than one entry"]
     t = tool(last_check=PASSED)
     assert status.effective_status(t, by_id, T) == "needs-update"
-    assert status.reasons(t, by_id, T) == ["Your sources list has two entries for faq"]
+    assert status.reasons(t, by_id, T) == ["Your sources list has two entries for OLM FAQ"]
 
 def test_duplicate_flag_not_saved(ws):
     from ja import workspace
@@ -137,3 +137,35 @@ def test_duplicate_flag_not_saved(ws):
     s = src(); s.duplicate = True
     sources.save(p, [s])
     assert "duplicate" not in yaml.safe_load(p.sources.read_text(encoding="utf-8"))[0]
+
+
+# A passed check counts only when no change came after it.
+
+def test_change_after_check_makes_draft():
+    t = tool(last_check={"date": "2026-10-20", "result": "pass", "detail": ""},
+             improvements=[{"date": "2026-10-25", "change": "Shorter", "reason": "Asked"}])
+    assert status.effective_status(t, {"faq": src()}, T) == "draft-not-checked"
+    assert status.reasons(t, {"faq": src()}, T) == ["Changed since its last check."]
+    assert not status.check_passed(t) and status.check_outdated(t)
+
+
+def test_check_on_same_day_as_change_counts():
+    t = tool(last_check={"date": "2026-10-25", "result": "pass", "detail": ""},
+             improvements=[{"date": "2026-10-01", "change": "a", "reason": ""},
+                           {"date": "2026-10-25", "change": "b", "reason": ""}])
+    assert status.effective_status(t, {"faq": src()}, T) == "working"
+    assert status.reasons(t, {"faq": src()}, T) == []
+
+
+def test_source_problem_wins_over_changed():
+    t = tool(last_check={"date": "2026-10-20", "result": "pass", "detail": ""},
+             improvements=[{"date": "2026-10-25", "change": "a", "reason": ""}])
+    s = {"faq": src(changed=True)}
+    assert status.effective_status(t, s, T) == "needs-update"
+    assert status.reasons(t, s, T) == ["OLM FAQ changed since this tool was checked"]
+
+
+def test_duplicate_source_reason_uses_name():
+    s = {"faq": src()}
+    s["faq"].duplicate = True
+    assert status.reasons(tool(), s, T) == ["Your sources list has two entries for OLM FAQ"]

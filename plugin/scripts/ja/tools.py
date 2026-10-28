@@ -70,9 +70,34 @@ def adopted_skill(tool: Tool) -> str:
     return text
 
 
-def add_from_file(paths: Paths, file: Path, today: date) -> Tool:
+NEW_STATUSES = ("being-built", "draft-not-checked")
+DROPPED_CHECK = "I left out the check result in the record. A new tool gets checked on a real example first."
+STARTS_AS_DRAFT = "It starts as Draft, not checked until a check on a real example passes."
+
+
+def _new_tool_status(data: dict[str, Any]) -> list[str]:
+    """New tools never start as checked. Adjusts data in place; returns plain notes."""
+    notes: list[str] = []
+    declared = data.get("status")
+    if declared == "retired":
+        raise ToolProblem("A new tool cannot start as retired.")
+    if declared == "needs-update":
+        raise ToolProblem("That status is worked out from checks and cannot be set by hand.")
+    if data.get("last_check") is not None:
+        data["last_check"] = None
+        notes.append(DROPPED_CHECK)
+    if declared in registry.STATUSES and declared not in NEW_STATUSES:
+        data["status"] = "draft-not-checked"
+        if declared == "working":
+            notes.append(STARTS_AS_DRAFT)
+    return notes
+
+
+def add_from_file(paths: Paths, file: Path, today: date) -> tuple[Tool, list[str]]:
+    """Add a tool from a record file. Returns the tool and plain notes about what was adjusted."""
     data = registry._normalize_dates(_read_record(file))
     data.setdefault("created", today.isoformat())
+    notes = _new_tool_status(data)
     tool_id = data.get("id")
     try:
         tool = Tool.from_dict(data, folder=tool_id if isinstance(tool_id, str) else None)
@@ -90,7 +115,7 @@ def add_from_file(paths: Paths, file: Path, today: date) -> Tool:
     registry.save(paths, tool)
     if tool.kind == "adopted":
         (folder / "SKILL.md").write_text(adopted_skill(tool), encoding="utf-8")
-    return tool
+    return tool, notes
 
 
 def _find(paths: Paths, tool_id: str) -> Tool:

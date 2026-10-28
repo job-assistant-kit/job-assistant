@@ -169,3 +169,12 @@ def test_quarter_has_upper_bound(ws, write_tool):
     html = dashboard.render(p, today=T)
     assert re.search(r"<b>1</b><span>times used this quarter</span>", html)
     assert "1.0 hrs" in html
+
+
+def test_changed_since_check_shown(ws, write_tool):
+    write_tool(ws, id="a", name="Answer a question", status="working",
+               last_check={"date": "2026-10-02", "result": "pass", "detail": ""},
+               improvements=[{"date": "2026-10-20", "change": "Shorter", "reason": "Asked"}])
+    html = dashboard.render(workspace.Paths(ws), today=date(2026, 10, 28))
+    assert "Changed since its last check." in html and "Draft, not checked" in html
+    assert "Waiting for your OK" not in html

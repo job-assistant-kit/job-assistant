@@ -30,7 +30,7 @@ def write(tmp_path, data, suffix=".yaml"):
 
 def test_add_built(ws, tmp_path):
     p = workspace.Paths(ws)
-    t = tools.add_from_file(p, write(tmp_path, BUILT), today=T)
+    t, _ = tools.add_from_file(p, write(tmp_path, BUILT), today=T)
     assert t.id == "brief-check" and t.created == "2026-10-28"
     assert (ws / ".claude/skills/brief-check/tool.yaml").is_file()
     assert not (ws / ".claude/skills/brief-check/SKILL.md").exists()
@@ -133,3 +133,39 @@ def test_retire_and_restore_refuse_clashes(ws, write_tool):
         tools.restore(p, "t1")
     with pytest.raises(tools.ToolProblem):
         tools.restore(p, "ghost")
+
+
+def test_add_never_trusts_a_check(ws, tmp_path):
+    p = workspace.Paths(ws)
+    data = dict(BUILT, status="working", last_check={"date": "2026-10-01", "result": "pass", "detail": ""})
+    t, notes = tools.add_from_file(p, write(tmp_path, data), today=T)
+    saved = registry.find(p, "brief-check")
+    assert saved.status == "draft-not-checked" and saved.last_check is None
+    assert t.status == "draft-not-checked"
+    assert any("check" in n for n in notes) and any("Draft, not checked" in n for n in notes)
+
+
+def test_add_keeps_being_built_and_draft(ws, tmp_path):
+    p = workspace.Paths(ws)
+    t, notes = tools.add_from_file(p, write(tmp_path, dict(BUILT, status="being-built")), today=T)
+    assert t.status == "being-built" and notes == []
+    t, _ = tools.add_from_file(p, write(tmp_path, dict(BUILT, id="b2", status="paused")), today=T)
+    assert t.status == "draft-not-checked"
+
+
+def test_add_refuses_retired_and_needs_update(ws, tmp_path):
+    p = workspace.Paths(ws)
+    with pytest.raises(tools.ToolProblem) as err:
+        tools.add_from_file(p, write(tmp_path, dict(BUILT, status="retired")), today=T)
+    assert str(err.value) == "A new tool cannot start as retired."
+    with pytest.raises(tools.ToolProblem) as err:
+        tools.add_from_file(p, write(tmp_path, dict(BUILT, status="needs-update")), today=T)
+    assert str(err.value) == "That status is worked out from checks and cannot be set by hand."
+    assert not (ws / ".claude/skills/brief-check").exists()
+
+
+def test_restore_with_check_before_change_is_draft(ws, write_tool):
+    p = workspace.Paths(ws)
+    write_tool(ws, id="t1", status="retired", folder="archive",
+               improvements=[{"date": "2026-10-05", "change": "x", "reason": "y"}])
+    assert tools.restore(p, "t1").status == "draft-not-checked"

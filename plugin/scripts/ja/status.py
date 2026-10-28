@@ -26,6 +26,7 @@ RHYTHM_WORDS: dict[str, str] = {
 
 HELD = ("retired", "paused", "being-built")
 UNKNOWN_SOURCE = "Uses a source that is not on your sources list"
+CHANGED = "Changed since its last check."
 
 
 def label(status: str) -> str:
@@ -45,7 +46,7 @@ def _problems(tool: Tool, sources_by_id: dict[str, Source], today: date) -> list
                 out.append(UNKNOWN_SOURCE)
             continue
         if src.duplicate:
-            out.append(f"Your sources list has two entries for {sid}")
+            out.append(f"Your sources list has two entries for {src.name}")
             continue
         if src.in_future(today):
             out.append(f"The export date for {src.name} is in the future. Check the date.")
@@ -60,8 +61,24 @@ def _problems(tool: Tool, sources_by_id: dict[str, Source], today: date) -> list
     return out
 
 
+def latest_change(tool: Tool) -> str | None:
+    """Date of the newest improvement, or None."""
+    dates = [i.get("date") for i in tool.improvements if isinstance(i, dict) and i.get("date")]
+    return max(dates) if dates else None
+
+
+def check_outdated(tool: Tool) -> bool:
+    """The last check passed, but the tool changed after it."""
+    check = tool.last_check
+    if not check or check.get("result") != "pass":
+        return False
+    changed = latest_change(tool)
+    return changed is not None and check.get("date", "") < changed
+
+
 def check_passed(tool: Tool) -> bool:
-    return bool(tool.last_check) and tool.last_check.get("result") == "pass"
+    """A passed check counts only when it is on or after the latest change to the tool."""
+    return bool(tool.last_check) and tool.last_check.get("result") == "pass" and not check_outdated(tool)
 
 
 def effective_status(tool: Tool, sources_by_id: dict[str, Source], today: date) -> str:
@@ -75,7 +92,10 @@ def effective_status(tool: Tool, sources_by_id: dict[str, Source], today: date) 
 
 
 def reasons(tool: Tool, sources_by_id: dict[str, Source], today: date) -> list[str]:
-    """Plain sentences explaining a needs-update status; empty for any other status."""
+    """Plain sentences explaining a needs-update status, or a draft caused by a change after the check."""
     if tool.status in HELD:
         return []
-    return _problems(tool, sources_by_id, today)
+    out = _problems(tool, sources_by_id, today)
+    if not out and check_outdated(tool):
+        out = [CHANGED]
+    return out

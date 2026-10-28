@@ -99,11 +99,14 @@ def _times(n: int) -> str:
     return "Not used yet" if n == 0 else f"Used {n} time" + ("" if n == 1 else "s")
 
 
-def _check_text(check: dict[str, str] | None, today: date, effective: str) -> str:
+def _check_text(tool: registry.Tool, today: date, effective: str) -> str:
+    check = tool.last_check
     if not check:
         return "Not checked yet"
     word = "passed" if check.get("result") == "pass" else "failed"
     text = f"Last check {word} {short_date(check['date'], today)}"
+    if status.check_outdated(tool):
+        return f"{text}. {status.CHANGED}"
     if effective == "draft-not-checked" and check.get("result") == "pass":
         return f"{text}. {WAITING}"
     return text
@@ -144,7 +147,12 @@ def build_view(paths: Paths, today: date, ideas: list[str] | None = None,
             attention.append(Attention(t.name, status.reasons(t, by_id, today), f"update {t.name}"))
         elif eff == "draft-not-checked":
             needs_ok += 1
-            why = _check_text(t.last_check, today, eff) if status.check_passed(t) else NOT_CHECKED
+            if status.check_outdated(t):
+                why = status.CHANGED
+            elif status.check_passed(t):
+                why = _check_text(t, today, eff)
+            else:
+                why = NOT_CHECKED
             attention.append(Attention(t.name, [why], f"check {t.name}"))
         last = records.last_run(paths, t.id)
         cards.append(Card(
@@ -156,7 +164,7 @@ def build_view(paths: Paths, today: date, ideas: list[str] | None = None,
             rhythm=status.RHYTHM_WORDS.get(t.rhythm, t.rhythm),
             uses=_times(records.count_runs(paths, t.id)),
             last_used=f"Last used {short_date(last, today)}" if last else "",
-            last_check=_check_text(t.last_check, today, eff),
+            last_check=_check_text(t, today, eff),
             data_path=t.data_path,
             manual_steps=list(t.manual_steps),
             rules=[rule_text.get(r, r) for r in t.rules],

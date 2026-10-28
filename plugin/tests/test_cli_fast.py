@@ -162,6 +162,8 @@ def test_tool_commands_refresh_index_and_page(ws, tmp_path, write_tool, cli):
     page = lambda: (ws / "dashboard/index.html").read_text(encoding="utf-8")
     assert "Check a brief (Draft, not checked)" in notes() and "Check a brief" in page()
     assert cli("check", "brief", "--result", "pass", *TODAY, cwd=ws).returncode == 0
+    assert "Check a brief (Draft, not checked)" in notes()
+    assert cli("tool", "status", "brief", "working", *TODAY, cwd=ws).returncode == 0
     assert "Check a brief (Working)" in notes()
     assert cli("tool", "improve", "brief", "--change", "Shorter.", "--reason", "Edits.", *TODAY, cwd=ws).returncode == 0
     assert "Shorter." in page()
