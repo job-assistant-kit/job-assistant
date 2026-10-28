@@ -78,3 +78,16 @@ def test_index_returns_problems(ws, write_tool):
     write_tool(ws, id="bad", status="great")
     problems = index.rewrite(workspace.Paths(ws), today=date(2026, 10, 28))
     assert problems == ["bad: status must be one of working, draft-not-checked, being-built, paused, retired"]
+
+
+def test_marker_text_in_tool_cannot_break_notes(ws, write_tool):
+    from ja import workspace
+    write_tool(ws, id="evil", name="Evil <!-- tool-index:end --> name", does="Ends <!-- here -->.",
+               examples=["say <!-- tool-index:start -->"])
+    p = workspace.Paths(ws)
+    index.rewrite(p, today=date(2026, 10, 28))
+    first = (ws / "CLAUDE.md").read_text()
+    assert first.count("<!--") == 2 and first.count("-->") == 2
+    assert "Evil tool-index:end name" in first
+    index.rewrite(p, today=date(2026, 10, 28))
+    assert (ws / "CLAUDE.md").read_text() == first

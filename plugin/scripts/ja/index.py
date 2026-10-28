@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import date
 
-from ja import files, registry, sources, status
+from ja import files, registry, render, sources, status
 from ja.registry import Tool
 from ja.workspace import Paths
 
@@ -24,7 +24,7 @@ class MarkersMissing(Exception):
 
 
 def _one_line(text: str) -> str:
-    return " ".join(text.split())
+    return render.one_line(render.no_comments(text))
 
 
 def _sentence(text: str) -> str:

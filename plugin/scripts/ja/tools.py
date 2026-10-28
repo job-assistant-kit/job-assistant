@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import os
 from datetime import date
 from pathlib import Path
@@ -10,7 +9,7 @@ from typing import Any
 
 import yaml
 
-from ja import registry
+from ja import registry, render
 from ja.registry import RECORD_NAME, Tool
 from ja.status import check_passed
 from ja.workspace import Paths
@@ -42,32 +41,34 @@ def _exists(paths: Paths, tool_id: str) -> bool:
 
 
 def _text(value: Any) -> str:
+    """One line of text, or one line per list item. Never empty."""
     if value is None or (isinstance(value, (str, list)) and not value):
         return NOT_RECORDED
     if isinstance(value, list):
-        return "\n".join(f"- {' '.join(str(v).split())}" for v in value)
-    return str(value).strip()
+        return "\n".join(f"- {render.one_line(v)}" for v in value)
+    return render.one_line(value) or NOT_RECORDED
+
+
+def description_for(tool: Tool) -> str:
+    examples = "; ".join(f'"{render.one_line(e)}"' for e in tool.examples)
+    text = f"{render.one_line(tool.does)} Use when the person says things like {examples}, or asks for the same thing in other words."
+    return text[:1000]
 
 
 def adopted_skill(tool: Tool) -> str:
     """The instructions page for an inherited tool, filled from its record."""
-    examples = "; ".join(f'"{e}"' for e in tool.examples)
-    description = f"{' '.join(tool.does.split())} Use when the person says things like {examples}."
     values = {
-        "skill_name": tool.id,
-        "description": json.dumps(description[:1000], ensure_ascii=False),
-        "name": tool.name,
-        "does": tool.does,
+        "skill_name": render.yaml_scalar(tool.id),
+        "description": render.yaml_scalar(description_for(tool)),
+        "name": render.one_line(tool.name),
+        "does": render.one_line(tool.does),
         "lives_at": _text(tool.extra.get("lives_at")),
         "how_to_run": _text(tool.extra.get("how_to_run")),
         "inputs": _text(tool.extra.get("inputs")),
         "outputs": _text(tool.extra.get("outputs")),
         "last_good_run": _text(tool.extra.get("last_good_run")),
     }
-    text = ADOPTED_TEMPLATE.read_text(encoding="utf-8")
-    for key, value in values.items():
-        text = text.replace("{{" + key + "}}", value)
-    return text
+    return render.fill(ADOPTED_TEMPLATE.read_text(encoding="utf-8"), values)
 
 
 NEW_STATUSES = ("being-built", "draft-not-checked")

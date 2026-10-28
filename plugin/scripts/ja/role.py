@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ja import files, index
+from ja import files, render
 from ja.workspace import Paths
 
 START = "<!-- role:start -->"
@@ -15,14 +15,18 @@ class RoleProblem(ValueError):
 
 
 def set_role(paths: Paths, text: str) -> None:
-    body = text.strip()
+    body = render.no_comments(text).strip()
     if not body:
         raise RoleProblem("The role description is empty. Write a few sentences about the job first.")
     if len(body) > MAX_CHARS:
         raise RoleProblem("The role description is too long. Keep it under about 250 words.")
-    if any(marker in body for marker in (START, END, index.START, index.END)):
-        raise RoleProblem("The role description contains a marker line from the notes page. Remove it and try again.")
     current = files.read_raw(paths.claude_md) if paths.claude_md.is_file() else ""
+    i, j = current.find(START), current.find(END)
+    if i != -1 and j != -1 and j < i:
+        raise RoleProblem(
+            "The role markers in your assistant notes are in the wrong order. "
+            f"Put the line {START} before the line {END} in CLAUDE.md, then try again."
+        )
     new = files.replace_block(current, START, END, body.splitlines())
     if new is None:
         raise RoleProblem(

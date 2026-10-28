@@ -56,11 +56,29 @@ def test_role_markers_missing(tmp_path):
         role.set_role(p, ROLE)
 
 
-def test_role_empty_or_with_markers_refused(tmp_path):
+def test_role_empty_refused(tmp_path):
     p = make(tmp_path)
-    for bad in ("   \n", f"text {role.END} more", f"{index.START}"):
-        with pytest.raises(role.RoleProblem):
-            role.set_role(p, bad)
+    with pytest.raises(role.RoleProblem):
+        role.set_role(p, "   \n")
+
+
+def test_role_marker_text_is_stripped(tmp_path):
+    p = make(tmp_path)
+    role.set_role(p, f"text {role.END} more {index.START} <!-- note -->")
+    text = p.claude_md.read_text(encoding="utf-8")
+    for marker in (role.START, role.END, index.START, index.END):
+        assert text.count(marker) == 1
+    assert "text  role:end  more" in text
+    role.set_role(p, "Second.")
+    assert "Second." in p.claude_md.read_text(encoding="utf-8")
+
+
+def test_role_markers_in_wrong_order(tmp_path):
+    p = make(tmp_path)
+    p.claude_md.write_text(f"# A\n{role.END}\n{role.START}\n", encoding="utf-8")
+    with pytest.raises(role.RoleProblem) as err:
+        role.set_role(p, ROLE)
+    assert "wrong order" in str(err.value)
 
 
 def test_core_size_empty(tmp_path):
