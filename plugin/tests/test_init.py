@@ -160,3 +160,9 @@ def test_no_git_still_works(tmp_path, monkeypatch):
     assert created.note == "Saved without version history because git is not installed."
     assert not (created.root / ".git").exists()
     assert (created.root / "CLAUDE.md").is_file()
+
+
+def test_folder_is_private(tmp_path):
+    import stat
+    root = init.create(tmp_path / "ws").root
+    assert stat.S_IMODE(root.stat().st_mode) == 0o700

@@ -56,12 +56,14 @@ def _tool_exists(paths: Paths, tool_id: str) -> None:
 
 
 def _guard(func):
-    """Turn Stop into a plain message and exit code 1."""
+    """Turn Stop and file errors into a plain message and exit code 1."""
     def wrapper(args: argparse.Namespace) -> int:
         try:
             return func(args)
         except Stop as exc:
             return _fail(str(exc))
+        except OSError as exc:
+            return _fail(f"I could not finish this: {init.plain_reason(exc)}.")
     wrapper.__name__ = func.__name__
     wrapper.__doc__ = func.__doc__
     return wrapper
@@ -342,7 +344,8 @@ def cmd_sources_exported(args: argparse.Namespace) -> int:
     except sources.SourceProblem as exc:
         raise Stop(str(exc)) from None
     _refresh(paths, today)
-    _say(f"Saved: your copy of {args.id} is from {args.date}.")
+    src = sources.load(paths)[0].get(args.id)
+    _say(f"Saved: your copy of {src.name if src else args.id} is from {args.date}.")
     return 0
 
 
@@ -357,7 +360,7 @@ def cmd_sources_list(args: argparse.Namespace) -> int:
     if not rows and not problems:
         _say("No sources yet.")
     for r in rows:
-        _say(f"{r['name']} ({r['id']}): {r['reached']}. {r['age']}.")
+        _say(f"{r['name']}: {r['reached']}. {r['age']}.")
     _say_problems("Sources with problems:", problems, gap=bool(rows))
     return 0
 

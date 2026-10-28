@@ -237,3 +237,28 @@ def test_env_reports_programs(ws, cli, monkeypatch):
     assert "git: installed" in r.stdout and "uv: not installed" in r.stdout
     data = json.loads(cli("env", "--json", cwd=ws).stdout)
     assert data["uv"] is False and data["claude"] is True
+
+
+def test_file_errors_are_plain(ws, write_tool, cli, monkeypatch):
+    from ja import registry
+    write_tool(ws, id="t1")
+
+    def refuse(*a, **k):
+        raise PermissionError(13, "Permission denied")
+
+    monkeypatch.setattr(registry, "save", refuse)
+    for args in (("tool", "improve", "t1", "--change", "x", "--reason", "y"), ("check", "t1", "--result", "pass"),
+                 ("tool", "status", "t1", "paused")):
+        r = cli(*args, *TODAY, cwd=ws)
+        assert r.returncode == 1, args
+        assert r.stderr.strip() == "I could not finish this: you do not have permission to save there.", args
+        assert "Traceback" not in r.text
+
+
+def test_source_messages_use_names(ws, cli):
+    cli("sources", "add", "--id", "faq", "--name", "OLM FAQ", "--kind", "living", "--where", "Drive",
+        "--access", "file", "--exported", "2026-10-20", *TODAY, cwd=ws)
+    r = cli("sources", "exported", "faq", "2026-10-27", *TODAY, cwd=ws)
+    assert r.stdout.strip() == "Saved: your copy of OLM FAQ is from 2026-10-27."
+    r = cli("sources", "list", *TODAY, cwd=ws)
+    assert r.stdout.startswith("OLM FAQ: a copy you drop in.") and "(faq)" not in r.stdout
