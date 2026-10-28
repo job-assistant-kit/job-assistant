@@ -89,3 +89,17 @@ def test_dashboard_title_uses_assistant_name(ws, cli):
     assert cli("dashboard", *TODAY, cwd=ws).returncode == 0
     html = (ws / "dashboard/index.html").read_text(encoding="utf-8")
     assert "<title>David&#39;s Assistant</title>" in html and "<h1>David&#39;s Assistant</h1>" in html
+
+
+def test_index_reports_invalid_tools(ws, write_tool, cli):
+    write_tool(ws, id="bad", status="great")
+    r = cli("index", *TODAY, cwd=ws)
+    assert r.returncode == 0
+    assert "up to date" not in r.stdout
+    assert "Tools with problems:" in r.stdout and "bad: status must be one of" in r.stdout
+
+
+def test_index_up_to_date_when_clean(ws, write_tool, cli):
+    write_tool(ws, id="a")
+    r = cli("index", *TODAY, cwd=ws)
+    assert r.stdout.strip() == "The list of tools in your assistant notes is up to date."

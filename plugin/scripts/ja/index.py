@@ -38,26 +38,49 @@ def line_for(tool: Tool, effective: str) -> str:
     return f'- {_one_line(tool.name)} ({status.label(effective)}): {_sentence(tool.does)} Say: "{example}".'
 
 
-def lines(paths: Paths, today: date) -> list[str]:
-    """One line per active tool (not retired), using the computed status."""
-    tools, _ = registry.load_all(paths)
+def collect(paths: Paths, today: date) -> tuple[list[str], list[str]]:
+    """One line per active tool (not retired), using the computed status, plus tool problems."""
+    tools, problems = registry.load_all(paths)
     by_id, _ = sources.load(paths)
     out = []
     for t in tools:
         eff = status.effective_status(t, by_id, today)
         if eff != "retired":
             out.append(line_for(t, eff))
-    return out or [EMPTY]
+    return out or [EMPTY], problems
 
 
-def rewrite(paths: Paths, today: date) -> None:
-    text = paths.claude_md.read_text(encoding="utf-8") if paths.claude_md.is_file() else ""
+def lines(paths: Paths, today: date) -> list[str]:
+    return collect(paths, today)[0]
+
+
+def read_raw(path) -> str:
+    """Text with its line endings untouched."""
+    with open(path, "r", encoding="utf-8", newline="") as fh:
+        return fh.read()
+
+
+def write_raw(path, text: str) -> None:
+    """Write atomically, keeping the line endings in text as they are."""
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    with open(tmp, "w", encoding="utf-8", newline="") as fh:
+        fh.write(text)
+    os.replace(tmp, path)
+
+
+def line_ending(text: str) -> str:
+    return "\r\n" if "\r\n" in text else "\n"
+
+
+def rewrite(paths: Paths, today: date) -> list[str]:
+    """Rewrite the block between the markers. Returns the tools left out because their records are broken."""
+    text = read_raw(paths.claude_md) if paths.claude_md.is_file() else ""
     start = text.find(START)
     end = text.find(END, start + len(START)) if start != -1 else -1
     if start == -1 or end == -1:
         raise MarkersMissing()
-    block = "\n" + "\n".join(lines(paths, today)) + "\n"
-    new = text[: start + len(START)] + block + text[end:]
-    tmp = paths.claude_md.with_suffix(".md.tmp")
-    tmp.write_text(new, encoding="utf-8")
-    os.replace(tmp, paths.claude_md)
+    eol = line_ending(text)
+    found, problems = collect(paths, today)
+    block = eol + eol.join(found) + eol
+    write_raw(paths.claude_md, text[: start + len(START)] + block + text[end:])
+    return problems

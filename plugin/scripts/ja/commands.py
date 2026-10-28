@@ -127,10 +127,15 @@ def _say_problems(heading: str, problems: list[str], gap: bool = True) -> None:
 def cmd_index(args: argparse.Namespace) -> int:
     paths = _paths(args)
     try:
-        index.rewrite(paths, today=_today(args))
+        problems = index.rewrite(paths, today=_today(args))
     except index.MarkersMissing as exc:
         raise Stop(str(exc)) from None
-    _say("The list of tools in your assistant notes is up to date.")
+    if problems:
+        _say("I updated the list of tools in your assistant notes, "
+             "but left out tools whose records have a mistake.")
+        _say_problems("Tools with problems:", problems)
+    else:
+        _say("The list of tools in your assistant notes is up to date.")
     return 0
 
 

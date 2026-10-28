@@ -60,3 +60,21 @@ def test_index_marks_unchecked_working_tool_as_draft(ws, write_tool):
     write_tool(ws, id="a", name="A", last_check=None)
     index.rewrite(workspace.Paths(ws), today=date(2026, 10, 28))
     assert "- A (Draft, not checked):" in (ws / "CLAUDE.md").read_text()
+
+def test_index_keeps_windows_line_endings(ws, write_tool):
+    (ws / "CLAUDE.md").write_bytes(b"Top\r\n<!-- tool-index:start -->\r\nold\r\n<!-- tool-index:end -->\r\nBottom\r\n")
+    write_tool(ws, id="a", name="A")
+    index.rewrite(workspace.Paths(ws), today=date(2026, 10, 28))
+    raw = (ws / "CLAUDE.md").read_bytes()
+    assert raw.count(b"\r\n") == raw.count(b"\n")
+    assert b'- A (Working): Does one thing. Say: "do one".\r\n' in raw
+
+def test_index_keeps_unix_line_endings(ws, write_tool):
+    write_tool(ws, id="a")
+    index.rewrite(workspace.Paths(ws), today=date(2026, 10, 28))
+    assert b"\r" not in (ws / "CLAUDE.md").read_bytes()
+
+def test_index_returns_problems(ws, write_tool):
+    write_tool(ws, id="bad", status="great")
+    problems = index.rewrite(workspace.Paths(ws), today=date(2026, 10, 28))
+    assert problems == ["bad: status must be one of working, draft-not-checked, being-built, paused, retired"]
