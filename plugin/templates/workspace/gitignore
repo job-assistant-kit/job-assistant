@@ -1,3 +1,4 @@
 inbox/
 data/
 dashboard/
+.claude/settings.local.json

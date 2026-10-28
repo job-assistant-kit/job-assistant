@@ -1,8 +1,9 @@
 {
   "permissions": {
+    "defaultMode": "acceptEdits",
     "allow": [
-      "Bash(uv run --script *ja.py*)",
-      "Bash(uv run --script *facts.py*)"
+      "Bash(uv run --script */plugins/cache/job-assistant/job-assistant/*/scripts/ja.py *)",
+      "Bash(uv run --script */plugins/cache/job-assistant/job-assistant/*/scripts/ja.py\" *)"
     ],
     "deny": [
       "mcp__claude_ai_Google_Drive__create_file",
@@ -22,7 +23,28 @@
       "mcp__claude_ai_Atlassian__createJiraIssue",
       "mcp__claude_ai_Atlassian__editJiraIssue",
       "mcp__claude_ai_Atlassian__transitionJiraIssue",
-      "mcp__claude_ai_Atlassian__updateConfluencePage"
+      "mcp__claude_ai_Atlassian__updateConfluencePage",
+      "mcp__atlassian-mcp-server__addCommentToJiraIssue",
+      "mcp__atlassian-mcp-server__addWorklogToJiraIssue",
+      "mcp__atlassian-mcp-server__createCompassComponent",
+      "mcp__atlassian-mcp-server__createCompassComponentRelationship",
+      "mcp__atlassian-mcp-server__createCompassCustomFieldDefinition",
+      "mcp__atlassian-mcp-server__createConfluenceFooterComment",
+      "mcp__atlassian-mcp-server__createConfluenceInlineComment",
+      "mcp__atlassian-mcp-server__createConfluencePage",
+      "mcp__atlassian-mcp-server__createIssueLink",
+      "mcp__atlassian-mcp-server__createJiraIssue",
+      "mcp__atlassian-mcp-server__editJiraIssue",
+      "mcp__atlassian-mcp-server__transitionJiraIssue",
+      "mcp__atlassian-mcp-server__updateConfluencePage",
+      "mcp__atlassian-mcp-server__addTeamworkGraphContext",
+      "mcp__claude_ai_Claude_Docs__create",
+      "mcp__claude_ai_Claude_Docs__update",
+      "mcp__claude_ai_Claude_Docs__batch",
+      "mcp__claude_ai_Claude_Docs__delete",
+      "Bash(git push*)",
+      "Bash(clasp push*)",
+      "Bash(clasp deploy*)"
     ]
   }
 }

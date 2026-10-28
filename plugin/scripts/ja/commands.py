@@ -14,7 +14,7 @@ import sys
 from datetime import date
 from pathlib import Path
 
-from ja import index, init, launcher, ledger, records, registry, role, runbook, settings, sources, status, tools, workspace
+from ja import helper, index, init, launcher, ledger, records, registry, role, runbook, settings, sources, status, tools, workspace
 from ja.registry import is_date
 from ja.workspace import Paths
 
@@ -43,9 +43,11 @@ def _today(args: argparse.Namespace) -> date:
 
 def _paths(args: argparse.Namespace) -> Paths:
     try:
-        return Paths(workspace.resolve(getattr(args, "workspace", None), Path.cwd()))
+        paths = Paths(workspace.resolve(getattr(args, "workspace", None), Path.cwd()))
     except workspace.NoWorkspace as exc:
         raise Stop(str(exc)) from None
+    helper.sync(paths)
+    return paths
 
 
 def _tool_exists(paths: Paths, tool_id: str) -> None:
@@ -277,7 +279,7 @@ def cmd_settings_deny(args: argparse.Namespace) -> int:
         added = settings.deny(paths, args.names)
     except settings.SettingsProblem as exc:
         raise Stop(str(exc)) from None
-    _say(f"Blocked: {added} new write actions.")
+    _say(f"Blocked: {added} new write action{'' if added == 1 else 's'}.")
     return 0
 
 

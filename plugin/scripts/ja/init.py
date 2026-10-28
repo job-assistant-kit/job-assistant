@@ -14,11 +14,11 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
-from ja.workspace import DEFAULT_NAME, MARKER
+from ja import helper
+from ja.workspace import DEFAULT_NAME, MARKER, Paths
 
 TEMPLATE = Path(__file__).resolve().parents[2] / "templates" / "workspace"
 NAME_TOKEN = "{{assistant_name}}"
-MARKER_TEXT = "This file marks this folder as a job assistant folder. Please keep it.\n"
 
 # Stored without the leading dot so the template's ignore rules do not hide the
 # template's own placeholder folders in this source tree.
@@ -99,8 +99,9 @@ def _fill(folder: Path, name: str) -> None:
         shutil.copyfile(src, dest)
     claude_md = folder / "CLAUDE.md"
     claude_md.write_text(claude_md.read_text(encoding="utf-8").replace(NAME_TOKEN, name), encoding="utf-8")
-    (folder / MARKER).parent.mkdir(parents=True, exist_ok=True)
-    (folder / MARKER).write_text(MARKER_TEXT, encoding="utf-8")
+    helper.sync(Paths(folder))
+    if not (folder / MARKER).is_file():
+        raise OSError("could not write the marker file")
 
 
 NO_GIT = "Saved without version history because git is not installed."

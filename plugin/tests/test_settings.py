@@ -7,16 +7,32 @@ import pytest
 from ja import init, settings, workspace
 
 
+CACHE_RULE = "Bash(uv run --script */plugins/cache/job-assistant/job-assistant/*/scripts/ja.py *)"
+
+
 def test_template_settings(tmp_path):
     p = workspace.Paths(init.create(tmp_path / "ws").root)
     data = json.loads(p.settings.read_text(encoding="utf-8"))
-    deny = data["permissions"]["deny"]
+    perms = data["permissions"]
+    deny = perms["deny"]
+    assert perms["defaultMode"] == "acceptEdits"
     for name in ("create_file", "update_file", "share_file", "trash_file", "copy_file"):
         assert f"mcp__claude_ai_Google_Drive__{name}" in deny
-    assert "mcp__claude_ai_Atlassian__createJiraIssue" in deny
-    assert all(n.startswith("mcp__") for n in deny) and len(deny) == len(set(deny))
-    assert "Bash(uv run --script *ja.py*)" in data["permissions"]["allow"]
+    for prefix in ("mcp__claude_ai_Atlassian__", "mcp__atlassian-mcp-server__"):
+        for name in ("createJiraIssue", "editJiraIssue", "transitionJiraIssue", "addCommentToJiraIssue",
+                     "createConfluencePage", "updateConfluencePage"):
+            assert prefix + name in deny
+    for rule in ("Bash(git push*)", "Bash(clasp push*)", "Bash(clasp deploy*)"):
+        assert rule in deny
+    assert len(deny) == len(set(deny))
+    mcp = [n for n in deny if not n.startswith("Bash(")]
+    assert all(settings.NAME.match(n) for n in mcp)
     assert "mcp__claude_ai_Google_Drive__read_file_content" not in deny
+    assert not any("slack" in n.lower() or "gmail" in n.lower() for n in deny)
+    allow = perms["allow"]
+    assert CACHE_RULE in allow
+    assert not any("facts.py" in rule for rule in allow)
+    assert "Bash(uv run --script *ja.py*)" not in allow
 
 
 def test_deny_adds_and_dedupes(ws):
@@ -40,7 +56,8 @@ def test_deny_keeps_other_keys(ws):
 
 def test_bad_names_refused(ws):
     p = workspace.Paths(ws)
-    for bad in (["Bash(rm *)"], ["mcp__ok__x", "slack_post"], ["mcp__has space"], [""]):
+    for bad in (["Bash(rm *)"], ["mcp__ok__x", "slack_post"], ["mcp__has space"], [""], ["mcp__nodouble"],
+                ["mcp__a__b c"], ["mcp__a__b*"], ["mcp____x"]):
         with pytest.raises(settings.SettingsProblem):
             settings.deny(p, bad)
     assert not p.settings.exists()
@@ -60,3 +77,8 @@ def test_unreadable_file_not_overwritten(ws):
     with pytest.raises(settings.SettingsProblem):
         settings.deny(p, ["mcp__x__send"])
     assert p.settings.read_text(encoding="utf-8") == "{not json"
+
+
+def test_deny_accepts_real_connector_names(ws):
+    p = workspace.Paths(ws)
+    assert settings.deny(p, ["mcp__atlassian-mcp-server__createJiraIssue", "mcp__claude_ai_Google_Drive__share_file"]) == 2

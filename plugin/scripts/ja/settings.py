@@ -14,7 +14,7 @@ from typing import Any
 
 from ja.workspace import Paths
 
-NAME = re.compile(r"^mcp__\S+$")
+NAME = re.compile(r"^mcp__[A-Za-z0-9_-]+__[A-Za-z0-9_-]+$")
 
 
 class SettingsProblem(ValueError):

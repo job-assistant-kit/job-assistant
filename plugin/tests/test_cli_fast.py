@@ -126,6 +126,8 @@ def test_settings_cli(ws, cli):
     assert r.returncode == 0 and r.stdout.strip() == "Blocked: 2 new write actions."
     r = cli("settings", "deny", "mcp__x__send", cwd=ws)
     assert r.stdout.strip() == "Blocked: 0 new write actions."
+    r = cli("settings", "deny", "mcp__x__send", "mcp__x__share", cwd=ws)
+    assert r.stdout.strip() == "Blocked: 1 new write action."
     r = cli("settings", "deny", "post_message", cwd=ws)
     assert r.returncode == 1 and "post_message" in r.stderr
     r = cli("settings", "show", cwd=ws)
