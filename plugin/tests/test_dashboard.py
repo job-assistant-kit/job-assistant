@@ -130,3 +130,24 @@ def test_pill_classes(ws, write_tool):
     write_tool(ws, id="b", name="B", status="paused")
     html = dashboard.render(workspace.Paths(ws), today=T)
     assert 'class="pill build">Being built' in html and 'class="pill off">Paused' in html
+
+def test_draft_with_passed_check_waits_for_ok(ws, write_tool):
+    write_tool(ws, id="b", name="TTM review", status="draft-not-checked",
+               last_check={"date": "2026-10-27", "result": "pass", "detail": ""})
+    html = dashboard.render(workspace.Paths(ws), today=T)
+    assert "Last check passed Oct 27. Waiting for your OK on the method." in section(html, "My tools")
+    assert "Waiting for your OK on the method." in section(html, "Needs your OK")
+    assert "Not checked yet" not in html
+
+def test_unchecked_working_tool_shows_draft(ws, write_tool):
+    write_tool(ws, id="a", name="New tool", last_check=None)
+    html = dashboard.render(workspace.Paths(ws), today=T)
+    card = section(html, "My tools")
+    assert 'class="pill warn">Draft, not checked' in card and "Not checked yet" in card
+    assert "check New tool" in section(html, "Needs your OK")
+
+def test_rhythm_in_plain_words(ws, write_tool):
+    write_tool(ws, id="a", name="A", rhythm="quarterly")
+    write_tool(ws, id="b", name="B", rhythm="on-demand")
+    card = section(dashboard.render(workspace.Paths(ws), today=T), "My tools")
+    assert "Runs quarterly" in card and "When you need it" in card

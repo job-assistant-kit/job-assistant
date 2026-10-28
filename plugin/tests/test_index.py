@@ -11,9 +11,11 @@ def test_index_rewrites_block_only(ws, write_tool):
     assert "old" not in text
 
 def test_index_excludes_retired(ws, write_tool):
-    write_tool(ws, id="old", status="retired")
+    write_tool(ws, id="old", name="Retired slide builder", status="retired")
+    write_tool(ws, id="a", name="Active tool")
     index.rewrite(workspace.Paths(ws), today=date(2026, 10, 28))
-    assert "old" not in (ws / "CLAUDE.md").read_text().split("tool-index:start")[1]
+    block = (ws / "CLAUDE.md").read_text().split("tool-index:start")[1]
+    assert "Retired slide builder" not in block and "Active tool" in block
 
 def test_missing_markers(ws):
     (ws / "CLAUDE.md").write_text("no markers\n")
@@ -53,3 +55,8 @@ def test_end_before_start_is_missing(ws):
     import pytest
     with pytest.raises(index.MarkersMissing):
         index.rewrite(workspace.Paths(ws), today=date(2026, 10, 28))
+
+def test_index_marks_unchecked_working_tool_as_draft(ws, write_tool):
+    write_tool(ws, id="a", name="A", last_check=None)
+    index.rewrite(workspace.Paths(ws), today=date(2026, 10, 28))
+    assert "- A (Draft, not checked):" in (ws / "CLAUDE.md").read_text()

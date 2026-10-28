@@ -14,6 +14,17 @@ from ja.workspace import Paths
 
 TEMPLATES = Path(__file__).resolve().parent / "templates"
 
+RHYTHM_WORDS = {
+    "on-demand": "When you need it",
+    "daily": "Runs daily",
+    "weekly": "Runs weekly",
+    "monthly": "Runs monthly",
+    "quarterly": "Runs quarterly",
+}
+
+WAITING = "Waiting for your OK on the method."
+NOT_CHECKED = "Not checked yet. Confirm it works on a real example."
+
 PILL_CLASS = {
     "working": "ok",
     "draft-not-checked": "warn",
@@ -31,6 +42,7 @@ class Card:
     pill: str
     does: str
     say: str
+    rhythm: str
     uses: str
     last_used: str
     last_check: str
@@ -85,11 +97,14 @@ def _times(n: int) -> str:
     return "Not used yet" if n == 0 else f"Used {n} time" + ("" if n == 1 else "s")
 
 
-def _check_text(check: dict[str, str] | None, today: date) -> str:
+def _check_text(check: dict[str, str] | None, today: date, effective: str) -> str:
     if not check:
         return "Not checked yet"
     word = "passed" if check.get("result") == "pass" else "failed"
-    return f"Last check {word} {short_date(check['date'], today)}"
+    text = f"Last check {word} {short_date(check['date'], today)}"
+    if effective == "draft-not-checked" and check.get("result") == "pass":
+        return f"{text}. {WAITING}"
+    return text
 
 
 def build_view(paths: Paths, today: date, ideas: list[str] | None = None,
@@ -127,8 +142,8 @@ def build_view(paths: Paths, today: date, ideas: list[str] | None = None,
             attention.append(Attention(t.name, status.reasons(t, by_id, today), f"update {t.name}"))
         elif eff == "draft-not-checked":
             needs_ok += 1
-            attention.append(Attention(t.name, ["Not checked yet. Confirm it works on a real example."],
-                                       f"check {t.name}"))
+            why = _check_text(t.last_check, today, eff) if status.check_passed(t) else NOT_CHECKED
+            attention.append(Attention(t.name, [why], f"check {t.name}"))
         last = records.last_run(paths, t.id)
         cards.append(Card(
             name=t.name,
@@ -136,9 +151,10 @@ def build_view(paths: Paths, today: date, ideas: list[str] | None = None,
             pill=PILL_CLASS.get(eff, "off"),
             does=t.does,
             say=t.examples[0],
+            rhythm=RHYTHM_WORDS.get(t.rhythm, t.rhythm),
             uses=_times(records.count_runs(paths, t.id)),
             last_used=f"Last used {short_date(last, today)}" if last else "",
-            last_check=_check_text(t.last_check, today),
+            last_check=_check_text(t.last_check, today, eff),
             data_path=t.data_path,
             manual_steps=list(t.manual_steps),
             rules=[rule_text.get(r, r) for r in t.rules],

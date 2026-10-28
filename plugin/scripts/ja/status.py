@@ -47,11 +47,17 @@ def _problems(tool: Tool, sources_by_id: dict[str, Source], today: date) -> list
     return out
 
 
+def check_passed(tool: Tool) -> bool:
+    return bool(tool.last_check) and tool.last_check.get("result") == "pass"
+
+
 def effective_status(tool: Tool, sources_by_id: dict[str, Source], today: date) -> str:
     if tool.status in HELD:
         return tool.status
     if _problems(tool, sources_by_id, today):
         return "needs-update"
+    if tool.status == "working" and not check_passed(tool):
+        return "draft-not-checked"
     return tool.status
 
 

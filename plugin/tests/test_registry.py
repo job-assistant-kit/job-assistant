@@ -100,7 +100,7 @@ def test_folder_without_record_ignored(ws):
     assert tools == [] and problems == []
 
 def test_defaults_applied(ws, write_tool):
-    write_tool(ws, id="t1")
+    write_tool(ws, id="t1", last_check=None)
     t = registry.load_all(workspace.Paths(ws))[0][0]
     assert t.sources == [] and t.manual_steps == [] and t.rules == [] and t.improvements == []
     assert t.confidential is False and t.exec_numbers is False
