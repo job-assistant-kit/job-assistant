@@ -131,6 +131,12 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--detail", default="")
     p.set_defaults(func=commands.cmd_check)
 
+    p = sub.add_parser("role", parents=[common], help="the role description in the assistant notes")
+    rsub = p.add_subparsers(dest="action", metavar="action", required=True)
+    rp = rsub.add_parser("set", parents=[common], help="replace the role description with a file's text")
+    rp.add_argument("--file", required=True, metavar="PATH")
+    rp.set_defaults(func=commands.cmd_role_set)
+
     return parser
 
 

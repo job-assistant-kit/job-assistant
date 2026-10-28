@@ -14,7 +14,7 @@ import sys
 from datetime import date
 from pathlib import Path
 
-from ja import index, init, ledger, records, registry, sources, status, workspace
+from ja import index, init, ledger, records, registry, role, sources, status, workspace
 from ja.registry import is_date
 from ja.workspace import Paths
 
@@ -223,4 +223,19 @@ def cmd_check(args: argparse.Namespace) -> int:
     registry.save(paths, tool)
     word = "passed" if args.result == "pass" else "failed"
     _say(f"Saved: the check of {tool.name} {word} today.")
+    return 0
+
+
+@_guard
+def cmd_role_set(args: argparse.Namespace) -> int:
+    paths = _paths(args)
+    try:
+        text = Path(args.file).expanduser().read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        raise Stop(f"I could not read {args.file}. Check that the file exists and is plain text.") from None
+    try:
+        role.set_role(paths, text)
+    except role.RoleProblem as exc:
+        raise Stop(str(exc)) from None
+    _say("Saved the role description in your assistant notes.")
     return 0

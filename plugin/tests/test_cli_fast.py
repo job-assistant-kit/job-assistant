@@ -103,3 +103,19 @@ def test_index_up_to_date_when_clean(ws, write_tool, cli):
     write_tool(ws, id="a")
     r = cli("index", *TODAY, cwd=ws)
     assert r.stdout.strip() == "The list of tools in your assistant notes is up to date."
+
+
+def test_role_set_cli(tmp_path, cli):
+    root = tmp_path / "ws"
+    assert cli("init", str(root)).returncode == 0
+    card = tmp_path / "role.md"
+    card.write_text("David reviews offerings.\n", encoding="utf-8")
+    r = cli("role", "set", "--file", str(card), cwd=root)
+    assert r.returncode == 0, r.text
+    assert "David reviews offerings." in (root / "CLAUDE.md").read_text(encoding="utf-8")
+    card.write_text("x" * 1700, encoding="utf-8")
+    r = cli("role", "set", "--file", str(card), cwd=root)
+    assert r.returncode == 1
+    assert r.stderr.strip() == "The role description is too long. Keep it under about 250 words."
+    r = cli("role", "set", "--file", str(tmp_path / "missing.md"), cwd=root)
+    assert r.returncode == 1 and "could not read" in r.stderr

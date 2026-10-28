@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-import os
 from datetime import date
 
-from ja import registry, sources, status
+from ja import files, registry, sources, status
 from ja.registry import Tool
 from ja.workspace import Paths
 
@@ -54,33 +53,11 @@ def lines(paths: Paths, today: date) -> list[str]:
     return collect(paths, today)[0]
 
 
-def read_raw(path) -> str:
-    """Text with its line endings untouched."""
-    with open(path, "r", encoding="utf-8", newline="") as fh:
-        return fh.read()
-
-
-def write_raw(path, text: str) -> None:
-    """Write atomically, keeping the line endings in text as they are."""
-    tmp = path.with_suffix(path.suffix + ".tmp")
-    with open(tmp, "w", encoding="utf-8", newline="") as fh:
-        fh.write(text)
-    os.replace(tmp, path)
-
-
-def line_ending(text: str) -> str:
-    return "\r\n" if "\r\n" in text else "\n"
-
-
 def rewrite(paths: Paths, today: date) -> list[str]:
     """Rewrite the block between the markers. Returns the tools left out because their records are broken."""
-    text = read_raw(paths.claude_md) if paths.claude_md.is_file() else ""
-    start = text.find(START)
-    end = text.find(END, start + len(START)) if start != -1 else -1
-    if start == -1 or end == -1:
+    text = files.read_raw(paths.claude_md) if paths.claude_md.is_file() else ""
+    if files.find_block(text, START, END) is None:
         raise MarkersMissing()
-    eol = line_ending(text)
     found, problems = collect(paths, today)
-    block = eol + eol.join(found) + eol
-    write_raw(paths.claude_md, text[: start + len(START)] + block + text[end:])
+    files.write_raw(paths.claude_md, files.replace_block(text, START, END, found))
     return problems
