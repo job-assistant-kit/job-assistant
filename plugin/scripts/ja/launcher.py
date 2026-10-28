@@ -9,6 +9,7 @@ from __future__ import annotations
 import os
 import platform
 import shlex
+import shutil
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -30,14 +31,24 @@ class Item:
     what: str
 
 
-def _script(root: Path) -> str:
-    return f"#!/bin/sh\n{MARKER}\ncd {shlex.quote(str(root))} || exit 1\nexec claude \"$@\"\n"
+NO_CLAUDE = "I could not find Claude on this computer, so I cannot make a shortcut yet."
+OTHER_SHORTCUT = {"Linux": "The menu shortcut works now.", "Darwin": "The desktop shortcut works now."}
 
 
-def _desktop_quote(text: str) -> str:
-    """Quote one argument for the Exec key of a .desktop file."""
-    escaped = text.replace("\\", "\\\\").replace('"', '\\"').replace("`", "\\`").replace("$", "\\$")
-    return f'"{escaped}"'.replace("%", "%%")
+def _script(root: Path, claude: str) -> str:
+    return f"#!/bin/sh\n{MARKER}\ncd {shlex.quote(str(root))} || exit 1\nexec {shlex.quote(claude)} \"$@\"\n"
+
+
+def _desktop_string(text: str) -> str:
+    """Escape a value of type string in a desktop entry: backslash, newline, tab, return, leading space."""
+    out = text.replace("\\", "\\\\").replace("\n", "\\n").replace("\t", "\\t").replace("\r", "\\r")
+    return "\\s" + out[1:] if out.startswith(" ") else out
+
+
+def _desktop_exec(program: str) -> str:
+    """One quoted program path for the Exec key: the quoting rule first, then string escaping and %."""
+    quoted = program.replace("\\", "\\\\").replace('"', '\\"').replace("`", "\\`").replace("$", "\\$")
+    return _desktop_string(f'"{quoted}"').replace("%", "%%")
 
 
 def _desktop(name: str, root: Path, script: Path) -> str:
@@ -45,10 +56,10 @@ def _desktop(name: str, root: Path, script: Path) -> str:
         "[Desktop Entry]\n"
         f"{MARKER}\n"
         "Type=Application\n"
-        f"Name={' '.join(name.split())}\n"
+        f"Name={_desktop_string(' '.join(name.split()))}\n"
         "Comment=Open your job assistant\n"
-        f"Exec={_desktop_quote(str(script))}\n"
-        f"Path={root}\n"
+        f"Exec={_desktop_exec(str(script))}\n"
+        f"Path={_desktop_string(str(root))}\n"
         "Icon=utilities-terminal\n"
         "Terminal=true\n"
         "Categories=Office;\n"
@@ -56,20 +67,23 @@ def _desktop(name: str, root: Path, script: Path) -> str:
 
 
 def plan(paths: Paths, *, system: str | None = None, bin_dir: Path | None = None,
-         apps_dir: Path | None = None, desktop_dir: Path | None = None) -> list[Item]:
+         apps_dir: Path | None = None, desktop_dir: Path | None = None, claude: str | None = None) -> list[Item]:
     system = system or platform.system()
+    claude = claude or shutil.which("claude")
+    if not claude:
+        raise LauncherProblem(NO_CLAUDE)
     home = Path.home()
     bin_dir = Path(bin_dir or home / ".local" / "bin").expanduser()
     root = paths.root.resolve()
     script = bin_dir / COMMAND
-    items = [Item(script, _script(root), "a command that opens the assistant")]
+    items = [Item(script, _script(root, claude), "a command that opens the assistant")]
     if system == "Linux":
         apps = Path(apps_dir or home / ".local" / "share" / "applications").expanduser()
         items.append(Item(apps / f"{COMMAND}.desktop", _desktop(workspace.assistant_name(paths), root, script),
                           "a menu shortcut"))
     elif system == "Darwin":
         desk = Path(desktop_dir or home / "Desktop").expanduser()
-        items.append(Item(desk / "Job Assistant.command", _script(root), "a desktop shortcut"))
+        items.append(Item(desk / "Job Assistant.command", _script(root, claude), "a desktop shortcut"))
     return items
 
 
@@ -108,13 +122,16 @@ def write(items: list[Item]) -> None:
 
 
 def run(paths: Paths, *, yes: bool, **options: object) -> str:
-    items = plan(paths, **options)  # type: ignore[arg-type]
+    system = str(options.pop("system", None) or platform.system())
+    items = plan(paths, system=system, **options)  # type: ignore[arg-type]
     if not yes:
         return preview(items)
     write(items)
     done = ["Your shortcut is ready:"] + [f"  {item.path}" for item in items]
     bin_dir = str(items[0].path.parent)
     if bin_dir not in os.environ.get("PATH", "").split(os.pathsep):
-        done.append(f"Note: {bin_dir} is not on the search path yet, so typing {COMMAND} may not work "
-                    "until it is added. The other shortcut works now.")
+        note = f"Note: {bin_dir} is not on the search path yet, so typing {COMMAND} may not work until it is added."
+        if system in OTHER_SHORTCUT:
+            note += " " + OTHER_SHORTCUT[system]
+        done.append(note)
     return "\n".join(done)
