@@ -9,7 +9,7 @@ from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader
 
-from ja import profile, records, registry, sources, status
+from ja import profile, records, registry, sources, status, workspace
 from ja.workspace import Paths
 
 TEMPLATES = Path(__file__).resolve().parent / "templates"
@@ -68,6 +68,7 @@ class Learned:
 
 @dataclass
 class View:
+    title: str
     updated: str
     working: int
     needs_ok: int
@@ -184,6 +185,7 @@ def build_view(paths: Paths, today: date, ideas: list[str] | None = None,
     ]
 
     return View(
+        title=workspace.assistant_name(paths),
         updated=f"{today:%b} {today.day}, {today.year}, {now.hour % 12 or 12}:{now:%M %p}",
         working=working,
         needs_ok=needs_ok,

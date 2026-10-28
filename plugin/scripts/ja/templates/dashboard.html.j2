@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>My Work Assistant</title>
+<title>{{ v.title }}</title>
 <style>
   :root {
     --bg: #fafaf8; --card: #ffffff; --ink: #1d1d1b; --muted: #5c5c57; --line: #e3e2dc;
@@ -62,7 +62,7 @@
 </head>
 <body>
 <main>
-  <h1>My Work Assistant</h1>
+  <h1>{{ v.title }}</h1>
   <p class="sub">Updated {{ v.updated }}. Say "show my tools" to open this page.</p>
 
   <div class="stats">

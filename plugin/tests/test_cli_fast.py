@@ -69,3 +69,23 @@ def test_argument_errors_are_plain(ws, cli):
 def test_help_still_works(cli):
     r = cli("--help")
     assert r.returncode == 0 and "init" in r.stdout
+
+
+def test_init_bad_name(tmp_path, cli):
+    r = cli("init", str(tmp_path / "x"), "--name", "<>")
+    assert r.returncode == 1 and "name" in r.stderr and not (tmp_path / "x").exists()
+
+
+def test_init_cannot_create(tmp_path, cli):
+    (tmp_path / "f").write_text("x", encoding="utf-8")
+    r = cli("init", str(tmp_path / "f" / "x"))
+    assert r.returncode == 1 and r.stderr.startswith("I could not create the folder at ")
+    assert "Traceback" not in r.text
+
+
+def test_dashboard_title_uses_assistant_name(ws, cli):
+    (ws / "CLAUDE.md").write_text("# David's Assistant\n<!-- tool-index:start -->\n<!-- tool-index:end -->\n",
+                                  encoding="utf-8")
+    assert cli("dashboard", *TODAY, cwd=ws).returncode == 0
+    html = (ws / "dashboard/index.html").read_text(encoding="utf-8")
+    assert "<title>David&#39;s Assistant</title>" in html and "<h1>David&#39;s Assistant</h1>" in html

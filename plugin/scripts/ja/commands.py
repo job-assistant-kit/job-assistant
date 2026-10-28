@@ -73,10 +73,12 @@ def _stamp(args: argparse.Namespace) -> str:
 @_guard
 def cmd_init(args: argparse.Namespace) -> int:
     try:
-        root = init.create(Path(args.path), name=args.name)
-    except init.NotEmpty as exc:
+        created = init.create(Path(args.path), name=args.name)
+    except (init.NotEmpty, init.BadName, init.CannotCreate) as exc:
         raise Stop(str(exc)) from None
-    _say(f"Your assistant folder is ready at {root}.")
+    _say(f"Your assistant folder is ready at {created.root}.")
+    if created.note:
+        _say(created.note)
     return 0
 
 

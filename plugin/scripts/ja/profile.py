@@ -41,7 +41,7 @@ def load(paths: Paths) -> tuple[list[Rule], list[str]]:
     if not paths.profile.is_file():
         return [], []
     try:
-        raw = yaml.safe_load(paths.profile.read_text())
+        raw = yaml.safe_load(paths.profile.read_text(encoding="utf-8"))
     except (yaml.YAMLError, OSError, UnicodeDecodeError):
         return [], ["profile: the list of learned rules could not be read"]
     if raw is None:

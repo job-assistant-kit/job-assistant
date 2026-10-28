@@ -103,7 +103,7 @@ def load(paths: Paths) -> tuple[dict[str, Source], list[str]]:
     if not paths.sources.is_file():
         return {}, []
     try:
-        raw = yaml.safe_load(paths.sources.read_text())
+        raw = yaml.safe_load(paths.sources.read_text(encoding="utf-8"))
     except (yaml.YAMLError, OSError, UnicodeDecodeError):
         return {}, ["sources: the sources list could not be read"]
     if raw is None:
@@ -130,5 +130,5 @@ def load(paths: Paths) -> tuple[dict[str, Source], list[str]]:
 def save(paths: Paths, items: list[Source]) -> None:
     paths.sources.parent.mkdir(parents=True, exist_ok=True)
     tmp = paths.sources.with_suffix(".yaml.tmp")
-    tmp.write_text(yaml.safe_dump([s.to_dict() for s in items], sort_keys=False, allow_unicode=True))
+    tmp.write_text(yaml.safe_dump([s.to_dict() for s in items], sort_keys=False, allow_unicode=True), encoding="utf-8")
     os.replace(tmp, paths.sources)

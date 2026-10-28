@@ -176,7 +176,7 @@ def _first_problem(d: dict[str, Any], folder: str | None) -> str | None:
 def load_file(path: Path) -> Tool:
     folder = path.parent.name
     try:
-        data = yaml.safe_load(path.read_text())
+        data = yaml.safe_load(path.read_text(encoding="utf-8"))
     except (yaml.YAMLError, OSError, UnicodeDecodeError):
         raise InvalidTool(f"{folder}: the tool record could not be read") from None
     if data is None:
@@ -222,7 +222,7 @@ def save(paths: Paths, tool: Tool) -> Path:
     target = tool.path or paths.skills_dir / tool.id / RECORD_NAME
     target.parent.mkdir(parents=True, exist_ok=True)
     tmp = target.with_suffix(".yaml.tmp")
-    tmp.write_text(yaml.safe_dump(tool.to_dict(), sort_keys=False, allow_unicode=True))
+    tmp.write_text(yaml.safe_dump(tool.to_dict(), sort_keys=False, allow_unicode=True), encoding="utf-8")
     os.replace(tmp, target)
     tool.path = target
     return target
