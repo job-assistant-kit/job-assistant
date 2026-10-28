@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import os
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass, field
 from datetime import date
 from typing import Any
 
@@ -28,6 +28,19 @@ class Source:
     exported: str | None = None
     fresh_days: int = DEFAULT_FRESH_DAYS
     changed: bool = False
+    # Set by load() when the id appears more than once. Never saved.
+    duplicate: bool = field(default=False, compare=False)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id, "name": self.name, "kind": self.kind, "where": self.where,
+            "access": self.access, "version": self.version, "exported": self.exported,
+            "fresh_days": self.fresh_days, "changed": self.changed,
+        }
+
+    def in_future(self, today: date) -> bool:
+        age = self.age_days(today)
+        return age is not None and age < 0
 
     def age_days(self, today: date) -> int | None:
         if self.exported is None:
@@ -35,7 +48,12 @@ class Source:
         return (today - date.fromisoformat(self.exported)).days
 
     def is_stale(self, today: date) -> bool:
-        """A living source read from a file copy is stale once the copy passes its freshness limit."""
+        """A living source read from a file copy is stale once the copy passes its freshness limit.
+
+        An export date in the future is a mistake, so it always counts as stale.
+        """
+        if self.in_future(today):
+            return True
         if self.access != "file" or self.kind != "living":
             return False
         age = self.age_days(today)
@@ -100,6 +118,11 @@ def load(paths: Paths) -> tuple[dict[str, Source], list[str]]:
         except ValueError as exc:
             problems.append(str(exc))
             continue
+        if s.id in by_id:
+            if not by_id[s.id].duplicate:
+                by_id[s.id].duplicate = True
+                problems.append(f"{s.id}: id is used by more than one entry")
+            continue
         by_id[s.id] = s
     return by_id, problems
 
@@ -107,5 +130,5 @@ def load(paths: Paths) -> tuple[dict[str, Source], list[str]]:
 def save(paths: Paths, items: list[Source]) -> None:
     paths.sources.parent.mkdir(parents=True, exist_ok=True)
     tmp = paths.sources.with_suffix(".yaml.tmp")
-    tmp.write_text(yaml.safe_dump([asdict(s) for s in items], sort_keys=False, allow_unicode=True))
+    tmp.write_text(yaml.safe_dump([s.to_dict() for s in items], sort_keys=False, allow_unicode=True))
     os.replace(tmp, paths.sources)

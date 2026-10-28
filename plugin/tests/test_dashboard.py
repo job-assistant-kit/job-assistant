@@ -151,3 +151,12 @@ def test_rhythm_in_plain_words(ws, write_tool):
     write_tool(ws, id="b", name="B", rhythm="on-demand")
     card = section(dashboard.render(workspace.Paths(ws), today=T), "My tools")
     assert "Runs quarterly" in card and "When you need it" in card
+
+def test_source_problems_listed_separately(ws, write_tool):
+    (ws / "assistant/sources.yaml").write_text(
+        "- id: faq\n  name: OLM FAQ\n  kind: soft\n  where: x\n  access: file\n")
+    write_tool(ws, id="bad", status="great")
+    html = dashboard.render(workspace.Paths(ws), today=T)
+    assert "faq: kind must be living or fixed" in section(html, "Sources with problems")
+    assert "faq:" not in section(html, "Tools with problems")
+    assert "bad: status" not in section(html, "Sources with problems")

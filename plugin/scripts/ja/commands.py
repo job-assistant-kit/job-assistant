@@ -85,7 +85,6 @@ def cmd_tools(args: argparse.Namespace) -> int:
     today = _today(args)
     tools, problems = registry.load_all(paths)
     by_id, source_problems = sources.load(paths)
-    problems = problems + source_problems
     rows = []
     for t in tools:
         eff = status.effective_status(t, by_id, today)
@@ -97,20 +96,28 @@ def cmd_tools(args: argparse.Namespace) -> int:
             "last_run": records.last_run(paths, t.id), "reasons": status.reasons(t, by_id, today),
         })
     if args.json:
-        print(json.dumps({"tools": rows, "problems": problems}, indent=2, ensure_ascii=False))
+        print(json.dumps({"tools": rows, "problems": problems, "source_problems": source_problems},
+                         indent=2, ensure_ascii=False))
         return 0
-    if not rows:
+    if not rows and not problems:
         _say(index.EMPTY)
     for row in rows:
         _say(f'{row["name"]} ({row["label"]}). Say "{row["example"]}".')
         for reason in row["reasons"]:
             _say(f"  Why: {reason}")
-    if problems:
-        _say("")
-        _say("Tools with problems:")
-        for p in problems:
-            _say(f"  {p}")
+    _say_problems("Tools with problems:", problems, gap=bool(rows))
+    _say_problems("Sources with problems:", source_problems, gap=bool(rows or problems))
     return 0
+
+
+def _say_problems(heading: str, problems: list[str], gap: bool = True) -> None:
+    if not problems:
+        return
+    if gap:
+        _say("")
+    _say(heading)
+    for p in problems:
+        _say(f"  {p}")
 
 
 @_guard

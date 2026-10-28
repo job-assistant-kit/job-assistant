@@ -105,3 +105,35 @@ def test_draft_with_passed_check_stays_draft():
 
 def test_working_with_passed_check_is_working():
     assert status.effective_status(tool(last_check=PASSED), {"faq": src()}, T) == "working"
+
+# Future export dates and duplicate source ids.
+
+def test_future_export_date_is_stale():
+    s = {"faq": src(exported="2026-11-02")}
+    t = tool(last_check=PASSED)
+    assert status.effective_status(t, s, T) == "needs-update"
+    assert status.reasons(t, s, T) == ["The export date for OLM FAQ is in the future. Check the date."]
+
+def test_future_export_date_on_fixed_source_is_a_problem():
+    s = {"faq": src(kind="fixed", exported="2027-01-01")}
+    assert status.reasons(tool(last_check=PASSED), s, T) == ["The export date for OLM FAQ is in the future. Check the date."]
+
+def test_duplicate_source_ids(ws, write_tool):
+    from ja import workspace
+    (ws / "assistant/sources.yaml").write_text(
+        "- id: faq\n  name: OLM FAQ\n  kind: fixed\n  where: Drive\n  access: file\n"
+        "- id: faq\n  name: Other FAQ\n  kind: fixed\n  where: Drive\n  access: file\n"
+    )
+    by_id, problems = sources.load(workspace.Paths(ws))
+    assert problems == ["faq: id is used by more than one entry"]
+    t = tool(last_check=PASSED)
+    assert status.effective_status(t, by_id, T) == "needs-update"
+    assert status.reasons(t, by_id, T) == ["Your sources list has two entries for faq"]
+
+def test_duplicate_flag_not_saved(ws):
+    from ja import workspace
+    import yaml
+    p = workspace.Paths(ws)
+    s = src(); s.duplicate = True
+    sources.save(p, [s])
+    assert "duplicate" not in yaml.safe_load(p.sources.read_text(encoding="utf-8"))[0]

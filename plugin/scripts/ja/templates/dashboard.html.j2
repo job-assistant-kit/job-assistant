@@ -98,6 +98,26 @@
 {% endfor %}
   </ul>
 {% endif %}
+{% if v.source_problems %}
+
+  <h2>Sources with problems</h2>
+  <p class="why">Your list of sources has a mistake in these entries. Tools that use them need an update.</p>
+  <ul class="plain">
+{% for p in v.source_problems %}
+    <li>{{ p }}</li>
+{% endfor %}
+  </ul>
+{% endif %}
+{% if v.rule_problems %}
+
+  <h2>Learned rules with problems</h2>
+  <p class="why">I could not read these learned rules, so I am not using them.</p>
+  <ul class="plain">
+{% for p in v.rule_problems %}
+    <li>{{ p }}</li>
+{% endfor %}
+  </ul>
+{% endif %}
 
   <h2>My tools</h2>
 {% if not v.cards %}

@@ -79,6 +79,8 @@ class View:
     ideas: list[str] = field(default_factory=list)
     retired: list[str] = field(default_factory=list)
     problems: list[str] = field(default_factory=list)
+    source_problems: list[str] = field(default_factory=list)
+    rule_problems: list[str] = field(default_factory=list)
 
 
 def quarter_start(today: date) -> date:
@@ -185,7 +187,9 @@ def build_view(paths: Paths, today: date, ideas: list[str] | None = None,
         learned=learned,
         ideas=list(ideas or []),
         retired=retired,
-        problems=tool_problems + archive_problems + source_problems + rule_problems,
+        problems=tool_problems + archive_problems,
+        source_problems=source_problems,
+        rule_problems=rule_problems,
     )
 
 
