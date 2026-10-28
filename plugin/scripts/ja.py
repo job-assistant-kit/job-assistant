@@ -189,6 +189,13 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("runbook", parents=[common], help="write the backup person's guide")
     p.set_defaults(func=commands.cmd_runbook)
 
+    p = sub.add_parser("launcher", parents=[common], help="add a shortcut that opens the assistant")
+    p.add_argument("--yes", action="store_true", help="write the files (without it, only show them)")
+    p.add_argument("--bin-dir", dest="bin_dir", default=None, metavar="D")
+    p.add_argument("--apps-dir", dest="apps_dir", default=None, metavar="D")
+    p.add_argument("--desktop-dir", dest="desktop_dir", default=None, metavar="D")
+    p.set_defaults(func=commands.cmd_launcher)
+
     return parser
 
 

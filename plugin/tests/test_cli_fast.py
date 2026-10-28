@@ -182,3 +182,12 @@ def test_runbook_cli_and_refresh(ws, write_tool, cli):
     assert "Answer a question" in (ws / "RUNBOOK.md").read_text(encoding="utf-8")
     cli("tool", "retire", "a", *TODAY, cwd=ws)
     assert "Answer a question" not in (ws / "RUNBOOK.md").read_text(encoding="utf-8")
+
+
+def test_launcher_cli_preview_and_yes(ws, tmp_path, cli):
+    args = ("--bin-dir", str(tmp_path / "b"), "--apps-dir", str(tmp_path / "a"), "--desktop-dir", str(tmp_path / "d"))
+    r = cli("launcher", *args, cwd=ws)
+    assert r.returncode == 0 and "Nothing has been written yet." in r.stdout
+    assert not (tmp_path / "b").exists()
+    r = cli("launcher", "--yes", *args, cwd=ws)
+    assert r.returncode == 0 and (tmp_path / "b/job-assistant").is_file()

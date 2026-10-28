@@ -14,7 +14,7 @@ import sys
 from datetime import date
 from pathlib import Path
 
-from ja import index, init, ledger, records, registry, role, runbook, settings, sources, status, tools, workspace
+from ja import index, init, launcher, ledger, records, registry, role, runbook, settings, sources, status, tools, workspace
 from ja.registry import is_date
 from ja.workspace import Paths
 
@@ -398,4 +398,16 @@ def cmd_runbook(args: argparse.Namespace) -> int:
     paths = _paths(args)
     out = runbook.write(paths, today=_today(args))
     _say(f"The backup guide is ready: {out}")
+    return 0
+
+
+@_guard
+def cmd_launcher(args: argparse.Namespace) -> int:
+    paths = _paths(args)
+    try:
+        text = launcher.run(paths, yes=args.yes, bin_dir=args.bin_dir, apps_dir=args.apps_dir,
+                            desktop_dir=args.desktop_dir)
+    except launcher.LauncherProblem as exc:
+        raise Stop(str(exc)) from None
+    _say(text)
     return 0
