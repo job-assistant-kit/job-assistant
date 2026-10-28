@@ -14,14 +14,6 @@ from ja.workspace import Paths
 
 TEMPLATES = Path(__file__).resolve().parent / "templates"
 
-RHYTHM_WORDS = {
-    "on-demand": "When you need it",
-    "daily": "Runs daily",
-    "weekly": "Runs weekly",
-    "monthly": "Runs monthly",
-    "quarterly": "Runs quarterly",
-}
-
 WAITING = "Waiting for your OK on the method."
 NOT_CHECKED = "Not checked yet. Confirm it works on a real example."
 
@@ -161,7 +153,7 @@ def build_view(paths: Paths, today: date, ideas: list[str] | None = None,
             pill=PILL_CLASS.get(eff, "off"),
             does=t.does,
             say=t.examples[0],
-            rhythm=RHYTHM_WORDS.get(t.rhythm, t.rhythm),
+            rhythm=status.RHYTHM_WORDS.get(t.rhythm, t.rhythm),
             uses=_times(records.count_runs(paths, t.id)),
             last_used=f"Last used {short_date(last, today)}" if last else "",
             last_check=_check_text(t.last_check, today, eff),

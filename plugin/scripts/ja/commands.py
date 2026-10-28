@@ -14,7 +14,7 @@ import sys
 from datetime import date
 from pathlib import Path
 
-from ja import index, init, ledger, records, registry, role, settings, sources, status, tools, workspace
+from ja import index, init, ledger, records, registry, role, runbook, settings, sources, status, tools, workspace
 from ja.registry import is_date
 from ja.workspace import Paths
 
@@ -71,7 +71,7 @@ def _stamp(args: argparse.Namespace) -> str:
 
 
 def _refresh(paths: Paths, today: date) -> None:
-    """After a change: rewrite the tool index and the tools page. Never fails the change itself."""
+    """After a change: rewrite the tool index, the tools page, and the backup guide. Never fails the change."""
     from ja import dashboard  # loaded here so other commands start faster
 
     try:
@@ -88,6 +88,10 @@ def _refresh(paths: Paths, today: date) -> None:
         dashboard.write(paths, today=today)
     except OSError:
         _warn("Saved, but I could not update your tools page.")
+    try:
+        runbook.write(paths, today=today)
+    except OSError:
+        _warn("Saved, but I could not update the backup guide.")
 
 
 def _warn(text: str) -> None:
@@ -387,3 +391,11 @@ def cmd_tool_retire(args: argparse.Namespace, paths: Paths, today: date) -> str:
 def cmd_tool_restore(args: argparse.Namespace, paths: Paths, today: date) -> str:
     tool = tools.restore(paths, args.tool)
     return f"Restored {tool.name}. It shows as {_shows_as(paths, tool, today)}."
+
+
+@_guard
+def cmd_runbook(args: argparse.Namespace) -> int:
+    paths = _paths(args)
+    out = runbook.write(paths, today=_today(args))
+    _say(f"The backup guide is ready: {out}")
+    return 0

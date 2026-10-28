@@ -118,6 +118,10 @@ class Paths:
         return self.root / "dashboard" / "index.html"
 
     @property
+    def runbook(self) -> Path:
+        return self.root / "RUNBOOK.md"
+
+    @property
     def settings(self) -> Path:
         return self.root / ".claude" / "settings.json"
 

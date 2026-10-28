@@ -186,6 +186,9 @@ def build_parser() -> argparse.ArgumentParser:
     tp.add_argument("tool", metavar="ID")
     tp.set_defaults(func=commands.cmd_tool_restore)
 
+    p = sub.add_parser("runbook", parents=[common], help="write the backup person's guide")
+    p.set_defaults(func=commands.cmd_runbook)
+
     return parser
 
 

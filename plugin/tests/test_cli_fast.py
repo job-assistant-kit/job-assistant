@@ -173,3 +173,12 @@ def test_tool_commands_refresh_index_and_page(ws, tmp_path, write_tool, cli):
     assert "Check a brief" not in notes().split("tool-index:start")[1] and "bring back Check a brief" in page()
     r = cli("tool", "restore", "brief", *TODAY, cwd=ws)
     assert r.returncode == 0 and "Check a brief (Working)" in notes()
+
+
+def test_runbook_cli_and_refresh(ws, write_tool, cli):
+    write_tool(ws, id="a", name="Answer a question")
+    r = cli("runbook", *TODAY, cwd=ws)
+    assert r.returncode == 0 and "RUNBOOK.md" in r.stdout
+    assert "Answer a question" in (ws / "RUNBOOK.md").read_text(encoding="utf-8")
+    cli("tool", "retire", "a", *TODAY, cwd=ws)
+    assert "Answer a question" not in (ws / "RUNBOOK.md").read_text(encoding="utf-8")

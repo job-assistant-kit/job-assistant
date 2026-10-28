@@ -16,6 +16,14 @@ LABELS: dict[str, str] = {
     "retired": "Retired",
 }
 
+RHYTHM_WORDS: dict[str, str] = {
+    "on-demand": "When you need it",
+    "daily": "Runs daily",
+    "weekly": "Runs weekly",
+    "monthly": "Runs monthly",
+    "quarterly": "Runs quarterly",
+}
+
 HELD = ("retired", "paused", "being-built")
 UNKNOWN_SOURCE = "Uses a source that is not on your sources list"
 
