@@ -16,10 +16,25 @@ def now_ts() -> str:
     return datetime.now().replace(microsecond=0).isoformat()
 
 
+def stamp(day: date | None) -> str:
+    """A timestamp for a record: the given day at the current time of day, or now."""
+    now = datetime.now().replace(microsecond=0)
+    return (now if day is None else datetime.combine(day, now.time())).isoformat()
+
+
+def _ends_without_newline(path: Path) -> bool:
+    if not path.is_file() or path.stat().st_size == 0:
+        return False
+    with path.open("rb") as fh:
+        fh.seek(-1, 2)
+        return fh.read(1) != b"\n"
+
+
 def append_line(path: Path, entry: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
+    lead = "\n" if _ends_without_newline(path) else ""
     with path.open("a", encoding="utf-8") as fh:
-        fh.write(json.dumps(entry, ensure_ascii=False) + "\n")
+        fh.write(lead + json.dumps(entry, ensure_ascii=False) + "\n")
 
 
 def read_lines(path: Path) -> list[dict[str, Any]]:
@@ -69,12 +84,14 @@ def runs(paths: Paths, tool: str | None = None, event: str | None = None) -> lis
     return out
 
 
-def count_runs(paths: Paths, tool: str, since: date | None = None) -> int:
-    """How many times the tool ran (event 'run' only), optionally on or after a date."""
-    return sum(
-        1 for r in runs(paths, tool, "run")
-        if since is None or (_ts_date(r["ts"]) or date.min) >= since
-    )
+def count_runs(paths: Paths, tool: str, since: date | None = None, until: date | None = None) -> int:
+    """How many times the tool ran (event 'run' only), optionally between two dates (both included)."""
+    count = 0
+    for r in runs(paths, tool, "run"):
+        day = _ts_date(r["ts"]) or date.min
+        if (since is None or day >= since) and (until is None or day <= until):
+            count += 1
+    return count
 
 
 def last_run(paths: Paths, tool: str) -> str | None:

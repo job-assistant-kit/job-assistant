@@ -11,17 +11,59 @@
 from __future__ import annotations
 
 import argparse
+import re
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from ja import commands  # noqa: E402
+from ja import commands, ledger  # noqa: E402
+
+
+def plain_error(message: str) -> str:
+    """Turn an argparse error into one plain sentence."""
+    m = re.match(r"the following arguments are required: (.+)", message)
+    if m:
+        return f"Some details are missing: {m.group(1)}."
+    m = re.match(r"unrecognized arguments: (.+)", message)
+    if m:
+        return f"I did not understand: {m.group(1)}."
+    m = re.match(r"argument ([^:]+): invalid choice: '?([^'(]*?)'? \(choose from (.+)\)", message)
+    if m:
+        choices = ", ".join(c.strip().strip("'") for c in m.group(3).split(","))
+        return f"{m.group(2)} is not one of the choices. Use one of: {choices}."
+    m = re.match(r"argument ([^:]+): expected one argument", message)
+    if m:
+        return f"{m.group(1).split('/')[0]} needs a value."
+    m = re.match(r"argument [^:]+: (.+)", message)
+    text = m.group(1) if m else message
+    return text[0].upper() + text[1:] if text else "I did not understand that."
+
+
+class PlainParser(argparse.ArgumentParser):
+    """Argument errors as one plain sentence and exit code 1, without the usage dump."""
+
+    def error(self, message: str) -> None:  # type: ignore[override]
+        print(plain_error(message), file=sys.stderr)
+        sys.exit(1)
+
+
+def number(text: str) -> int | float:
+    try:
+        return ledger.parse_number(text)
+    except ValueError:
+        raise argparse.ArgumentTypeError(ledger.NOT_A_NUMBER) from None
+
+
+def whole(text: str) -> int:
+    if not re.fullmatch(r"\d+", text.strip()):
+        raise argparse.ArgumentTypeError("The number must be a whole number, like 3.")
+    return int(text)
 
 
 def _common() -> argparse.ArgumentParser:
     """Options accepted before or after the command name."""
-    p = argparse.ArgumentParser(add_help=False)
+    p = PlainParser(add_help=False)
     p.add_argument("--workspace", metavar="PATH", default=argparse.SUPPRESS,
                    help="assistant folder to use")
     p.add_argument("--today", metavar="YYYY-MM-DD", default=argparse.SUPPRESS,
@@ -31,7 +73,7 @@ def _common() -> argparse.ArgumentParser:
 
 def build_parser() -> argparse.ArgumentParser:
     common = _common()
-    parser = argparse.ArgumentParser(prog="ja", description="Job assistant command line.",
+    parser = PlainParser(prog="ja", description="Job assistant command line.",
                                      parents=[common])
     sub = parser.add_subparsers(dest="command", metavar="command", required=True)
 
@@ -60,9 +102,9 @@ def build_parser() -> argparse.ArgumentParser:
     rp = rsub.add_parser("build", parents=[common], help="record a finished build")
     rp.add_argument("--tool", required=True)
     rp.add_argument("--recipe", default=None)
-    rp.add_argument("--questions", type=int, required=True)
-    rp.add_argument("--corrections", type=int, required=True)
-    rp.add_argument("--minutes", type=int, required=True)
+    rp.add_argument("--questions", type=whole, required=True)
+    rp.add_argument("--corrections", type=whole, required=True)
+    rp.add_argument("--minutes", type=whole, required=True)
     rp.set_defaults(func=commands.cmd_record_build)
 
     p = sub.add_parser("ledger", parents=[common], help="published-numbers ledger")
@@ -70,7 +112,7 @@ def build_parser() -> argparse.ArgumentParser:
     lp = lsub.add_parser("add", parents=[common], help="add an approved number")
     lp.add_argument("--metric", required=True)
     lp.add_argument("--period", required=True)
-    lp.add_argument("--value", type=float, required=True)
+    lp.add_argument("--value", type=number, required=True)
     lp.add_argument("--unit", required=True)
     lp.add_argument("--source", required=True)
     lp.add_argument("--method-notes", dest="method_notes", required=True)
@@ -79,7 +121,7 @@ def build_parser() -> argparse.ArgumentParser:
     lp.set_defaults(func=commands.cmd_ledger_add)
     lp = lsub.add_parser("compare", parents=[common], help="compare with the last published value")
     lp.add_argument("--metric", required=True)
-    lp.add_argument("--value", type=float, required=True)
+    lp.add_argument("--value", type=number, required=True)
     lp.add_argument("--json", action="store_true", help="output for code")
     lp.set_defaults(func=commands.cmd_ledger_compare)
 

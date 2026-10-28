@@ -53,3 +53,26 @@ def test_describe_plain():
     assert ledger.describe(c) == "Last published: 112 days for 2026-Q2. Change: -18 (-16.1%)."
     c = {"previous": 10, "period": "P", "unit": "offerings", "change": 2.5, "percent": 25.0}
     assert ledger.describe(c) == "Last published: 10 offerings for P. Change: +2.5 (+25.0%)."
+
+def test_nan_and_infinity_rejected(ws):
+    import pytest
+    for bad in (float("nan"), float("inf"), float("-inf")):
+        with pytest.raises(ValueError):
+            ledger.add(workspace.Paths(ws), metric="m", period="P", value=bad, unit="n", source="s",
+                       method_notes="m", approved_on="2026-07-10", tool="x")
+
+def test_percent_uses_absolute_previous(ws):
+    p = workspace.Paths(ws)
+    ledger.add(p, metric="m", period="P", value=-10, unit="n", source="s", method_notes="m",
+               approved_on="2026-07-10", tool="x")
+    c = ledger.compare(p, "m", -5)
+    assert c["change"] == 5 and c["percent"] == 50.0
+
+def test_parse_number():
+    import pytest
+    assert ledger.parse_number("94") == 94 and isinstance(ledger.parse_number("94"), int)
+    assert ledger.parse_number("12.5") == 12.5
+    assert ledger.parse_number("9007199254740993") == 9007199254740993
+    for bad in ("nan", "inf", "-Infinity", "ninety", ""):
+        with pytest.raises(ValueError):
+            ledger.parse_number(bad)

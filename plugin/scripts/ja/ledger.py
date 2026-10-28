@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import math
+import re
 from typing import Any
 
 from ja.records import append_line, read_lines
@@ -17,10 +19,33 @@ def _tidy(value: Number) -> Number:
     return value
 
 
+NOT_A_NUMBER = "The value must be a number, like 94 or 12.5."
+_DECIMAL = re.compile(r"[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?")
+
+
+def parse_number(text: str) -> Number:
+    """Whole numbers stay exact integers; decimals become floats. NaN and infinity are refused."""
+    text = text.strip().replace(",", "")
+    if re.fullmatch(r"[+-]?\d+", text):
+        return int(text)
+    if not _DECIMAL.fullmatch(text):
+        raise ValueError(NOT_A_NUMBER)
+    value = float(text)
+    if not math.isfinite(value):
+        raise ValueError(NOT_A_NUMBER)
+    return value
+
+
+def _check_number(value: Any) -> None:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(NOT_A_NUMBER)
+    if isinstance(value, float) and not math.isfinite(value):
+        raise ValueError(NOT_A_NUMBER)
+
+
 def add(paths: Paths, *, metric: str, period: str, value: Number, unit: str, source: str,
         method_notes: str, approved_on: str, tool: str) -> None:
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
-        raise ValueError("value must be a number")
+    _check_number(value)
     if not is_date(approved_on):
         raise ValueError("approved_on must be a date like 2026-10-28")
     append_line(paths.ledger, {
@@ -34,6 +59,8 @@ def entries(paths: Paths, metric: str | None = None) -> list[dict[str, Any]]:
     for e in read_lines(paths.ledger):
         v = e.get("value")
         if isinstance(v, bool) or not isinstance(v, (int, float)) or not is_date(e.get("approved_on")):
+            continue
+        if isinstance(v, float) and not math.isfinite(v):
             continue
         if metric is not None and e.get("metric") != metric:
             continue
@@ -51,13 +78,14 @@ def latest(paths: Paths, metric: str) -> dict[str, Any] | None:
 
 
 def compare(paths: Paths, metric: str, value: Number) -> dict[str, Any]:
+    _check_number(value)
     prev = latest(paths, metric)
     if prev is None:
         return {"previous": None}
     value = _tidy(value)
     previous = prev["value"]
     change = _tidy(round(value - previous, 10))
-    percent = None if previous == 0 else change / previous * 100
+    percent = None if previous == 0 else change / abs(previous) * 100
     return {
         "previous": previous, "period": prev.get("period"), "unit": prev.get("unit", ""),
         "approved_on": prev["approved_on"], "change": change, "percent": percent,

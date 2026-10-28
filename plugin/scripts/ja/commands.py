@@ -65,8 +65,9 @@ def _guard(func):
     return wrapper
 
 
-def _num(value: float) -> int | float:
-    return int(value) if float(value).is_integer() else value
+def _stamp(args: argparse.Namespace) -> str:
+    """Record time: the --today date (when given) at the current time of day."""
+    return records.stamp(_today(args) if getattr(args, "today", None) else None)
 
 
 @_guard
@@ -159,7 +160,7 @@ def cmd_dashboard(args: argparse.Namespace) -> int:
 def cmd_record_run(args: argparse.Namespace) -> int:
     paths = _paths(args)
     _tool_exists(paths, args.tool)
-    records.add_run(paths, args.tool, args.event)
+    records.add_run(paths, args.tool, args.event, ts=_stamp(args))
     return 0
 
 
@@ -169,7 +170,7 @@ def cmd_record_build(args: argparse.Namespace) -> int:
     _tool_exists(paths, args.tool)
     try:
         records.add_build(paths, tool=args.tool, recipe=args.recipe, questions=args.questions,
-                          corrections=args.corrections, minutes=args.minutes)
+                          corrections=args.corrections, minutes=args.minutes, ts=_stamp(args))
     except ValueError as exc:
         raise Stop(f"I could not save the build record: {exc}.") from None
     return 0
@@ -181,16 +182,19 @@ def cmd_ledger_add(args: argparse.Namespace) -> int:
     approved = args.date or _today(args).isoformat()
     if not is_date(approved):
         raise Stop("The date must look like 2026-10-28.")
-    ledger.add(paths, metric=args.metric, period=args.period, value=_num(args.value), unit=args.unit,
-               source=args.source, method_notes=args.method_notes, approved_on=approved, tool=args.tool)
-    _say(f"Saved {_num(args.value)} {args.unit} for {args.period} as the published {args.metric} number.")
+    try:
+        ledger.add(paths, metric=args.metric, period=args.period, value=args.value, unit=args.unit,
+                   source=args.source, method_notes=args.method_notes, approved_on=approved, tool=args.tool)
+    except ValueError as exc:
+        raise Stop(str(exc)) from None
+    _say(f"Saved {args.value} {args.unit} for {args.period} as the published {args.metric} number.")
     return 0
 
 
 @_guard
 def cmd_ledger_compare(args: argparse.Namespace) -> int:
     paths = _paths(args)
-    result = ledger.compare(paths, args.metric, _num(args.value))
+    result = ledger.compare(paths, args.metric, args.value)
     if args.json:
         print(json.dumps(result, indent=2, ensure_ascii=False))
     else:

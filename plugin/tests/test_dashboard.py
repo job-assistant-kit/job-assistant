@@ -160,3 +160,12 @@ def test_source_problems_listed_separately(ws, write_tool):
     assert "faq: kind must be living or fixed" in section(html, "Sources with problems")
     assert "faq:" not in section(html, "Tools with problems")
     assert "bad: status" not in section(html, "Sources with problems")
+
+def test_quarter_has_upper_bound(ws, write_tool):
+    write_tool(ws, id="a", your_minutes_by_hand=60)
+    p = workspace.Paths(ws)
+    records.add_run(p, "a", "run", ts="2026-10-02T09:00:00")
+    records.add_run(p, "a", "run", ts="2027-01-05T09:00:00")
+    html = dashboard.render(p, today=T)
+    assert re.search(r"<b>1</b><span>times used this quarter</span>", html)
+    assert "1.0 hrs" in html

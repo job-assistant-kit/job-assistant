@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass, field
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader
@@ -87,6 +87,13 @@ def quarter_start(today: date) -> date:
     return date(today.year, 3 * ((today.month - 1) // 3) + 1, 1)
 
 
+def quarter_end(today: date) -> date:
+    start = quarter_start(today)
+    if start.month == 10:
+        return date(start.year, 12, 31)
+    return date(start.year, start.month + 3, 1) - timedelta(days=1)
+
+
 def short_date(iso: str, today: date) -> str:
     d = date.fromisoformat(iso)
     if d == today:
@@ -118,7 +125,7 @@ def build_view(paths: Paths, today: date, ideas: list[str] | None = None,
     rules, rule_problems = profile.load(paths)
     rule_text = {r.id: r.text for r in rules}
     names = {t.id: t.name for t in tools}
-    since = quarter_start(today)
+    since, until = quarter_start(today), quarter_end(today)
 
     working = needs_ok = uses_quarter = 0
     minutes_total = 0
@@ -132,7 +139,7 @@ def build_view(paths: Paths, today: date, ideas: list[str] | None = None,
         if eff == "retired":
             retired.append(t.name)
             continue
-        runs_q = records.count_runs(paths, t.id, since=since)
+        runs_q = records.count_runs(paths, t.id, since=since, until=until)
         uses_quarter += runs_q
         if t.your_minutes_by_hand is not None:
             has_estimate = True
