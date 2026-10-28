@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My Work Assistant</title>
+<style>
+  :root {
+    --bg: #fafaf8; --card: #ffffff; --ink: #1d1d1b; --muted: #5c5c57; --line: #e3e2dc;
+    --ok-bg: #e6f4ea; --ok-ink: #1e6b34;
+    --warn-bg: #fff4d6; --warn-ink: #7a5300;
+    --build-bg: #e7eefc; --build-ink: #24489c;
+    --off-bg: #eeeeec; --off-ink: #55554f;
+    --accent: #b8251d;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #171716; --card: #21211f; --ink: #ededea; --muted: #a8a8a1; --line: #3a3a36;
+      --ok-bg: #173822; --ok-ink: #9fdcae; --warn-bg: #3d3010; --warn-ink: #f2cf72;
+      --build-bg: #1b2a4a; --build-ink: #a9c1f5; --off-bg: #2c2c29; --off-ink: #bdbdb6;
+      --accent: #ff7b72;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 980px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 28px; margin: 0 0 4px; }
+  h2 { font-size: 20px; margin: 36px 0 12px; }
+  .sub { color: var(--muted); margin: 0 0 20px; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  .stat { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 14px; }
+  .stat b { display: block; font-size: 26px; }
+  .stat span { color: var(--muted); font-size: 14px; }
+  .attention { background: var(--card); border: 1px solid var(--line); border-left: 4px solid var(--accent);
+    border-radius: 8px; padding: 12px 16px; margin-top: 12px; }
+  .attention p { margin: 4px 0; }
+  .attention ul { margin: 4px 0; padding-left: 20px; }
+  .tool { background: var(--card); border: 1px solid var(--line); border-radius: 8px;
+    padding: 16px; margin-bottom: 12px; }
+  .tool-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 12px; }
+  .tool-head h3 { margin: 0; font-size: 18px; flex: 1 1 auto; }
+  .pill { font-size: 13px; font-weight: 600; padding: 2px 10px; border-radius: 999px; white-space: nowrap; }
+  .ok { background: var(--ok-bg); color: var(--ok-ink); }
+  .warn { background: var(--warn-bg); color: var(--warn-ink); }
+  .build { background: var(--build-bg); color: var(--build-ink); }
+  .off { background: var(--off-bg); color: var(--off-ink); }
+  .say { margin: 8px 0; }
+  .say code, .attention code { background: var(--off-bg); padding: 2px 8px; border-radius: 4px; font-size: 15px; }
+  .meta { color: var(--muted); font-size: 14px; display: flex; flex-wrap: wrap; gap: 4px 18px; }
+  .note { font-size: 14px; margin: 8px 0 0; }
+  .steps { font-size: 14px; margin: 8px 0 0; }
+  .steps ol { margin: 4px 0 0; padding-left: 20px; }
+  details { margin-top: 10px; }
+  summary { cursor: pointer; color: var(--muted); font-size: 14px; }
+  ul.history { margin: 8px 0 0; padding-left: 20px; font-size: 14px; }
+  ul.history li { margin: 4px 0; }
+  ul.plain { padding-left: 20px; }
+  ul.plain li { margin: 6px 0; }
+  .why { color: var(--muted); font-size: 14px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>My Work Assistant</h1>
+  <p class="sub">Updated {{ v.updated }}. Say "show my tools" to open this page.</p>
+
+  <div class="stats">
+    <div class="stat"><b>{{ v.working }}</b><span>tools working</span></div>
+    <div class="stat"><b>{{ v.needs_ok }}</b><span>needs your OK</span></div>
+    <div class="stat"><b>{{ v.uses_quarter }}</b><span>times used this quarter</span></div>
+{% if v.estimate_hours %}
+    <div class="stat"><b>{{ v.estimate_hours }}</b><span>Your time estimate: what this quarter's uses would take by hand (your estimate, not measured)</span></div>
+{% endif %}
+  </div>
+{% if v.attention %}
+
+  <h2>Needs your OK</h2>
+{% for a in v.attention %}
+  <div class="attention">
+    <p><strong>{{ a.name }}</strong></p>
+    <ul>
+{% for r in a.reasons %}
+      <li>{{ r }}</li>
+{% endfor %}
+    </ul>
+    <p>Say <code>{{ a.say }}</code> and I will take care of it.</p>
+  </div>
+{% endfor %}
+{% endif %}
+{% if v.problems %}
+
+  <h2>Tools with problems</h2>
+  <p class="why">I skipped these because their records have a mistake. Say "fix my tools" and I will look at them.</p>
+  <ul class="plain">
+{% for p in v.problems %}
+    <li>{{ p }}</li>
+{% endfor %}
+  </ul>
+{% endif %}
+
+  <h2>My tools</h2>
+{% if not v.cards %}
+  <p>No tools yet. Say "automate this" and show me a task you do by hand.</p>
+{% endif %}
+{% for c in v.cards %}
+  <div class="tool">
+    <div class="tool-head"><h3>{{ c.name }}</h3><span class="pill {{ c.pill }}">{{ c.label }}</span></div>
+    <p class="say">Say <code>{{ c.say }}</code></p>
+    <p class="note">{{ c.does }}</p>
+    <div class="meta">
+      <span>{{ c.uses }}</span>
+{% if c.last_used %}
+      <span>{{ c.last_used }}</span>
+{% endif %}
+      <span>{{ c.last_check }}</span>
+      <span>Data: {{ c.data_path }}</span>
+    </div>
+{% if c.manual_steps %}
+    <div class="steps">You do:
+      <ol>
+{% for s in c.manual_steps %}
+        <li>{{ s }}</li>
+{% endfor %}
+      </ol>
+    </div>
+{% endif %}
+{% if c.rules %}
+    <p class="note why">Rules applied: {{ c.rules | join("; ") }}</p>
+{% endif %}
+{% if c.improvements %}
+    <details><summary>Improvements ({{ c.improvements | length }})</summary>
+      <ul class="history">
+{% for i in c.improvements %}
+        <li>{{ i.date }}: {{ i.change }}{% if i.reason %} <span class="why">{{ i.reason }}</span>{% endif %}</li>
+{% endfor %}
+      </ul>
+    </details>
+{% endif %}
+  </div>
+{% endfor %}
+
+  <h2>What I have learned about how you work</h2>
+{% if v.learned %}
+  <ul class="plain">
+{% for l in v.learned %}
+    <li>{{ l.text }} <span class="why">{{ l.reason }} {{ l.scope }}.</span></li>
+{% endfor %}
+  </ul>
+  <p class="why">Say "forget that" about any item to remove it.</p>
+{% else %}
+  <p class="why">Nothing yet. When you correct my work, I keep the lesson here.</p>
+{% endif %}
+{% if v.ideas %}
+
+  <h2>Ideas</h2>
+  <ul class="plain">
+{% for idea in v.ideas %}
+    <li>{{ idea }}</li>
+{% endfor %}
+  </ul>
+{% endif %}
+{% if v.retired %}
+
+  <h2>Retired</h2>
+  <ul class="plain">
+{% for name in v.retired %}
+    <li>{{ name }}. Say "bring back {{ name }}" to restore it.</li>
+{% endfor %}
+  </ul>
+{% endif %}
+</main>
+</body>
+</html>
