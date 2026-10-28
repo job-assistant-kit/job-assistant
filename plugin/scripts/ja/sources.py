@@ -9,7 +9,7 @@ from typing import Any
 
 import yaml
 
-from ja.registry import _normalize_dates, is_date
+from ja.registry import ID_PATTERN, _normalize_dates, is_date
 from ja.workspace import Paths
 
 KINDS = ("living", "fixed")
@@ -132,3 +132,107 @@ def save(paths: Paths, items: list[Source]) -> None:
     tmp = paths.sources.with_suffix(".yaml.tmp")
     tmp.write_text(yaml.safe_dump([s.to_dict() for s in items], sort_keys=False, allow_unicode=True), encoding="utf-8")
     os.replace(tmp, paths.sources)
+
+
+class SourceProblem(ValueError):
+    """A sources change cannot be made. The message is plain."""
+
+
+def _read_raw(paths: Paths) -> list[Any]:
+    """The sources file as written, so entries this version cannot read are kept."""
+    if not paths.sources.is_file():
+        return []
+    try:
+        raw = yaml.safe_load(paths.sources.read_text(encoding="utf-8"))
+    except (yaml.YAMLError, OSError, UnicodeDecodeError):
+        raise SourceProblem("Your sources list could not be read, so I did not change it.") from None
+    if raw is None:
+        return []
+    if not isinstance(raw, list):
+        raise SourceProblem("Your sources list is not a list, so I did not change it.")
+    return raw
+
+
+def _write_raw(paths: Paths, items: list[Any]) -> None:
+    items = sorted(items, key=lambda e: str(e.get("id", "")) if isinstance(e, dict) else "")
+    paths.sources.parent.mkdir(parents=True, exist_ok=True)
+    tmp = paths.sources.with_suffix(".yaml.tmp")
+    tmp.write_text(yaml.safe_dump(items, sort_keys=False, allow_unicode=True), encoding="utf-8")
+    os.replace(tmp, paths.sources)
+
+
+def _plain(problem: str) -> str:
+    """'<id>: <field> <problem>' as a sentence."""
+    text = problem.split(": ", 1)[-1]
+    return "The source " + text + "."
+
+
+def _check_date(value: str, today: date) -> None:
+    if not is_date(value):
+        raise SourceProblem("The export date must look like 2026-10-28.")
+    if date.fromisoformat(value) > today:
+        raise SourceProblem("The export date is in the future. Use the date the copy was saved.")
+
+
+def add(paths: Paths, entry: dict[str, Any], today: date) -> Source:
+    """Add one source. Refuses a duplicate id and invalid values."""
+    entry = {k: v for k, v in entry.items() if v is not None}
+    sid = entry.get("id")
+    if not isinstance(sid, str) or not ID_PATTERN.match(sid):
+        raise SourceProblem("The source id must use only lowercase letters, numbers, and hyphens.")
+    if entry.get("exported") is not None:
+        _check_date(entry["exported"], today)
+    try:
+        src = from_dict(entry)
+    except ValueError as exc:
+        raise SourceProblem(_plain(str(exc))) from None
+    items = _read_raw(paths)
+    if any(isinstance(e, dict) and e.get("id") == sid for e in items):
+        raise SourceProblem(f"There is already a source called {sid}.")
+    items.append(src.to_dict())
+    _write_raw(paths, items)
+    return src
+
+
+def set_exported(paths: Paths, sid: str, when: str, today: date) -> None:
+    """Record the date of a fresh copy."""
+    _check_date(when, today)
+    items = _read_raw(paths)
+    found = [e for e in items if isinstance(e, dict) and e.get("id") == sid]
+    if not found:
+        raise SourceProblem(f"There is no source called {sid}.")
+    for e in found:
+        e["exported"] = when
+    _write_raw(paths, items)
+
+
+def _short(d: date, today: date) -> str:
+    text = f"{d:%b} {d.day}"
+    return text if d.year == today.year else f"{text}, {d.year}"
+
+
+def _days(n: int) -> str:
+    return f"{n} day old" if n == 1 else f"{n} days old"
+
+
+def describe(paths: Paths, today: date) -> list[dict[str, Any]]:
+    """One plain row per readable source: how it is reached and how old the copy is."""
+    by_id, _ = load(paths)
+    rows = []
+    for s in sorted(by_id.values(), key=lambda x: x.id):
+        age = s.age_days(today)
+        if s.access == "connector":
+            reached, text = "read live through a connector", "live"
+        else:
+            reached = "a copy you drop in"
+            if age is None:
+                text = "No export date yet"
+            elif age < 0:
+                text = "The export date is in the future. Check the date"
+            else:
+                text = f"Copy from {_short(date.fromisoformat(s.exported), today)}, {_days(age)}"
+                if s.is_stale(today):
+                    text += f", past its {s.fresh_days}-day limit"
+        rows.append({**s.to_dict(), "reached": reached, "age": text, "age_days": age,
+                     "stale": s.is_stale(today)})
+    return rows

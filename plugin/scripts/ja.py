@@ -145,6 +145,26 @@ def build_parser() -> argparse.ArgumentParser:
     sp = ssub.add_parser("show", parents=[common], help="list blocked and allowed actions")
     sp.set_defaults(func=commands.cmd_settings_show)
 
+    p = sub.add_parser("sources", parents=[common], help="the list of documents and data the tools use")
+    ssub = p.add_subparsers(dest="action", metavar="action", required=True)
+    sp = ssub.add_parser("add", parents=[common], help="add a source")
+    sp.add_argument("--id", required=True)
+    sp.add_argument("--name", required=True)
+    sp.add_argument("--kind", required=True, choices=["living", "fixed"])
+    sp.add_argument("--where", required=True, metavar="TEXT")
+    sp.add_argument("--access", required=True, choices=["connector", "file"])
+    sp.add_argument("--version", default=None)
+    sp.add_argument("--exported", default=None, metavar="YYYY-MM-DD")
+    sp.add_argument("--fresh-days", dest="fresh_days", type=whole, default=None, metavar="N")
+    sp.set_defaults(func=commands.cmd_sources_add)
+    sp = ssub.add_parser("exported", parents=[common], help="record the date of a fresh copy")
+    sp.add_argument("id", metavar="ID")
+    sp.add_argument("date", metavar="YYYY-MM-DD")
+    sp.set_defaults(func=commands.cmd_sources_exported)
+    sp = ssub.add_parser("list", parents=[common], help="list sources")
+    sp.add_argument("--json", action="store_true", help="output for code")
+    sp.set_defaults(func=commands.cmd_sources_list)
+
     return parser
 
 

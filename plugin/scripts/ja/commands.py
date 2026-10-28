@@ -70,6 +70,30 @@ def _stamp(args: argparse.Namespace) -> str:
     return records.stamp(_today(args) if getattr(args, "today", None) else None)
 
 
+def _refresh(paths: Paths, today: date) -> None:
+    """After a change: rewrite the tool index and the tools page. Never fails the change itself."""
+    from ja import dashboard  # loaded here so other commands start faster
+
+    try:
+        problems = index.rewrite(paths, today=today)
+    except index.MarkersMissing as exc:
+        _warn(f"Saved, but I could not update the tool list: {exc}")
+    except OSError:
+        _warn("Saved, but I could not update the tool list in your assistant notes.")
+    else:
+        if problems:
+            _warn("Some tool records have a mistake and were left out of the tool list. "
+                  "Say \"fix my tools\" to look at them.")
+    try:
+        dashboard.write(paths, today=today)
+    except OSError:
+        _warn("Saved, but I could not update your tools page.")
+
+
+def _warn(text: str) -> None:
+    print(text, file=sys.stderr)
+
+
 @_guard
 def cmd_init(args: argparse.Namespace) -> int:
     try:
@@ -265,4 +289,48 @@ def cmd_settings_show(args: argparse.Namespace) -> int:
     _say(f"Allowed without asking ({len(allowed)}):")
     for name in allowed:
         _say(f"  {name}")
+    return 0
+
+
+@_guard
+def cmd_sources_add(args: argparse.Namespace) -> int:
+    paths = _paths(args)
+    today = _today(args)
+    entry = {"id": args.id, "name": args.name, "kind": args.kind, "where": args.where, "access": args.access,
+             "version": args.version, "exported": args.exported, "fresh_days": args.fresh_days}
+    try:
+        src = sources.add(paths, entry, today=today)
+    except sources.SourceProblem as exc:
+        raise Stop(str(exc)) from None
+    _refresh(paths, today)
+    _say(f"Added {src.name} to your sources.")
+    return 0
+
+
+@_guard
+def cmd_sources_exported(args: argparse.Namespace) -> int:
+    paths = _paths(args)
+    today = _today(args)
+    try:
+        sources.set_exported(paths, args.id, args.date, today=today)
+    except sources.SourceProblem as exc:
+        raise Stop(str(exc)) from None
+    _refresh(paths, today)
+    _say(f"Saved: your copy of {args.id} is from {args.date}.")
+    return 0
+
+
+@_guard
+def cmd_sources_list(args: argparse.Namespace) -> int:
+    paths = _paths(args)
+    rows = sources.describe(paths, _today(args))
+    _, problems = sources.load(paths)
+    if args.json:
+        print(json.dumps(rows, indent=2, ensure_ascii=False))
+        return 0
+    if not rows and not problems:
+        _say("No sources yet.")
+    for r in rows:
+        _say(f"{r['name']} ({r['id']}): {r['reached']}. {r['age']}.")
+    _say_problems("Sources with problems:", problems, gap=bool(rows))
     return 0

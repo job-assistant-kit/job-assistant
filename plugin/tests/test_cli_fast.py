@@ -130,3 +130,22 @@ def test_settings_cli(ws, cli):
     assert r.returncode == 1 and "post_message" in r.stderr
     r = cli("settings", "show", cwd=ws)
     assert r.returncode == 0 and "mcp__x__send" in r.stdout and "mcp__x__post" in r.stdout
+
+
+def test_sources_cli(ws, write_tool, cli):
+    write_tool(ws, id="a", name="Answer", sources=["faq"])
+    r = cli("sources", "add", "--id", "faq", "--name", "OLM FAQ", "--kind", "living", "--where", "Shared drive",
+            "--access", "file", "--exported", "2026-10-01", *TODAY, cwd=ws)
+    assert r.returncode == 0, r.text
+    assert "Answer (Needs update)" in (ws / "CLAUDE.md").read_text(encoding="utf-8")
+    r = cli("sources", "add", "--id", "faq", "--name", "X", "--kind", "living", "--where", "x",
+            "--access", "file", *TODAY, cwd=ws)
+    assert r.returncode == 1 and r.stderr.strip() == "There is already a source called faq."
+    r = cli("sources", "add", "--id", "q", "--name", "X", "--kind", "soft", "--where", "x", "--access", "file", cwd=ws)
+    assert r.returncode == 1 and "usage:" not in r.text
+    assert cli("sources", "exported", "faq", "2026-10-27", *TODAY, cwd=ws).returncode == 0
+    assert "Answer (Working)" in (ws / "CLAUDE.md").read_text(encoding="utf-8")
+    r = cli("sources", "list", *TODAY, cwd=ws)
+    assert "OLM FAQ" in r.stdout and "1 day old" in r.stdout
+    data = json.loads(cli("sources", "list", "--json", *TODAY, cwd=ws).stdout)
+    assert data[0]["id"] == "faq" and data[0]["age_days"] == 1
