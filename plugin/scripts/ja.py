@@ -165,6 +165,27 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--json", action="store_true", help="output for code")
     sp.set_defaults(func=commands.cmd_sources_list)
 
+    p = sub.add_parser("tool", parents=[common], help="add or change a tool record")
+    tsub = p.add_subparsers(dest="action", metavar="action", required=True)
+    tp = tsub.add_parser("add", parents=[common], help="add a tool from a record file")
+    tp.add_argument("--from", dest="file", required=True, metavar="FILE")
+    tp.set_defaults(func=commands.cmd_tool_add)
+    tp = tsub.add_parser("improve", parents=[common], help="note an improvement")
+    tp.add_argument("tool", metavar="ID")
+    tp.add_argument("--change", required=True, metavar="TEXT")
+    tp.add_argument("--reason", required=True, metavar="TEXT")
+    tp.set_defaults(func=commands.cmd_tool_improve)
+    tp = tsub.add_parser("status", parents=[common], help="set the declared status")
+    tp.add_argument("tool", metavar="ID")
+    tp.add_argument("status", metavar="STATUS")
+    tp.set_defaults(func=commands.cmd_tool_status)
+    tp = tsub.add_parser("retire", parents=[common], help="move a tool to the archive")
+    tp.add_argument("tool", metavar="ID")
+    tp.set_defaults(func=commands.cmd_tool_retire)
+    tp = tsub.add_parser("restore", parents=[common], help="bring a tool back from the archive")
+    tp.add_argument("tool", metavar="ID")
+    tp.set_defaults(func=commands.cmd_tool_restore)
+
     return parser
 
 

@@ -14,7 +14,7 @@ import sys
 from datetime import date
 from pathlib import Path
 
-from ja import index, init, ledger, records, registry, role, settings, sources, status, workspace
+from ja import index, init, ledger, records, registry, role, settings, sources, status, tools, workspace
 from ja.registry import is_date
 from ja.workspace import Paths
 
@@ -245,6 +245,7 @@ def cmd_check(args: argparse.Namespace) -> int:
         raise Stop(f"I could not read this tool's record: {exc}") from None
     tool.last_check = {"date": today.isoformat(), "result": args.result, "detail": args.detail or ""}
     registry.save(paths, tool)
+    _refresh(paths, today)
     word = "passed" if args.result == "pass" else "failed"
     _say(f"Saved: the check of {tool.name} {word} today.")
     return 0
@@ -334,3 +335,55 @@ def cmd_sources_list(args: argparse.Namespace) -> int:
         _say(f"{r['name']} ({r['id']}): {r['reached']}. {r['age']}.")
     _say_problems("Sources with problems:", problems, gap=bool(rows))
     return 0
+
+
+def _shows_as(paths: Paths, tool: registry.Tool, today: date) -> str:
+    by_id, _ = sources.load(paths)
+    return status.label(status.effective_status(tool, by_id, today))
+
+
+def _tool_change(func):
+    """Run a tool change, then refresh the tool list and the tools page."""
+    @_guard
+    def wrapper(args: argparse.Namespace) -> int:
+        paths = _paths(args)
+        today = _today(args)
+        try:
+            message = func(args, paths, today)
+        except tools.ToolProblem as exc:
+            raise Stop(str(exc)) from None
+        _refresh(paths, today)
+        _say(message)
+        return 0
+    wrapper.__name__ = func.__name__
+    return wrapper
+
+
+@_tool_change
+def cmd_tool_add(args: argparse.Namespace, paths: Paths, today: date) -> str:
+    tool = tools.add_from_file(paths, Path(args.file), today=today)
+    return f'Added {tool.name} ({_shows_as(paths, tool, today)}). Say "{tool.examples[0]}" to use it.'
+
+
+@_tool_change
+def cmd_tool_improve(args: argparse.Namespace, paths: Paths, today: date) -> str:
+    tool = tools.improve(paths, args.tool, args.change, args.reason, today=today)
+    return f"Saved the change to {tool.name}."
+
+
+@_tool_change
+def cmd_tool_status(args: argparse.Namespace, paths: Paths, today: date) -> str:
+    tool = tools.set_status(paths, args.tool, args.status)
+    return f"Saved. {tool.name} now shows as {_shows_as(paths, tool, today)}."
+
+
+@_tool_change
+def cmd_tool_retire(args: argparse.Namespace, paths: Paths, today: date) -> str:
+    tool = tools.retire(paths, args.tool)
+    return f'Retired {tool.name}. Say "bring back {tool.name}" to restore it.'
+
+
+@_tool_change
+def cmd_tool_restore(args: argparse.Namespace, paths: Paths, today: date) -> str:
+    tool = tools.restore(paths, args.tool)
+    return f"Restored {tool.name}. It shows as {_shows_as(paths, tool, today)}."

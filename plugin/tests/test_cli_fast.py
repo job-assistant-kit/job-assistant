@@ -149,3 +149,27 @@ def test_sources_cli(ws, write_tool, cli):
     assert "OLM FAQ" in r.stdout and "1 day old" in r.stdout
     data = json.loads(cli("sources", "list", "--json", *TODAY, cwd=ws).stdout)
     assert data[0]["id"] == "faq" and data[0]["age_days"] == 1
+
+
+def test_tool_commands_refresh_index_and_page(ws, tmp_path, write_tool, cli):
+    rec = tmp_path / "t.yaml"
+    rec.write_text(yaml.safe_dump({"id": "brief", "name": "Check a brief", "does": "Lists gaps.",
+                                   "examples": ["check this brief"], "kind": "built", "status": "working",
+                                   "rhythm": "on-demand", "data_path": "Files you drop in"}), encoding="utf-8")
+    r = cli("tool", "add", "--from", str(rec), *TODAY, cwd=ws)
+    assert r.returncode == 0, r.text
+    notes = lambda: (ws / "CLAUDE.md").read_text(encoding="utf-8")
+    page = lambda: (ws / "dashboard/index.html").read_text(encoding="utf-8")
+    assert "Check a brief (Draft, not checked)" in notes() and "Check a brief" in page()
+    assert cli("check", "brief", "--result", "pass", *TODAY, cwd=ws).returncode == 0
+    assert "Check a brief (Working)" in notes()
+    assert cli("tool", "improve", "brief", "--change", "Shorter.", "--reason", "Edits.", *TODAY, cwd=ws).returncode == 0
+    assert "Shorter." in page()
+    assert cli("tool", "status", "brief", "paused", *TODAY, cwd=ws).returncode == 0
+    assert "Check a brief (Paused)" in notes()
+    r = cli("tool", "status", "brief", "needs-update", *TODAY, cwd=ws)
+    assert r.returncode == 1 and r.stderr.strip() == "That status is worked out from checks and cannot be set by hand."
+    assert cli("tool", "retire", "brief", *TODAY, cwd=ws).returncode == 0
+    assert "Check a brief" not in notes().split("tool-index:start")[1] and "bring back Check a brief" in page()
+    r = cli("tool", "restore", "brief", *TODAY, cwd=ws)
+    assert r.returncode == 0 and "Check a brief (Working)" in notes()
