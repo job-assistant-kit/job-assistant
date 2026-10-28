@@ -63,7 +63,7 @@ class Tool:
     def from_dict(cls, data: dict[str, Any], folder: str | None = None, path: Path | None = None) -> "Tool":
         """Build a Tool from raw record data. Raises InvalidTool with a plain message."""
         if not isinstance(data, dict):
-            raise InvalidTool(f"{folder or '?'}: tool.yaml must hold named fields")
+            raise InvalidTool(f"{folder or '?'}: the tool record must hold named fields")
         data = _normalize_dates(data)
         label = folder or (data.get("id") if isinstance(data.get("id"), str) else None) or "?"
         problem = _first_problem(data, folder)
@@ -178,9 +178,9 @@ def load_file(path: Path) -> Tool:
     try:
         data = yaml.safe_load(path.read_text())
     except (yaml.YAMLError, OSError, UnicodeDecodeError):
-        raise InvalidTool(f"{folder}: tool.yaml could not be read") from None
+        raise InvalidTool(f"{folder}: the tool record could not be read") from None
     if data is None:
-        raise InvalidTool(f"{folder}: tool.yaml is empty")
+        raise InvalidTool(f"{folder}: the tool record is empty")
     return Tool.from_dict(data, folder=folder, path=path)
 
 

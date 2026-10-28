@@ -92,7 +92,7 @@ def test_unreadable_yaml_reported(ws):
     d = ws / ".claude/skills/broken"; d.mkdir(parents=True)
     (d / "tool.yaml").write_text("id: [unclosed\n")
     tools, problems = registry.load_all(workspace.Paths(ws))
-    assert tools == [] and problems == ["broken: tool.yaml could not be read"]
+    assert tools == [] and problems == ["broken: the tool record could not be read"]
 
 def test_folder_without_record_ignored(ws):
     (ws / ".claude/skills/plain-skill").mkdir(parents=True)
