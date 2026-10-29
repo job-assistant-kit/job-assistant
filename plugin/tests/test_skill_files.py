@@ -39,7 +39,7 @@ RECIPE_HEADINGS = ["When it fits", "What to ask", "Inputs and checks", "Facts st
 
 
 def test_there_are_skills():
-    assert [p.parent.name for p in SKILLS] == ["automate-this", "fix-tool", "set-me-up"]
+    assert [p.parent.name for p in SKILLS] == ["automate-this", "check-number", "fix-tool", "set-me-up"]
 
 
 def test_frontmatter_valid():
@@ -223,3 +223,28 @@ def test_rendered_built_page_is_valid_and_plain():
 def test_recipes_and_steps_quote_plain_words():
     for page in [*RECIPES, *SKILLS]:
         assert _banned_in_quotes(page.read_text(encoding="utf-8")) == [], page.name
+
+
+def test_check_number_triggers_and_flow():
+    front, body = frontmatter(PLUGIN / "skills/check-number/SKILL.md")
+    for phrase in ("is this number safe to send", "check this number", "sign off this number"):
+        assert phrase in front["description"]
+    assert "whenever a tool whose numbers go to leaders" in front["description"]
+    order = ["ja sources list --json", "Copy its exact words", "ja numbers note", "End with the label \"Draft, not checked\"",
+             "\"approve\", \"yes, send it\"", "ja numbers approve", "ja tool status <id> working"]
+    positions = [body.index(step) for step in order]
+    assert positions == sorted(positions)
+    assert "Never work out the other number yourself." in body and "You never call a number checked." in body
+
+
+def test_exec_number_tools_point_to_the_sign_off_steps():
+    from ja import tools
+    from ja.registry import Tool
+
+    tool = Tool(id="ttm-report", name="TTM report", does="Reports the TTM median.", examples=["run the TTM report"],
+                kind="built", status="being-built", rhythm="quarterly", data_path="The metrics export",
+                created="2026-10-28", exec_numbers=True)
+    text = tools.built_skill(tool, "/kit/scripts/ja.py")
+    assert "follow the check-number steps" in text and "this tool (ttm-report)" in text
+    automate = (PLUGIN / "skills/automate-this/SKILL.md").read_text(encoding="utf-8")
+    assert "follow the check-number steps" in automate

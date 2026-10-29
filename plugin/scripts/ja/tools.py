@@ -32,7 +32,9 @@ FILE_WORDS = {SKILL_NAME: "instructions page", CHECKLIST_NAME: "checklist", INPU
 NUMBER_SIGNOFF = (
     "\n## Number sign-off\n\n"
     "The numbers from this tool go to leaders or published pages. Label every number \"Draft, not checked\" "
-    "until the person approves it through number sign-off. Never call a number checked yourself.\n"
+    "until the person approves it through number sign-off. Never call a number checked yourself.\n\n"
+    "For each such number, follow the check-number steps: give them the metric, value, unit, period, this tool "
+    "(<id>), and the counts of rows left out and in total from the facts step.\n"
 )
 ADOPTED_REQUIRED = ("lives_at", "how_to_run")
 NOT_RECORDED = "Not recorded yet. Ask the person."
@@ -102,7 +104,7 @@ def built_skill(tool: Tool, script: Path | str = helper.SCRIPT) -> str:
         "does": render.one_line(tool.does),
         "id": tool.id,
         "ja_path": str(script),
-        "number_signoff": NUMBER_SIGNOFF if tool.exec_numbers else "",
+        "number_signoff": NUMBER_SIGNOFF.replace("<id>", tool.id) if tool.exec_numbers else "",
     }
     return render.fill(BUILT_TEMPLATE.read_text(encoding="utf-8"), values)
 

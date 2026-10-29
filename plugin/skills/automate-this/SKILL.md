@@ -109,7 +109,7 @@ If none fits, build from the closest one and note in the tool record's `does` wh
 1. Run `ja input check <id> <files>`. If it reports a problem with their file, tell them plainly and show the steps it prints.
 2. Run `ja facts run <id> <files>` when the tool has a facts step.
 3. Write the result the way the tool's page now says, using the facts exactly as printed. Check it against every checklist item.
-4. When the tool's numbers go to leaders, label each number "Draft, not checked". Do not call any number checked.
+4. When the tool's numbers go to leaders, follow the check-number steps for each number before you show it, and label each number "Draft, not checked". Do not call any number checked.
 5. Show them the result.
 
 ### 7. Agree on the result
