@@ -282,6 +282,18 @@ def build_parser() -> argparse.ArgumentParser:
     rp.add_argument("--json", action="store_true", help="output for code")
     rp.set_defaults(func=commands.cmd_rules_similar)
 
+    p = sub.add_parser("knowledge", parents=[common], help="facts the person taught, with sources")
+    ksub = p.add_subparsers(dest="action", metavar="action", required=True)
+    kp = ksub.add_parser("add", parents=[common], help="save a fact with its source")
+    kp.add_argument("--fact", required=True, metavar="TEXT")
+    kp.add_argument("--source", required=True, metavar="TEXT")
+    kp.set_defaults(func=commands.cmd_knowledge_add)
+    kp = ksub.add_parser("list", parents=[common], help="list what was taught")
+    kp.set_defaults(func=commands.cmd_knowledge_list)
+    kp = ksub.add_parser("forget", parents=[common], help="remove a fact")
+    kp.add_argument("words", nargs="+", metavar="TEXT")
+    kp.set_defaults(func=commands.cmd_knowledge_forget)
+
     p = sub.add_parser("runbook", parents=[common], help="write the backup person's guide")
     p.set_defaults(func=commands.cmd_runbook)
 

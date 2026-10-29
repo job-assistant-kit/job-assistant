@@ -14,7 +14,7 @@ import sys
 from datetime import date, datetime
 from pathlib import Path
 
-from ja import facts, helper, profile, index, inputs, init, launcher, ledger, parts, proof, records, registry, role, runbook, settings, sources, status, tools, workspace
+from ja import facts, helper, knowledge, profile, index, inputs, init, launcher, ledger, parts, proof, records, registry, role, runbook, settings, sources, status, tools, workspace
 from ja.registry import is_date
 from ja.workspace import Paths
 
@@ -807,6 +807,45 @@ def cmd_rules_similar(args: argparse.Namespace) -> int:
         _say("No similar rules yet.")
     for r, matched in found:
         _say(f"{r.id} ({_scope_words(r, names)}): {r.text} Shared words: {', '.join(matched)}.")
+    return 0
+
+
+@_guard
+def cmd_knowledge_add(args: argparse.Namespace) -> int:
+    paths = _paths(args)
+    try:
+        knowledge.add(paths, args.fact, args.source, today=_today(args))
+    except knowledge.KnowledgeProblem as exc:
+        raise Stop(str(exc)) from None
+    _say("Saved what you taught me, with its source.")
+    return 0
+
+
+@_guard
+def cmd_knowledge_list(args: argparse.Namespace) -> int:
+    found = knowledge.entries(_paths(args))
+    if not found:
+        _say("Nothing taught yet.")
+    for entry in found:
+        _say(entry)
+    return 0
+
+
+@_guard
+def cmd_knowledge_forget(args: argparse.Namespace) -> int:
+    match = " ".join(args.words)
+    try:
+        found = knowledge.forget(_paths(args), match)
+    except knowledge.KnowledgeProblem as exc:
+        raise Stop(str(exc)) from None
+    if not found:
+        raise Stop(f"I could not find anything taught about {match}.")
+    if len(found) > 1:
+        _say("More than one entry matches. Say which one:")
+        for fact in found:
+            _say(f"  {fact}")
+        return 1
+    _say(f"I will no longer use this: {found[0]}.")
     return 0
 
 

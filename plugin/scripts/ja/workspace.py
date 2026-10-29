@@ -86,6 +86,10 @@ class Paths:
         return self.assistant_dir / "profile.yaml"
 
     @property
+    def knowledge(self) -> Path:
+        return self.assistant_dir / "knowledge.md"
+
+    @property
     def sources(self) -> Path:
         return self.assistant_dir / "sources.yaml"
 
