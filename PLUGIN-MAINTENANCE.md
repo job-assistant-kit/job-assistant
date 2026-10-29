@@ -157,6 +157,20 @@ First match wins: a declared `retired`, `paused`, or `being-built`; a failed las
 - Idea: three or more task records in the last 30 days that share most of the shorter one's words (at least two, common short words left out).
 - Stable: built tools with five or more accepted runs and no facts step.
 
+## Facts step safety
+
+A tool's facts step is code the assistant wrote, and it runs without asking. The boundary is `scripts/ja/runner.py`:
+
+- `ja facts run` starts the step as `uv run --no-project --with openpyxl python runner.py <folder> <facts.py> <files>`, in its own process group. On the time limit the whole group is killed.
+- The runner installs a Python audit hook before the step runs. The hook refuses, at the moment it happens: network use (`socket.*` and the protocol client events), starting programs (`subprocess.*`, `os.system`, `os.exec*`, `os.spawn*`, `os.posix_spawn`, `os.fork*`, `os.kill*`), native code (`ctypes.*`, importing `ctypes`, `_ctypes`, `cffi`), any file write or change (`open` in a write mode or with write flags, `os.remove`, `os.rename`, `os.mkdir`, `shutil.*`, and the rest in `_PREFIXES`), reading files outside the assistant folder, the Python install, and the input files given, and adding another hook. A refused action ends the run with exit code 3 and `JA-BLOCKED: <what>`; the helper turns that into a plain sentence.
+- Only `openpyxl` may be added as extra software. `ja tool files` and `ja facts run` refuse an inline dependency header that names anything else.
+- The source check in `safety.py` stays only as an early, friendly refusal.
+- Bytecode caching is off for the step, and the file type table is loaded before the hook, so ordinary imports need no write or wide read access.
+- Tests: `tests/test_runner.py` runs every known bypass for real (asyncio, aliased and star imports of `os`, `sys.modules`, `posix`, computed `__import__`, `importlib` with a variable, `eval` and `exec`, `pathlib` writes to `.claude/settings.json`, a part changed after it was added, `ctypes`, a swallowed refusal).
+- Verified on Python 3.14.7, 2026-10-29.
+
+Limit, stated plainly: an audit hook is strong in-process enforcement for code written by the assistant. It is not an operating system sandbox. Code that already runs native code could get around it, which is why native code loading is refused first.
+
 ## Hooks
 
 `plugin/hooks/hooks.json` declares two command hooks, both in shell form with the placeholder in double quotes, stdout and stderr sent to `/dev/null`, `|| true` at the end, and a 5 second timeout:

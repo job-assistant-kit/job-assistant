@@ -1,13 +1,16 @@
 """Refuse facts steps and code parts that reach other systems or run programs.
 
 A tool's facts step runs on the person's computer without asking, so it may only read
-the files it is given and print results. This is a check of the code as written, not a
-sandbox: it catches the ordinary ways to open a connection or start a program.
+the files it is given and print results. The real boundary is the runner (runner.py),
+which blocks outside actions while the step runs. This check of the code as written only
+gives an early, friendly refusal for the ordinary cases, and limits extra software to an
+approved list.
 """
 
 from __future__ import annotations
 
 import ast
+import re
 from pathlib import Path
 
 REFUSED = "This step tries to reach other systems or run programs, which tools here are not allowed to do."
@@ -17,6 +20,8 @@ BANNED_MODULES = frozenset({
     "urllib3", "aiohttp", "ssl", "imaplib", "poplib", "telnetlib", "xmlrpc", "webbrowser", "pty",
 })
 BANNED_OS = ("system", "popen", "exec", "spawn", "posix_spawn", "fork")
+ALLOWED_LIBRARIES = ("openpyxl",)
+_DEPENDENCIES = re.compile(r"^# /// script\s*$(.*?)^# ///\s*$", re.M | re.S)
 
 
 def _banned_module(name: str | None) -> bool:
@@ -54,6 +59,20 @@ def _refused(tree: ast.AST) -> bool:
     return False
 
 
+def extra_software(source: str) -> list[str]:
+    """Libraries named in the inline header that are not on the approved list."""
+    block = _DEPENDENCIES.search(source)
+    if not block:
+        return []
+    text = "\n".join(line.lstrip("#").strip() for line in block.group(1).splitlines())
+    match = re.search(r"dependencies\s*=\s*\[(.*?)\]", text, re.S)
+    if not match:
+        return []
+    names = [re.split(r"[<>=!~\[; ]", n.strip().strip("'\""), maxsplit=1)[0]
+             for n in match.group(1).split(",") if n.strip().strip("'\"")]
+    return [n for n in names if n.lower() not in ALLOWED_LIBRARIES]
+
+
 def problem(path: Path) -> str | None:
     """A plain sentence when the code is not allowed or cannot be read, else None."""
     try:
@@ -64,4 +83,10 @@ def problem(path: Path) -> str | None:
         tree = ast.parse(source)
     except SyntaxError as exc:
         return f"{Path(path).name} has a mistake on line {exc.lineno} and cannot run."
-    return REFUSED if _refused(tree) else None
+    if _refused(tree):
+        return REFUSED
+    extra = extra_software(source)
+    if extra:
+        return (f"This step asks for extra software ({', '.join(extra)}). "
+                f"Tools here may only use {', '.join(ALLOWED_LIBRARIES)}.")
+    return None

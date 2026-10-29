@@ -119,3 +119,44 @@ def test_run_prints_when_each_file_was_received(tool, cli, tmp_path):
     data = json.loads(cli("--workspace", str(tool), "facts", "run", "match", *files, "--json").stdout)
     assert data["received"] == {"servicenow-export.csv": "2026-10-27", "inventory.csv": "2026-10-20"}
     assert "received" not in json.loads((tool / "data/last/match.json").read_text(encoding="utf-8"))
+
+
+def _running(marker: str) -> bool:
+    for proc in Path("/proc").iterdir():
+        if proc.name.isdigit():
+            try:
+                if marker in (proc / "cmdline").read_bytes().decode(errors="ignore"):
+                    return True
+            except OSError:
+                pass
+    return False
+
+
+def test_time_limit_stops_the_whole_step(tool):
+    marker = "ja-sleep-marker-7f3a"
+    step(tool, f"# {marker}\nimport time\ntime.sleep(60)\n")
+    target = tool / ".claude/skills/match/facts.py"
+    with pytest.raises(facts.FactsProblem, match="took too long"):
+        facts.run(workspace.Paths(tool), "match", "Match the lists", [Path(f) for f in FILES], timeout=3)
+    assert not _running(str(target))
+
+
+def test_blocked_action_gets_a_plain_message(tool):
+    step(tool, "import importlib\nm = importlib.import_module('sub' + 'process')\nm.run(['id'])\n")
+    with pytest.raises(facts.FactsProblem) as err:
+        facts.run(workspace.Paths(tool), "match", "Match the lists", [Path(f) for f in FILES])
+    assert str(err.value) == ("The facts step for Match the lists tried to run a program, "
+                              "which tools here are not allowed to do.")
+
+
+def test_extra_software_is_refused(tool):
+    step(tool, "# /// script\n# dependencies = [\"requests>=2\", \"openpyxl\"]\n# ///\nprint('{}')\n")
+    with pytest.raises(facts.FactsProblem, match=r"extra software \(requests\)"):
+        facts.run(workspace.Paths(tool), "match", "Match the lists", [Path(f) for f in FILES])
+
+
+def test_approved_library_is_available(tool):
+    step(tool, "# /// script\n# dependencies = [\"openpyxl\"]\n# ///\nimport json, openpyxl\n"
+               "print(json.dumps({'facts': [], 'counts': {}, 'problems': []}))\n")
+    result = facts.run(workspace.Paths(tool), "match", "Match the lists", [Path(f) for f in FILES])
+    assert result.facts == []

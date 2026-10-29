@@ -12,6 +12,7 @@ import json
 import math
 import os
 import shutil
+import signal
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -48,10 +49,28 @@ def has_step(paths: Paths, tool_id: str) -> bool:
     return script_for(paths, tool_id).is_file()
 
 
-def _command(script: Path, files: list[Path]) -> list[str]:
+RUNNER = Path(__file__).with_name("runner.py")
+BLOCKED_EXIT = 3
+BLOCKED_MARKER = "JA-BLOCKED: "
+
+
+def _command(root: Path, script: Path, files: list[Path]) -> list[str]:
+    """Run the step under the runner, with only the approved libraries available."""
     uv = shutil.which("uv")
-    head = [uv, "run", "--quiet", "--script"] if uv else [sys.executable]
-    return [*head, str(script), *[str(f) for f in files]]
+    with_libs = [arg for lib in safety.ALLOWED_LIBRARIES for arg in ("--with", lib)]
+    head = [uv, "run", "--quiet", "--no-project", *with_libs, "python"] if uv else [sys.executable]
+    return [*head, str(RUNNER), str(root), str(script), *[str(f) for f in files]]
+
+
+def _stop_group(proc: subprocess.Popen) -> None:
+    try:
+        os.killpg(proc.pid, signal.SIGKILL)
+    except (ProcessLookupError, PermissionError):
+        pass
+    try:
+        proc.wait(timeout=10)
+    except subprocess.TimeoutExpired:
+        pass
 
 
 def _last_line(text: str) -> str:
@@ -111,14 +130,22 @@ def run(paths: Paths, tool_id: str, name: str, files: list[Path], timeout: float
     refused = safety.problem(script)
     if refused:
         raise FactsProblem(refused)
-    env = {**os.environ, "JA_WORKSPACE": str(paths.root)}
+    env = {**os.environ, "JA_WORKSPACE": str(paths.root), "PYTHONDONTWRITEBYTECODE": "1"}
     try:
-        done = subprocess.run(_command(script, files), cwd=paths.root, env=env, capture_output=True, text=True,
-                              stdin=subprocess.DEVNULL, timeout=timeout)
-    except subprocess.TimeoutExpired:
-        raise FactsProblem(f"The facts step for {name} took too long and was stopped.") from None
+        proc = subprocess.Popen(_command(paths.root, script, files), cwd=paths.root, env=env, text=True,
+                                stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                start_new_session=True)
     except OSError:
         raise FactsProblem(f"The facts step for {name} could not start.") from None
+    try:
+        stdout, stderr = proc.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        _stop_group(proc)
+        raise FactsProblem(f"The facts step for {name} took too long and was stopped.") from None
+    done = subprocess.CompletedProcess(proc.args, proc.returncode, stdout, stderr)
+    if done.returncode == BLOCKED_EXIT and BLOCKED_MARKER in done.stderr:
+        what = done.stderr.split(BLOCKED_MARKER, 1)[1].splitlines()[0].strip()
+        raise FactsProblem(f"The facts step for {name} tried to {what}, which tools here are not allowed to do.")
     if done.returncode != 0:
         raise FactsProblem(f"The facts step for {name} failed: {_last_line(done.stderr)}")
     try:
