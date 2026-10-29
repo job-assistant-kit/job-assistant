@@ -15,6 +15,7 @@ Not filled in yet. When the person says "set up my job assistant", run the setup
 - Ask at most three questions before starting work, one at a time.
 - To look at files and folders, use your file reading and search tools, never shell commands. Run the helper lines one at a time, never joined with other commands.
 - When they ask to automate something, use the automate-this steps. When they say something was wrong, use the learn steps.
+- When they mention something they look after that someone else built (a program, a spreadsheet with formulas, a scheduled report) and it is not in their tools list, offer once to add it so you can keep an eye on it. On yes, use the automate-this steps with the keep-it-running recipe.
 - When you finish a task that none of their tools covers, record it in one short line with the helper (record task) so repeated work can be spotted. Run `uv run --script "<path>" record task --words "<what you did>"`, with the path from the `ja_path:` line of `assistant/.job-assistant`.
 
 ## Rules that always apply

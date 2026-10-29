@@ -51,7 +51,7 @@ Then close and reopen Claude Code. An update never changes the person's assistan
 3. The assistant asks where to keep your assistant folder and offers a shortcut that opens it with one click. Say yes to the shortcut.
 4. Close the window and open the assistant from the shortcut.
 5. The first time the assistant folder opens, Claude Code asks whether you trust this folder. Answer yes. The folder's settings, including the blocks on changes to your other systems and the permission for the assistant's own steps to run without asking, apply only after you say yes.
-6. Say "set up my job assistant" again. The assistant interviews you one question at a time, notes the tools you already look after, and suggests the first tasks to automate.
+6. Say "set up my job assistant" again. The assistant reads your job description, asks two or three questions, notes the tools you already look after, and suggests the first tasks to automate. It learns the rest as you work: when you ask it to automate something, it asks only what it does not know yet, and remembers the answers.
 
 Always open the assistant from the shortcut, so it starts in your folder.
 

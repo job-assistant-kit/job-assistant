@@ -18,7 +18,8 @@ plugin/
   skills/<name>/SKILL.md               automate-this, check-number, fix-tool, learn,
                                        set-me-up, show-tools, upkeep
   skills/automate-this/recipes/*.md    the nine recipes
-  skills/set-me-up/                    interview.md, role-card-template.md
+  skills/set-me-up/                    role-card-template.md
+  skills/automate-this/questions.md    question bank for building a tool
   templates/                           built-skill.md, adopted-skill.md, checklist.yaml, facts.py
   templates/workspace/                 files copied into a new assistant folder
   scripts/ja.py                        helper entry (argument parsing only)

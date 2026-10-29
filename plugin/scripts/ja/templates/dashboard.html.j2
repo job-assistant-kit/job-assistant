@@ -146,6 +146,9 @@
       </ol>
     </div>
 {% endif %}
+{% if c.assumed %}
+    <p class="note why">{{ c.assumed }}</p>
+{% endif %}
 {% if c.rules %}
     <p class="note why">Rules applied: {{ c.rules | join("; ") }}</p>
 {% endif %}
@@ -171,6 +174,9 @@
   <p class="why">Say "forget that" about any item to remove it.</p>
 {% else %}
   <p class="why">Nothing yet. When you correct my work, I keep the lesson here.</p>
+{% endif %}
+{% if v.questions %}
+  <p class="why">{{ v.questions }} Fewer questions with no more corrections means I know more of your work.</p>
 {% endif %}
 {% if v.ideas %}
 

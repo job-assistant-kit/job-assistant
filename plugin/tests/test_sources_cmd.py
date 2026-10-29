@@ -72,3 +72,17 @@ def test_describe(ws):
     assert rows["drive-plan"]["age"] == "live" and rows["drive-plan"]["reached"] == "read live through a connector"
     assert rows["old"]["age"] == "No export date yet"
     assert rows["faq"]["reached"] == "a copy you drop in"
+
+
+def test_sources_list_names_confidential_tools(ws, write_tool):
+    import json, subprocess, sys
+    from pathlib import Path
+    ja = Path(__file__).parents[1] / "scripts" / "ja.py"
+    run = lambda *a: subprocess.run([sys.executable, str(ja), "--workspace", str(ws), *a, "--today", "2026-10-28"],
+                                    capture_output=True, text=True)
+    assert run("sources", "add", "--id", "inv", "--name", "Inventory", "--kind", "living", "--where", "Drive",
+               "--access", "file", "--exported", "2026-10-27").returncode == 0
+    write_tool(ws, id="brief", name="Brief", confidential=True, sources=["inv"])
+    write_tool(ws, id="faq", name="FAQ", confidential=False, sources=["inv"])
+    rows = json.loads(run("sources", "list", "--json").stdout)
+    assert rows[0]["confidential_tools"] == ["brief"]

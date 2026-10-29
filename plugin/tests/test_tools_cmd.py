@@ -169,3 +169,24 @@ def test_restore_with_check_before_change_is_draft(ws, write_tool):
     write_tool(ws, id="t1", status="retired", folder="archive",
                improvements=[{"date": "2026-10-05", "change": "x", "reason": "y"}])
     assert tools.restore(p, "t1").status == "draft-not-checked"
+
+
+def test_settle_confirms_or_corrects_guesses(ws, write_tool):
+    import subprocess, sys, yaml
+    from pathlib import Path
+    ja = Path(__file__).parents[1] / "scripts" / "ja.py"
+    run = lambda *a: subprocess.run([sys.executable, str(ja), "--workspace", str(ws), *a, "--today", "2026-10-28"],
+                                    capture_output=True, text=True)
+    write_tool(ws, id="m", name="Match lists", assumed=["rhythm", "exec_numbers", "manual_steps"], status="working")
+    rec = lambda: yaml.safe_load((ws / ".claude/skills/m/tool.yaml").read_text())
+    r = run("tool", "settle", "m", "rhythm", "--value", "monthly")
+    assert r.returncode == 0 and "2 guesses left" in r.stdout
+    assert rec()["rhythm"] == "monthly" and rec()["assumed"] == ["exec_numbers", "manual_steps"]
+    r = run("tool", "settle", "m", "exec_numbers", "--value", "yes")
+    assert rec()["exec_numbers"] is True and rec()["status"] == "draft-not-checked"
+    r = run("tool", "settle", "m", "manual_steps", "--step", "Export the list", "--step", "Drop it in the inbox")
+    assert r.returncode == 0 and "No guesses left" in r.stdout
+    assert rec()["manual_steps"] == ["Export the list", "Drop it in the inbox"] and rec()["assumed"] == []
+    for bad in (("name", "--value", "x"), ("rhythm", "--value", "sometimes"), ("your_minutes_by_hand", "--value", "ten"),
+                ("confidential", "--value", "maybe"), ("manual_steps", "--value", "x")):
+        assert run("tool", "settle", "m", *bad).returncode == 1, bad

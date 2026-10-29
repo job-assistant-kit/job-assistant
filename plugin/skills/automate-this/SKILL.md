@@ -14,7 +14,7 @@ The person wants a piece of their work done for them from now on. Build a tool f
 
 - To look at files and folders, use your file reading and search tools, never shell commands. Run the helper lines one at a time, never joined with other commands.
 - Talk in plain business English. Never show or say the words skill, plugin, script, repo, MCP, YAML, JSON, terminal, or command. Do technical steps yourself and tell them the result in one plain sentence.
-- Ask at most three questions about the task, one at a time, plus the confidentiality question.
+- Ask only what you do not already know: at most three questions about the task, one at a time, plus the two checks in step 3.
 - Never post, send, share, edit, or delete anything in another system. Read only. Results are drafts.
 - Numbers, counts, dates, and matches come from the tool's facts step, never from your own counting.
 
@@ -52,17 +52,19 @@ Run `ja search <the main words of the task>`.
 - If a tool already does this, say so in one sentence and offer to run it or change it. Stop here unless they want a new one.
 - If a part fits (a shared piece that reads, matches, checks, or writes something), plan to reuse it.
 
-### 3. Ask what is missing
+### 3. Ask only what is still unknown
 
-Ask only what you cannot see from the example, one question at a time, three at most:
+This is where you learn their work: just in time, about the task in front of you. Never ask what you already know.
 
-1. What do you start from each time? (Which file, report, or document, and where it comes from.)
-2. What do you produce, and who reads it?
-3. How often do you do this, and how long does it take you by hand?
+1. Read what is known first: the role card in `CLAUDE.md`, `assistant/knowledge.md`, `ja sources list --json`, and the tools step 2 found.
+2. Using `questions.md` next to this page, work out what a right result needs that you cannot see from the example or the notes. Ask at most three of those questions, one at a time, the ones that matter most for a right result.
+3. Always settle these two, outside the three:
+   - Confidential. Treat the task as confidential, and say so in one sentence ("I'll treat this as confidential, like <tool name>"), when `ja sources list --json` shows a confidential tool already reads one of its sources, or the notes say this kind of document is confidential. Otherwise ask: "Does this contain anything confidential, such as unannounced offerings, partners, or pricing?" Never save a "not confidential" answer for later.
+   - Numbers for leaders. When the result has numbers and the notes do not say who reads them, ask: "Do these numbers go to leaders, a review, or a published page?"
+4. For anything else still unknown, use your best guess. In step 5, list each guessed field in the tool record's `assumed`, and tell them in one sentence what you guessed so they can correct it.
+5. Answers that are true of their job and not only this task are worth keeping: the source of truth for a kind of data, who reads a kind of report, a deadline, a word that must be written a certain way, a kind of document that is confidential. Read them back in one line before saving: "I'll remember these for all your work: <facts>. Say if any is only for this task." Then save each with `ja knowledge add --fact "<fact>" --source "per <their name>, <today's date>"`.
 
-Then always ask: "Does this contain anything confidential, such as unannounced offerings, partners, or pricing?"
-
-Count the questions you asked; the build record needs the number.
+Count every question you asked, including the two checks; the build record needs the number.
 
 ### 4. Pick the recipe
 
@@ -94,8 +96,9 @@ If none fits, build from the closest one and note in the tool record's `does` wh
    - `data_path`: where its input comes from, in plain words
    - `manual_steps`: numbered steps, in their words, for getting the input file
    - `your_minutes_by_hand`: their estimate, as a whole number
-   - `confidential`: true or false, from their answer
+   - `confidential`: true or false, from step 3
    - `exec_numbers`: true when its numbers go to leaders, a review, or a published page
+   - `assumed`: the fields you guessed in step 3, from rhythm, data_path, manual_steps, your_minutes_by_hand, confidential, exec_numbers
    - `parts`: the ids of parts it reuses, if any
 3. Run `ja tool add --from data/drafts/<id>/tool.yaml`. This creates the tool and puts working copies of its files in `data/drafts/<id>/`.
 4. Edit `data/drafts/<id>/SKILL.md`. Replace each `<!-- fill: ... -->` note with the real instructions for this tool, following the recipe. Remove the notes. Keep the other sections as they are.

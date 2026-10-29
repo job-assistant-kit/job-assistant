@@ -42,6 +42,7 @@ class Card:
     manual_steps: list[str]
     rules: list[str]
     improvements: list[dict[str, str]]
+    assumed: str = ""
 
 
 @dataclass
@@ -75,6 +76,7 @@ class View:
     problems: list[str] = field(default_factory=list)
     source_problems: list[str] = field(default_factory=list)
     rule_problems: list[str] = field(default_factory=list)
+    questions: str | None = None
 
 
 quarter_start = upkeep.quarter_start
@@ -87,6 +89,23 @@ def short_date(iso: str, today: date) -> str:
         return "today"
     text = f"{d:%b} {d.day}"
     return text if d.year == today.year else f"{text}, {d.year}"
+
+
+ASSUMED_WORDS = {
+    "rhythm": "how often you do it",
+    "data_path": "where the input comes from",
+    "manual_steps": "the steps you do by hand",
+    "your_minutes_by_hand": "how long it takes you by hand",
+    "confidential": "whether it is confidential",
+    "exec_numbers": "whether its numbers go to leaders",
+}
+
+
+def _assumed_text(tool: registry.Tool) -> str:
+    words = [ASSUMED_WORDS[a] for a in tool.assumed if a in ASSUMED_WORDS]
+    if not words:
+        return ""
+    return f"I guessed {', '.join(words)}. Tell me if any of that is wrong."
 
 
 def _times(n: int) -> str:
@@ -130,6 +149,29 @@ def _state_text(rule: profile.Rule) -> str:
 
 
 _HEADINGS = {"inbox": "Your inbox"}
+
+
+QUESTIONS_SHOWN = 8
+
+
+def _count(value: object) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool)
+
+
+def questions_line(paths: Paths) -> str | None:
+    """Questions asked and corrections needed for each recent new tool, oldest first, from the build records.
+
+    Corrections sit next to questions, so asking fewer questions only looks better when the
+    results did not need more fixing.
+    """
+    pairs = [(b["questions"], b["corrections"]) for b in records.builds(paths)
+             if _count(b.get("questions")) and _count(b.get("corrections"))]
+    if not pairs:
+        return None
+    shown = pairs[-QUESTIONS_SHOWN:]
+    which = "each new tool" if len(shown) == len(pairs) else f"each of the last {len(shown)} new tools"
+    parts = "; ".join(f"{q} and {c}" for q, c in shown)
+    return f"Questions I asked and corrections you made for {which}, oldest first: {parts}."
 
 
 def build_view(paths: Paths, today: date, ideas: list[str] | None = None,
@@ -186,6 +228,7 @@ def build_view(paths: Paths, today: date, ideas: list[str] | None = None,
             data_path=t.data_path,
             manual_steps=list(t.manual_steps),
             rules=_rules_used(t, rules, rules_by_id),
+            assumed=_assumed_text(t),
             improvements=[
                 {"date": short_date(i["date"], today), "change": i["change"], "reason": i.get("reason", "")}
                 for i in t.improvements
@@ -227,6 +270,7 @@ def build_view(paths: Paths, today: date, ideas: list[str] | None = None,
         problems=tool_problems + archive_problems,
         source_problems=source_problems,
         rule_problems=rule_problems,
+        questions=questions_line(paths),
     )
 
 

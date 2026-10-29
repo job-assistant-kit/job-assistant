@@ -121,3 +121,17 @@ def test_find_tool(ws, write_tool):
     assert registry.find(workspace.Paths(ws), "t1").id == "t1"
     with pytest.raises(registry.ToolNotFound):
         registry.find(workspace.Paths(ws), "nope")
+
+
+def test_assumed_fields_are_checked():
+    from ja.registry import Tool, InvalidTool
+    base = {"id": "a", "name": "A", "does": "x", "examples": ["a"], "kind": "built", "status": "working",
+            "rhythm": "weekly", "data_path": "d", "created": "2026-10-01"}
+    assert Tool.from_dict({**base, "assumed": ["rhythm", "exec_numbers"]}).assumed == ["rhythm", "exec_numbers"]
+    for bad in (["name"], "rhythm", [3]):
+        try:
+            Tool.from_dict({**base, "assumed": bad})
+        except InvalidTool as exc:
+            assert "assumed must list fields from" in str(exc)
+        else:
+            raise AssertionError(bad)

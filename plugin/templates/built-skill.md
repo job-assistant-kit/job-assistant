@@ -36,6 +36,10 @@ Run `ja facts run {{id}} <files>`. Use the facts exactly as it prints them, with
 
 It also prints when each file was received. In the result, give each file's export date if the person told you. Otherwise write "Export date: unknown" and the date it was received.
 
+## What they taught you
+
+Read `assistant/knowledge.md` before you write the result. It holds facts about their work, such as which document is the source of truth or who reads this report. They may have changed since this tool was built. Where the notes and this page disagree, follow the notes.
+
 ## Learned rules
 
 Run `ja rules for {{id}}` before you write the result. Follow every rule it prints. They come from the person's own corrections.

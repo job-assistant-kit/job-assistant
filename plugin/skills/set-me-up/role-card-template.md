@@ -1,6 +1,6 @@
 # Role card template
 
-Fill each line in plain words from the job description and the interview. Keep the whole card under 250 words. Write "unknown" for anything you were not told. Do not include confidential details such as unannounced offerings, partner names, or pricing.
+Fill each line in plain words from the job description and what they told you. Keep the whole card under 250 words. Write "unknown, I will fill this in as we work" for anything you were not told. Do not include confidential details such as unannounced offerings, partner names, or pricing.
 
 ```
 <Name> is a <job title> at <organization>, working on <area>.

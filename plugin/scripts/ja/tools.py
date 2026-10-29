@@ -304,6 +304,50 @@ def improve(paths: Paths, tool_id: str, change: str, reason: str, today: date) -
     return tool
 
 
+def settle(paths: Paths, tool_id: str, name: str, value: str | None, steps: list[str] | None,
+           today: date) -> Tool:
+    """Confirm a guessed field, or correct it, and take it off the tool's list of guesses.
+
+    With no value the guess is confirmed as it stands. Turning on exec_numbers puts a working
+    tool back to draft, because its numbers now need sign-off.
+    """
+    if name not in registry.ASSUMABLE:
+        raise ToolProblem("I can only settle these: " + ", ".join(registry.ASSUMABLE) + ".")
+    tool = find(paths, tool_id)
+    if name == "manual_steps":
+        if value is not None:
+            raise ToolProblem("Give the steps one by one, each as a step.")
+        if steps is not None:
+            if not [s for s in steps if s.strip()]:
+                raise ToolProblem("The steps cannot be empty.")
+            tool.manual_steps = [s.strip() for s in steps if s.strip()]
+    elif steps is not None:
+        raise ToolProblem("Only the steps done by hand take steps.")
+    elif value is not None:
+        value = value.strip()
+        if name == "rhythm":
+            if value not in registry.RHYTHMS:
+                raise ToolProblem("How often must be one of " + ", ".join(registry.RHYTHMS) + ".")
+            tool.rhythm = value
+        elif name == "your_minutes_by_hand":
+            if not value.isdigit():
+                raise ToolProblem("Give the minutes as a whole number.")
+            tool.your_minutes_by_hand = int(value)
+        elif name in ("confidential", "exec_numbers"):
+            if value not in ("yes", "no"):
+                raise ToolProblem("Say yes or no.")
+            setattr(tool, name, value == "yes")
+            if name == "exec_numbers" and value == "yes" and tool.status == "working":
+                tool.status = "draft-not-checked"
+        else:
+            if not value:
+                raise ToolProblem("The answer cannot be empty.")
+            tool.data_path = value
+    tool.assumed = [a for a in tool.assumed if a != name]
+    registry.save(paths, tool)
+    return tool
+
+
 def set_status(paths: Paths, tool_id: str, new: str) -> Tool:
     if new == "needs-update":
         raise ToolProblem("That status is worked out from checks and cannot be set by hand.")

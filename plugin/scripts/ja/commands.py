@@ -598,6 +598,10 @@ def cmd_sources_list(args: argparse.Namespace) -> int:
     paths = _paths(args)
     rows = sources.describe(paths, _today(args))
     _, problems = sources.load(paths)
+    tools, _ = registry.load_all(paths)
+    for r in rows:
+        # A source read by a tool marked confidential is treated as confidential by new tools.
+        r["confidential_tools"] = sorted(t.id for t in tools if t.confidential and r.get("id") in t.sources)
     if args.json:
         print(json.dumps(rows, indent=2, ensure_ascii=False))
         return 0
@@ -659,6 +663,14 @@ def cmd_tool_files(args: argparse.Namespace, paths: Paths, today: date) -> str:
 def cmd_tool_improve(args: argparse.Namespace, paths: Paths, today: date) -> str:
     tool = tools.improve(paths, args.tool, args.change, args.reason, today=today)
     return f"Saved the change to {tool.name}."
+
+
+@_tool_change
+def cmd_tool_settle(args: argparse.Namespace, paths: Paths, today: date) -> str:
+    tool = tools.settle(paths, args.tool, args.field, args.value, args.step, today)
+    left = len(tool.assumed)
+    rest = f" {left} guess{'es' if left != 1 else ''} left to confirm." if left else " No guesses left."
+    return f"Saved for {tool.name}.{rest} It shows as {_shows_as(paths, tool, today)}."
 
 
 @_tool_change

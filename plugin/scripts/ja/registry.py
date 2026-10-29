@@ -24,8 +24,11 @@ CHECK_RESULTS = ("pass", "fail")
 FIELDS = (
     "id", "name", "does", "examples", "kind", "recipe", "status", "rhythm", "sources",
     "data_path", "manual_steps", "your_minutes_by_hand", "confidential", "exec_numbers",
-    "rules", "improvements", "last_check", "created",
+    "rules", "improvements", "last_check", "created", "assumed",
 )
+# Fields the assistant may fill with a guess while building. Each guess is listed in
+# `assumed` and shown on the tools page until the person confirms or corrects it.
+ASSUMABLE = ("rhythm", "data_path", "manual_steps", "your_minutes_by_hand", "confidential", "exec_numbers")
 REQUIRED = ("id", "name", "does", "examples", "kind", "status", "rhythm", "data_path", "created")
 
 
@@ -57,6 +60,7 @@ class Tool:
     rules: list[str] = field(default_factory=list)
     improvements: list[dict[str, str]] = field(default_factory=list)
     last_check: dict[str, str] | None = None
+    assumed: list[str] = field(default_factory=list)
     extra: dict[str, Any] = field(default_factory=dict)
     path: Path | None = None
 
@@ -147,6 +151,9 @@ def _first_problem(d: dict[str, Any], folder: str | None) -> str | None:
     for name in ("sources", "manual_steps", "rules"):
         if d.get(name) is not None and not _is_text_list(d[name]):
             return f"{name} must be a list of text"
+    assumed = d.get("assumed")
+    if assumed is not None and (not _is_text_list(assumed) or any(a not in ASSUMABLE for a in assumed)):
+        return "assumed must list fields from: " + ", ".join(ASSUMABLE)
     minutes = d.get("your_minutes_by_hand")
     if minutes is not None and (isinstance(minutes, bool) or not isinstance(minutes, int) or minutes < 0):
         return "your_minutes_by_hand must be a whole number or empty"

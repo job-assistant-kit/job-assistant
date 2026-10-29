@@ -178,3 +178,35 @@ def test_changed_since_check_shown(ws, write_tool):
     html = dashboard.render(workspace.Paths(ws), today=date(2026, 10, 28))
     assert "Changed since its last check." in html and "Draft, not checked" in html
     assert "Waiting for your OK" not in html
+
+
+def test_questions_per_build_shown_oldest_first(ws, write_tool):
+    from ja import records
+    from ja.workspace import Paths
+    p = Paths(ws)
+    assert dashboard.questions_line(p) is None
+    assert "Questions I asked" not in dashboard.render(p, date(2026, 10, 28))
+    for n in (3, 3, 2, 1):
+        records.add_build(p, tool="t", recipe=None, questions=n, corrections=0, minutes=5)
+    line = dashboard.questions_line(p)
+    assert line == ("Questions I asked and corrections you made for each new tool, oldest first: "
+                    "3 and 0; 3 and 0; 2 and 0; 1 and 0.")
+    assert line in dashboard.render(p, date(2026, 10, 28))
+    for n in range(9):
+        records.add_build(p, tool="t", recipe=None, questions=n, corrections=0, minutes=5)
+    assert dashboard.questions_line(p).startswith("Questions I asked and corrections you made for each of the last 8 new tools")
+
+
+def test_corrections_sit_next_to_questions(ws):
+    from ja.workspace import Paths
+    p = Paths(ws)
+    records.add_build(p, tool="t", recipe=None, questions=3, corrections=1, minutes=5)
+    records.add_build(p, tool="u", recipe=None, questions=1, corrections=2, minutes=5)
+    assert dashboard.questions_line(p) == ("Questions I asked and corrections you made for each new tool, "
+                                          "oldest first: 3 and 1; 1 and 2.")
+
+
+def test_assumed_fields_shown_on_the_card(ws, write_tool):
+    write_tool(ws, id="a", name="Match lists", assumed=["rhythm", "exec_numbers"])
+    html = dashboard.render(workspace.Paths(ws), date(2026, 10, 28))
+    assert "I guessed how often you do it, whether its numbers go to leaders. Tell me if any of that is wrong." in html

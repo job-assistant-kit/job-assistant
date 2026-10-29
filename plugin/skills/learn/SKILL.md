@@ -36,7 +36,8 @@ The correction is about the tool used most recently in this conversation. If no 
 
 ### 2. Decide what kind of lesson it is
 
-- A fact (a date, a name, a policy, who owns what): save it with `ja knowledge add --fact "<the fact>" --source "<document name, or per <their name>, <date>>"`. Then redo the result if it used the wrong fact. Done.
+- A fact (a date, a name, a policy, who owns what): save it with `ja knowledge add --fact "<the fact>" --source "<document name, or per <their name>, <date>>"`. If it replaces an older fact in `assistant/knowledge.md`, remove the old one the same way as when they say "forget that". Then use your search tool to look for the old fact's words in each tool's page and facts step under `.claude/skills/`. For each tool that still relies on the old fact, tell them which one, and offer to update it with the fix-tool steps. Redo the result if it used the wrong fact. Done.
+- A detail the assistant guessed when building a tool (how often it runs, how long it takes by hand, whether it is confidential, whether its numbers go to leaders, where its input comes from, the steps done by hand): run `ja tool settle <id> <field> --value <their answer>`, or `ja tool settle <id> manual_steps --step "<step>" --step "<step>"`. When they confirm a guess as it stands, run it without a value. Done.
 - A one-off fix (this result only): redo the result, show it, and run `ja record corrected <id>`. Nothing is saved. Done.
 - A way of working (how results should be written or arranged from now on): a rule. Go on to step 3.
 
