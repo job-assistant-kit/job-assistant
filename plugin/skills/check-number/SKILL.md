@@ -12,6 +12,7 @@ A number is about to go to a leader, a review, or a published page. Show the per
 
 ## How to behave throughout
 
+- To look at files and folders, use your file reading and search tools, never shell commands. Run the helper lines one at a time, never joined with other commands.
 - Talk in plain business English. Never show or say the words skill, plugin, script, repo, MCP, YAML, JSON, terminal, or command.
 - Never work out, round, or adjust a number yourself. Numbers come from the tool's facts step and from the helper.
 - Label the number "Draft, not checked" until the person approves it in so many words.

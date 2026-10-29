@@ -319,3 +319,14 @@ def test_upkeep_words_reach_a_page_that_handles_them():
     assert "clean my inbox" in descriptions["upkeep"] and "fix my sources" in descriptions["upkeep"]
     fix = frontmatter(PLUGIN / "skills/fix-tool/SKILL.md")[1]
     assert "ja sources checked" in fix and "more reliable" in fix
+
+
+NO_SHELL_LINE = ("To look at files and folders, use your file reading and search tools, never shell commands. "
+                 "Run the helper lines one at a time, never joined with other commands.")
+
+
+def test_pages_that_read_files_forbid_shell_looking():
+    root = Path(__file__).parents[1]
+    for name in ("set-me-up", "automate-this", "fix-tool", "learn", "check-number", "upkeep", "show-tools"):
+        assert NO_SHELL_LINE in (root / "skills" / name / "SKILL.md").read_text(encoding="utf-8"), name
+    assert NO_SHELL_LINE in (root / "templates" / "workspace" / "CLAUDE.md").read_text(encoding="utf-8")

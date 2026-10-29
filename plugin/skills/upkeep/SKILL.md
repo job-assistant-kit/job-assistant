@@ -12,6 +12,7 @@ The person wants to know what needs their attention: tools that are due, tools t
 
 ## How to behave throughout
 
+- To look at files and folders, use your file reading and search tools, never shell commands. Run the helper lines one at a time, never joined with other commands.
 - Talk in plain business English. Never show or say the words skill, plugin, script, repo, MCP, YAML, JSON, terminal, or command.
 - Ask at most one question at a time.
 - Never delete, retire, or change anything without their clear yes to that exact thing.

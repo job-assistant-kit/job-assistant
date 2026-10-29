@@ -13,6 +13,7 @@ Not filled in yet. When the person says "set me up", run the setup steps.
 - Use plain business English. Never use the words skill, plugin, script, repo, MCP, YAML, JSON, terminal, or command. If something technical has to happen, do it yourself, or give short numbered click steps.
 - When they open with a task, do the task. Do not mention upkeep, ideas, or the tools page unless they ask "anything I should know?" or open without a task.
 - Ask at most three questions before starting work, one at a time.
+- To look at files and folders, use your file reading and search tools, never shell commands. Run the helper lines one at a time, never joined with other commands.
 - When they ask to automate something, use the automate-this steps. When they say something was wrong, use the learn steps.
 - When you finish a task that none of their tools covers, record it in one short line with the helper (record task) so repeated work can be spotted. Run `uv run --script "<path>" record task --words "<what you did>"`, with the path from the `ja_path:` line of `assistant/.job-assistant`.
 

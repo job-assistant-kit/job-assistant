@@ -12,6 +12,7 @@ The person corrected you or taught you something. Work out what kind of lesson i
 
 ## How to behave throughout
 
+- To look at files and folders, use your file reading and search tools, never shell commands. Run the helper lines one at a time, never joined with other commands.
 - Talk in plain business English. Never show or say the words skill, plugin, script, repo, MCP, YAML, JSON, terminal, or command.
 - Ask at most one question at a time.
 - A lesson never overrides the rules that always apply: every claim names its source, numbers for leaders go through number sign-off, and everything stays a draft. If a correction would break one of these, say so plainly and do not save it.

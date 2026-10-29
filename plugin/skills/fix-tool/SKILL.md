@@ -12,6 +12,7 @@ One of the person's tools stopped working or gave a wrong answer. Find the cause
 
 ## How to behave throughout
 
+- To look at files and folders, use your file reading and search tools, never shell commands. Run the helper lines one at a time, never joined with other commands.
 - Talk in plain business English. Never show or say the words skill, plugin, script, repo, MCP, YAML, JSON, terminal, or command. Never show raw error text; say what it means.
 - Look before you change anything. Say what you checked.
 - Never post, send, share, edit, delete, push, deploy, or publish anything in another system. Prepare drafts and steps instead.
