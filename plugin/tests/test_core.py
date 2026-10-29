@@ -6,16 +6,16 @@ import pytest
 
 from ja import index, init, registry, role, workspace
 
-ROLE = "David is a business consultant for a product line. He writes briefs and reviews.\n"
+ROLE = "Sam is a business consultant for a product line. He writes briefs and reviews.\n"
 
 
 def make(tmp_path):
-    return workspace.Paths(init.create(tmp_path / "ws", name="David's Assistant").root)
+    return workspace.Paths(init.create(tmp_path / "ws", name="Sam's Assistant").root)
 
 
 def test_template_renders_with_name(tmp_path):
     text = make(tmp_path).claude_md.read_text(encoding="utf-8")
-    assert text.startswith("# David's Assistant\n")
+    assert text.startswith("# Sam's Assistant\n")
     assert "{{" not in text
     for marker in (role.START, role.END, index.START, index.END):
         assert text.count(marker) == 1

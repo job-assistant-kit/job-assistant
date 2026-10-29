@@ -68,7 +68,7 @@ def test_copy_failure_keeps_existing_empty_folder(tmp_path, monkeypatch):
 
 
 @pytest.mark.parametrize("raw, clean", [
-    ("David's assistant", "David's assistant"),
+    ("Sam's assistant", "Sam's assistant"),
     ("  <b>Ops</b>\nhelper ", "bOps/b helper"),
 ])
 def test_clean_name(raw, clean):
@@ -88,8 +88,8 @@ def test_default_name(tmp_path):
 
 def test_assistant_name_from_heading(ws):
     p = workspace.Paths(ws)
-    (ws / "CLAUDE.md").write_text("intro\n# David's Assistant\n\n# Later\n", encoding="utf-8")
-    assert workspace.assistant_name(p) == "David's Assistant"
+    (ws / "CLAUDE.md").write_text("intro\n# Sam's Assistant\n\n# Later\n", encoding="utf-8")
+    assert workspace.assistant_name(p) == "Sam's Assistant"
     (ws / "CLAUDE.md").write_text("no heading\n", encoding="utf-8")
     assert workspace.assistant_name(p) == "My Job Assistant"
     (ws / "CLAUDE.md").unlink()

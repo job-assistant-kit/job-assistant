@@ -28,7 +28,7 @@ def make(tmp_path, write_tool=None, **tool):
 
 def test_init_creates_layout(tmp_path):
     root = tmp_path / "new"
-    r = run("init", str(root), "--name", "David's assistant")
+    r = run("init", str(root), "--name", "Sam's assistant")
     assert r.returncode == 0, out(r)
     for d in (".claude/skills", "archive", "parts", "inbox", "data/records", "data/proofs", "assistant"):
         assert (root / d).is_dir(), d
@@ -39,7 +39,7 @@ def test_init_creates_layout(tmp_path):
         assert entry in lines
     claude = (root / "CLAUDE.md").read_text()
     assert "<!-- tool-index:start -->" in claude and "<!-- tool-index:end -->" in claude
-    assert "David's assistant" in claude
+    assert "Sam's assistant" in claude
     assert not (root / "gitignore").exists()
 
 

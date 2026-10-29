@@ -8,7 +8,7 @@ T = date(2026, 10, 28)
 
 
 def test_runbook_content(ws, write_tool):
-    (ws / "CLAUDE.md").write_text("# David's Assistant\n<!-- tool-index:start -->\n<!-- tool-index:end -->\n",
+    (ws / "CLAUDE.md").write_text("# Sam's Assistant\n<!-- tool-index:start -->\n<!-- tool-index:end -->\n",
                                   encoding="utf-8")
     (ws / "assistant/sources.yaml").write_text(
         "- id: faq\n  name: OLM FAQ\n  kind: living\n  where: Shared drive, FAQ folder\n  access: connector\n",
@@ -25,7 +25,7 @@ def test_runbook_content(ws, write_tool):
     out = runbook.write(p, today=T)
     assert out == ws / "RUNBOOK.md"
     text = out.read_text(encoding="utf-8")
-    assert text.startswith("# How to run David's Assistant's tools when they are away\n")
+    assert text.startswith("# How to run Sam's Assistant's tools when they are away\n")
     for part in ("## Check a brief", "Lists gaps in a brief.", '"check this brief"', '"review this brief"',
                  "The brief you drop in", "1. Export the brief as a PDF", "2. Drop it in the inbox",
                  "OLM FAQ (Shared drive, FAQ folder)", "Runs weekly", "Passed on 2026-10-27", "Working",

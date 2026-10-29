@@ -14,14 +14,13 @@ It works inside Claude Code, on a Mac or a Linux computer.
 
 ### Install
 
-1. Add the kit to Claude Code, from a local copy of this folder or from its git address:
+1. Add the kit to Claude Code:
 
    ```
-   claude plugin marketplace add /path/to/job-assistant
-   claude plugin marketplace add <git address of this repository>
+   claude plugin marketplace add job-assistant-kit/job-assistant
    ```
 
-   Use one of the two lines. With a local copy, Claude Code reads the kit from that folder, so keep the folder where it is.
+   The repository is private. The person needs read access to it, and git on their computer must be signed in to GitHub (for example with `gh auth login` and `gh auth setup-git`). To use a local copy instead, run `claude plugin marketplace add /path/to/job-assistant` and keep the folder where it is.
 
 2. Install it:
 

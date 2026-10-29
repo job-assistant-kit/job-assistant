@@ -84,11 +84,11 @@ def test_init_cannot_create(tmp_path, cli):
 
 
 def test_dashboard_title_uses_assistant_name(ws, cli):
-    (ws / "CLAUDE.md").write_text("# David's Assistant\n<!-- tool-index:start -->\n<!-- tool-index:end -->\n",
+    (ws / "CLAUDE.md").write_text("# Sam's Assistant\n<!-- tool-index:start -->\n<!-- tool-index:end -->\n",
                                   encoding="utf-8")
     assert cli("dashboard", *TODAY, cwd=ws).returncode == 0
     html = (ws / "dashboard/index.html").read_text(encoding="utf-8")
-    assert "<title>David&#39;s Assistant</title>" in html and "<h1>David&#39;s Assistant</h1>" in html
+    assert "<title>Sam&#39;s Assistant</title>" in html and "<h1>Sam&#39;s Assistant</h1>" in html
 
 
 def test_index_reports_invalid_tools(ws, write_tool, cli):
@@ -109,10 +109,10 @@ def test_role_set_cli(tmp_path, cli):
     root = tmp_path / "ws"
     assert cli("init", str(root)).returncode == 0
     card = tmp_path / "role.md"
-    card.write_text("David reviews offerings.\n", encoding="utf-8")
+    card.write_text("Sam reviews offerings.\n", encoding="utf-8")
     r = cli("role", "set", "--file", str(card), cwd=root)
     assert r.returncode == 0, r.text
-    assert "David reviews offerings." in (root / "CLAUDE.md").read_text(encoding="utf-8")
+    assert "Sam reviews offerings." in (root / "CLAUDE.md").read_text(encoding="utf-8")
     card.write_text("x" * 1700, encoding="utf-8")
     r = cli("role", "set", "--file", str(card), cwd=root)
     assert r.returncode == 1

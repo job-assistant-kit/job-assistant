@@ -36,7 +36,7 @@ class BadName(ValueError):
     """The assistant name is empty after cleaning."""
 
     def __init__(self) -> None:
-        super().__init__("The assistant name cannot be empty. Use a short name, like David's Assistant.")
+        super().__init__("The assistant name cannot be empty. Use a short name, like Sam's Assistant.")
 
 
 class CannotCreate(Exception):

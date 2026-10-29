@@ -13,10 +13,10 @@ def text(ws):
 
 def test_add_appends_with_source_and_date(ws, cli):
     (ws / "assistant/knowledge.md").write_text("# What I have been taught\n\nEach entry: the fact.\n", encoding="utf-8")
-    r = run(cli, ws, "add", "--fact", "Launch reviews happen on Tuesdays.", "--source", "per David, 2026-10-29")
+    r = run(cli, ws, "add", "--fact", "Launch reviews happen on Tuesdays.", "--source", "per Sam, 2026-10-29")
     assert r.returncode == 0, r.text
     assert "Saved" in r.stdout
-    assert text(ws).endswith("- Launch reviews happen on Tuesdays (Source: per David, 2026-10-29. Added 2026-10-29.)\n")
+    assert text(ws).endswith("- Launch reviews happen on Tuesdays (Source: per Sam, 2026-10-29. Added 2026-10-29.)\n")
     assert text(ws).startswith("# What I have been taught\n")
 
 
@@ -36,11 +36,11 @@ def test_add_keeps_one_line_and_creates_the_file(ws, cli):
 
 def test_list_and_forget(ws, cli):
     assert run(cli, ws, "list").stdout.strip() == "Nothing taught yet."
-    run(cli, ws, "add", "--fact", "Launch reviews happen on Tuesdays", "--source", "per David, 2026-10-29")
+    run(cli, ws, "add", "--fact", "Launch reviews happen on Tuesdays", "--source", "per Sam, 2026-10-29")
     run(cli, ws, "add", "--fact", "Pricing reviews happen monthly", "--source", "Pricing guide")
     r = run(cli, ws, "list")
     assert r.stdout.splitlines() == [
-        "Launch reviews happen on Tuesdays (Source: per David, 2026-10-29. Added 2026-10-29.)",
+        "Launch reviews happen on Tuesdays (Source: per Sam, 2026-10-29. Added 2026-10-29.)",
         "Pricing reviews happen monthly (Source: Pricing guide. Added 2026-10-29.)"]
     r = run(cli, ws, "forget", "reviews")
     assert r.returncode == 1 and "More than one entry matches" in r.stdout
