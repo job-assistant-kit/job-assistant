@@ -163,6 +163,8 @@ def test_tool_commands_refresh_index_and_page(ws, tmp_path, write_tool, cli):
     notes = lambda: (ws / "CLAUDE.md").read_text(encoding="utf-8")
     page = lambda: (ws / "dashboard/index.html").read_text(encoding="utf-8")
     assert "Check a brief (Draft, not checked)" in notes() and "Check a brief" in page()
+    (ws / "data/proofs/brief/case-1/inputs").mkdir(parents=True)
+    (ws / "data/proofs/brief/case-1/meta.json").write_text('{"saved": "2026-10-28", "inputs": []}', encoding="utf-8")
     assert cli("check", "brief", "--result", "pass", *TODAY, cwd=ws).returncode == 0
     assert "Check a brief (Draft, not checked)" in notes()
     assert cli("tool", "status", "brief", "working", *TODAY, cwd=ws).returncode == 0
@@ -247,7 +249,7 @@ def test_file_errors_are_plain(ws, write_tool, cli, monkeypatch):
         raise PermissionError(13, "Permission denied")
 
     monkeypatch.setattr(registry, "save", refuse)
-    for args in (("tool", "improve", "t1", "--change", "x", "--reason", "y"), ("check", "t1", "--result", "pass"),
+    for args in (("tool", "improve", "t1", "--change", "x", "--reason", "y"), ("check", "t1", "--result", "fail"),
                  ("tool", "status", "t1", "paused")):
         r = cli(*args, *TODAY, cwd=ws)
         assert r.returncode == 1, args

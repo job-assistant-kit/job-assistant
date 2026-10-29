@@ -47,8 +47,8 @@ If the correction needs the counting or matching to change, it is not a rule. Ch
 
 1. Pick a short id for the rule: lowercase words joined by hyphens, such as `unmatched-first`. Write the rule as one plain sentence that starts with a verb, such as "List unmatched rows before matched ones."
 2. Run `ja rules add --id <rule id> --text "<the rule>" --reason "<why, in their words>" --scope <tool id> --pending`.
-3. Run `ja proof run <tool id>`. If it says there are no saved examples, there is nothing to spoil: go to item 5.
-4. For each saved example it lists: read the saved input files and the saved result, then write the result again following the tool's own steps, the rules from `ja rules for <tool id>`, and the new rule. Confirm each checklist item it printed. Then compare with the saved result: the new one must keep everything the person accepted there.
+3. Run `ja proof run <tool id>`. If it says there are no saved examples, there is nothing to check against: go to item 7.
+4. For each saved example it lists: read the saved input files and the saved result, then write the result again following the tool's own steps, the rules from `ja rules for <tool id>`, and the new rule. Confirm each checklist item it printed. Then compare with the saved result: the new one must keep everything the person accepted there. If it says an example is damaged or missing its result, that example fails: go to item 6.
 5. When every example passes:
    1. Run `ja rules confirm <rule id>`.
    2. Run `ja record corrected <tool id>`.
@@ -60,6 +60,13 @@ If the correction needs the counting or matching to change, it is not a rule. Ch
    2. Tell them plainly which earlier result would get worse and how, and ask how to go on: change the wording of the rule, keep it on hold, or use it anyway.
    3. To change the wording: `ja rules forget <rule id>`, then start this step again with the new wording.
    4. To use it anyway, only on their clear yes: `ja rules confirm <rule id>`, then the same record, improve, and check lines as in item 5, with the detail "Used on your say-so although an example changes". Offer to keep the next result they accept as a new example.
+7. When the tool has no saved examples:
+   1. Confirm the rule with them in one sentence, in their words.
+   2. Run `ja rules confirm <rule id>`.
+   3. Run `ja record corrected <tool id>`.
+   4. Run `ja tool improve <tool id> --change "<the rule, in a few words>" --reason "You asked"`.
+   5. Do not run `ja check`. Nothing was checked, so no check is recorded.
+   6. Redo the result they corrected with the rule and show it. Say: "There is no saved example to check this against yet, so the change is not checked." Offer to keep the next result they accept as an example.
 
 ### 4. Look for the same lesson in other tools
 

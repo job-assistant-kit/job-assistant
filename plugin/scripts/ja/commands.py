@@ -409,6 +409,8 @@ def cmd_check(args: argparse.Namespace) -> int:
         raise Stop(f"There is no tool called {args.tool}.") from None
     except registry.InvalidTool as exc:
         raise Stop(f"I could not read this tool's record: {exc}") from None
+    if args.result == "pass" and not proof.cases(paths, tool.id):
+        raise Stop("There is no saved example to check against yet.")
     _record_check(paths, tool, args.result, args.detail or "", today)
     word = "passed" if args.result == "pass" else "failed"
     _say(f"Saved: the check of {tool.name} {word} today.")
@@ -684,6 +686,9 @@ def cmd_proof_list(args: argparse.Namespace) -> int:
     if not found:
         _say(f"There are no saved examples for {tool.name} yet.")
     for case in found:
+        if case.problem:
+            _say(f"Example {case.number}: {case.problem}")
+            continue
         n = len(case.inputs)
         _say(f"Example {case.number}, saved {case.saved}, {n} input file{'' if n == 1 else 's'}.")
     return 0
@@ -707,6 +712,10 @@ def cmd_proof_run(args: argparse.Namespace) -> int:
         outcome = proof.check_case(paths, tool, case)
         outcomes.append(outcome)
         _say(f"Example {case.number} (saved {case.saved}):")
+        if outcome.problems:
+            for problem in outcome.problems:
+                _say(f"  {problem}")
+            continue
         if outcome.failed:
             _say("  The facts changed:")
             for d in outcome.differences:
@@ -727,7 +736,9 @@ def cmd_proof_run(args: argparse.Namespace) -> int:
     if failed:
         _record_check(paths, tool, "fail", proof.failure_detail(outcomes), today)
         _say("")
-        _say(f"Saved: the check of {tool.name} failed because the facts changed.")
+        why = ("the facts changed" if any(o.differences for o in failed)
+               else "a saved example is damaged or incomplete")
+        _say(f"Saved: the check of {tool.name} failed because {why}.")
         return 1
     return 0
 

@@ -165,3 +165,103 @@ def test_saved_example_keeps_received_dates(tool, cli, tmp_path):
     assert meta["received"] == {"servicenow-export.csv": "2026-10-27", "inventory.csv": "2026-10-27"}
     r = cli("--workspace", str(tool), "proof", "run", "match")
     assert "servicenow-export.csv (received Oct 27, 2026)" in r.stdout
+
+
+COUNTED = ("import json, sys\n"
+           "rows = int(open(sys.argv[1]).read().split()[0])\n"
+           "print(json.dumps({'facts': [{'id': 'n', 'label': 'Offerings counted', 'value': 12}],"
+           " 'counts': {'rows_used': rows, 'rows_left_out': 2}}))\n")
+
+
+def saved_tool(ws, write_tool, cli, tmp_path, script=TTM, days="101\n"):
+    write_tool(ws, id="ttm", name="TTM report", last_check=None)
+    (ws / ".claude/skills/ttm/facts.py").write_text(script, encoding="utf-8")
+    data = tmp_path / "days.txt"
+    data.write_text(days, encoding="utf-8")
+    (tmp_path / "out.md").write_text("Median 101 days.\n", encoding="utf-8")
+    assert cli("--workspace", str(ws), "facts", "run", "ttm", str(data)).returncode == 0
+    assert cli("--workspace", str(ws), "proof", "save", "ttm", "--input", str(data),
+               "--output", str(tmp_path / "out.md")).returncode == 0
+    return ws / "data/proofs/ttm/case-1"
+
+
+def proof_run(cli, ws):
+    return cli("--workspace", str(ws), "--today", "2026-10-28", "proof", "run", "ttm")
+
+
+def last_check(ws):
+    return registry.find(workspace.Paths(ws), "ttm").last_check
+
+
+def test_a_pass_needs_a_saved_example(ws, write_tool, cli, tmp_path):
+    write_tool(ws, id="ttm", name="TTM report", last_check=None)
+    r = cli("--workspace", str(ws), "check", "ttm", "--result", "pass")
+    assert r.returncode == 1 and r.stderr.strip() == "There is no saved example to check against yet."
+    assert last_check(ws) is None
+    r = cli("--workspace", str(ws), "--today", "2026-10-28", "check", "ttm", "--result", "fail", "--detail", "x")
+    assert r.returncode == 0 and last_check(ws)["result"] == "fail"
+
+
+def test_missing_facts_fail_the_example(ws, write_tool, cli, tmp_path):
+    case = saved_tool(ws, write_tool, cli, tmp_path)
+    (case / "facts.json").unlink()
+    r = proof_run(cli, ws)
+    assert r.returncode == 1
+    assert "This saved example is damaged: its facts are missing." in r.stdout
+    assert last_check(ws) == {"date": "2026-10-28", "result": "fail",
+                              "detail": "Example 1: This saved example is damaged: its facts are missing"}
+
+
+def test_unreadable_facts_fail_the_example(ws, write_tool, cli, tmp_path):
+    case = saved_tool(ws, write_tool, cli, tmp_path)
+    (case / "facts.json").write_text("{not facts", encoding="utf-8")
+    r = proof_run(cli, ws)
+    assert r.returncode == 1 and "This saved example is damaged: its facts cannot be read." in r.stdout
+    assert last_check(ws)["result"] == "fail"
+
+
+def test_missing_result_fails_the_example(ws, write_tool, cli, tmp_path):
+    case = saved_tool(ws, write_tool, cli, tmp_path)
+    (case / "output.md").unlink()
+    r = proof_run(cli, ws)
+    assert r.returncode == 1 and "This saved example is missing its result." in r.stdout
+    assert last_check(ws)["result"] == "fail"
+    write_tool(ws, id="faq", name="Answer from the FAQ", last_check=None)
+    (tmp_path / "answer.md").write_text("Answer.\n", encoding="utf-8")
+    cli("--workspace", str(ws), "proof", "save", "faq", "--input", str(SYN / "slack-questions.txt"),
+        "--output", str(tmp_path / "answer.md"))
+    (ws / "data/proofs/faq/case-1/output.md").unlink()
+    r = cli("--workspace", str(ws), "--today", "2026-10-28", "proof", "run", "faq")
+    assert r.returncode == 1 and "This saved example is missing its result." in r.stdout
+    assert registry.find(workspace.Paths(ws), "faq").last_check["result"] == "fail"
+
+
+def test_damaged_details_fail_and_inputs_are_not_guessed(ws, write_tool, cli, tmp_path):
+    case = saved_tool(ws, write_tool, cli, tmp_path)
+    for broken in ("{not json", json.dumps({"saved": "2026-10-28", "inputs": "days.txt"})):
+        (case / "meta.json").write_text(broken, encoding="utf-8")
+        r = proof_run(cli, ws)
+        assert r.returncode == 1, r.text
+        assert "This saved example is damaged: its list of input files cannot be read." in r.stdout
+        assert "The facts match" not in r.stdout and proof.REWRITE not in r.stdout
+        assert last_check(ws)["result"] == "fail"
+    (case / "meta.json").unlink()
+    found = proof.cases(workspace.Paths(ws), "ttm")
+    assert found[0].inputs == [] and found[0].problem
+    assert "Example 1: This saved example is damaged" in cli("--workspace", str(ws), "proof", "list", "ttm").stdout
+
+
+def test_counts_are_compared_exactly(ws, write_tool, cli, tmp_path):
+    case = saved_tool(ws, write_tool, cli, tmp_path, script=COUNTED, days="40\n")
+    assert proof_run(cli, ws).returncode == 0
+    (case / "inputs/days.txt").write_text("41\n", encoding="utf-8")
+    r = proof_run(cli, ws)
+    assert r.returncode == 1
+    assert "The count rows_used: was 40, now 41" in r.stdout
+    assert last_check(ws)["detail"] == "Example 1: The count rows_used: was 40, now 41"
+
+
+def test_compare_counts_sentences():
+    assert proof.compare([], [], {"a": 1, "b": 2}, {"a": 1, "c": 3}) == [
+        "The count b: was 2, now no longer given", "The count c: new, now 3"]
+    assert proof.compare([], [], {"a": 1}, {"a": 1}) == []

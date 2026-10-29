@@ -24,6 +24,10 @@ from ja.workspace import Paths
 
 CASE = re.compile(r"^case-(\d+)$")
 REWRITE = "Now write the result again for this example and confirm each item above."
+DAMAGED_DETAILS = "This saved example is damaged: its list of input files cannot be read."
+FACTS_MISSING = "This saved example is damaged: its facts are missing."
+FACTS_UNREADABLE = "This saved example is damaged: its facts cannot be read."
+RESULT_MISSING = "This saved example is missing its result."
 
 
 class ProofProblem(Exception):
@@ -37,6 +41,7 @@ class Case:
     saved: str
     inputs: list[Path]
     received: dict[str, str] = field(default_factory=dict)
+    problem: str | None = None
 
     @property
     def output(self) -> Path:
@@ -53,10 +58,11 @@ class Outcome:
     compared: bool
     differences: list[str] = field(default_factory=list)
     note: str | None = None
+    problems: list[str] = field(default_factory=list)
 
     @property
     def failed(self) -> bool:
-        return bool(self.differences)
+        return bool(self.differences or self.problems)
 
 
 def tool_dir(paths: Paths, tool_id: str) -> Path:
@@ -72,18 +78,31 @@ def cases(paths: Paths, tool_id: str) -> list[Case]:
         m = CASE.match(folder.name)
         if not m or not folder.is_dir():
             continue
-        try:
-            meta = json.loads((folder / "meta.json").read_text(encoding="utf-8"))
-        except (OSError, UnicodeDecodeError, json.JSONDecodeError):
-            meta = {}
-        names = meta.get("inputs") if isinstance(meta.get("inputs"), list) else None
-        if names is None:
-            names = sorted(p.name for p in (folder / "inputs").glob("*")) if (folder / "inputs").is_dir() else []
+        meta = _meta(folder)
+        if meta is None:
+            # The saved order is part of the example; never guess it from the folder.
+            out.append(Case(number=int(m.group(1)), folder=folder, saved="unknown", inputs=[],
+                            problem=DAMAGED_DETAILS))
+            continue
         got = meta.get("received") if isinstance(meta.get("received"), dict) else {}
         got = {str(k): v for k, v in got.items() if is_date(v)}
         out.append(Case(number=int(m.group(1)), folder=folder, saved=str(meta.get("saved", "unknown")),
-                        inputs=[folder / "inputs" / n for n in names], received=got))
+                        inputs=[folder / "inputs" / n for n in meta["inputs"]], received=got))
     return sorted(out, key=lambda c: c.number)
+
+
+def _meta(folder: Path) -> dict[str, Any] | None:
+    """The example's details, or None when they cannot be read or do not list the input files."""
+    try:
+        meta = json.loads((folder / "meta.json").read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return None
+    if not isinstance(meta, dict):
+        return None
+    names = meta.get("inputs")
+    if not isinstance(names, list) or not all(isinstance(n, str) and n and Path(n).name == n for n in names):
+        return None
+    return meta
 
 
 def _ordered_like_last_run(paths: Paths, tool_id: str, files: list[Path]) -> list[Path]:
@@ -147,8 +166,12 @@ def _same(a: Any, b: Any) -> bool:
     return a == b
 
 
-def compare(saved: list[dict[str, Any]], now: list[dict[str, Any]]) -> list[str]:
-    """Plain sentences for every fact whose id, value, or unit differs. Sources and notes are ignored."""
+def compare(saved: list[dict[str, Any]], now: list[dict[str, Any]], saved_counts: dict[str, int] | None = None,
+            now_counts: dict[str, int] | None = None) -> list[str]:
+    """Plain sentences for every fact whose id, value, or unit differs, then every count that differs.
+
+    Sources and notes are ignored. Counts must match exactly.
+    """
     before = {f["id"]: f for f in saved}
     after = {f["id"]: f for f in now}
     out: list[str] = []
@@ -161,23 +184,41 @@ def compare(saved: list[dict[str, Any]], now: list[dict[str, Any]]) -> list[str]
     for fid, new in after.items():
         if fid not in before:
             out.append(f"{new['label']}: new fact, now {_shown(new)}")
+    old_counts, new_counts = saved_counts or {}, now_counts or {}
+    for name, old in old_counts.items():
+        if name not in new_counts:
+            out.append(f"The count {name}: was {old}, now no longer given")
+        elif not _same(old, new_counts[name]):
+            out.append(f"The count {name}: was {old}, now {new_counts[name]}")
+    for name, new in new_counts.items():
+        if name not in old_counts:
+            out.append(f"The count {name}: new, now {new}")
     return out
 
 
-def _saved_facts(case: Case) -> list[dict[str, Any]] | None:
+def _saved_facts(case: Case) -> dict[str, Any] | None:
     try:
-        return facts.validate(json.loads(case.facts_file.read_text(encoding="utf-8")))["facts"]
+        return facts.validate(json.loads(case.facts_file.read_text(encoding="utf-8")))
     except (OSError, UnicodeDecodeError, json.JSONDecodeError, ValueError):
         return None
 
 
 def check_case(paths: Paths, tool: Tool, case: Case) -> Outcome:
-    if not facts.has_step(paths, tool.id):
+    if case.problem:
+        return Outcome(case=case, compared=False, problems=[case.problem])
+    with_facts = facts.has_step(paths, tool.id)
+    problems = [] if case.output.is_file() else [RESULT_MISSING]
+    saved = None
+    if with_facts:
+        if not case.facts_file.is_file():
+            problems.append(FACTS_MISSING)
+        elif (saved := _saved_facts(case)) is None:
+            problems.append(FACTS_UNREADABLE)
+    if problems:
+        return Outcome(case=case, compared=False, problems=problems)
+    if not with_facts:
         return Outcome(case=case, compared=False, note="This tool has no facts step, so only the written "
                                                        "result can be checked.")
-    saved = _saved_facts(case)
-    if saved is None:
-        return Outcome(case=case, compared=False, note="This example has no saved facts to compare with.")
     missing = [p.name for p in case.inputs if not p.is_file()]
     if missing:
         return Outcome(case=case, compared=True, differences=[f"The saved file {missing[0]} is missing"])
@@ -185,7 +226,8 @@ def check_case(paths: Paths, tool: Tool, case: Case) -> Outcome:
         result = facts.run(paths, tool.id, tool.name, case.inputs)
     except facts.FactsProblem as exc:
         return Outcome(case=case, compared=True, differences=[str(exc).rstrip(".")])
-    return Outcome(case=case, compared=True, differences=compare(saved, result.facts))
+    return Outcome(case=case, compared=True, differences=compare(saved["facts"], result.facts, saved["counts"],
+                                                                 result.data["counts"]))
 
 
 def checklist(paths: Paths, tool_id: str) -> list[str]:
@@ -201,5 +243,6 @@ def failure_detail(outcomes: list[Outcome]) -> str:
     parts = []
     for o in outcomes:
         if o.failed:
-            parts.append(f"Example {o.case.number}: " + "; ".join(o.differences[:3]))
+            found = [p.rstrip(".") for p in o.problems] + o.differences
+            parts.append(f"Example {o.case.number}: " + "; ".join(found[:3]))
     return ". ".join(parts)

@@ -57,7 +57,7 @@ Run as `uv run --script plugin/scripts/ja.py <command>`. Every command accepts `
 | `ledger add ... [--replace]` / `ledger compare --metric M --value V --unit U [--json]` | Published-numbers ledger; compare warns past a 15 percent change and refuses when the unit differs from the last published number |
 | `ledger metrics [--json]` | The metrics already published, each with its unit, last period, and approval date |
 | `numbers note ...` / `numbers approve --metric M --period P [--method-notes TEXT] [--replace]` | Number sign-off note, then approval into the ledger; the note refuses when the unit differs from the last published number |
-| `check TOOL --result pass\|fail [--detail TEXT]` | Record a check result with today's date |
+| `check TOOL --result pass\|fail [--detail TEXT]` | Record a check result with today's date; a pass is refused while the tool has no saved example |
 | `role set --file PATH` | Replace the role description between its markers |
 | `settings deny NAME...` / `settings show` | Block connector write actions; list blocked and allowed actions |
 | `sources add ...` / `sources exported ID DATE` / `sources list [--json]` | The sources list and export dates |
@@ -68,7 +68,7 @@ Run as `uv run --script plugin/scripts/ja.py <command>`. Every command accepts `
 | `tool status ID STATUS` / `tool retire ID` / `tool restore ID` | Declared status, archive, restore |
 | `input check TOOL FILE...` | Check files against the tool's `input.yaml` |
 | `facts run TOOL FILE... [--json]` | Run the tool's facts step with a time limit and check its output |
-| `proof save TOOL --input FILE... --output FILE` / `proof run TOOL [--case N]` / `proof list TOOL` | Saved examples and checks against them |
+| `proof save TOOL --input FILE... --output FILE` / `proof run TOOL [--case N]` / `proof list TOOL` | Saved examples and checks against them; `proof run` compares facts and counts exactly, and fails (and records a failed check) for an example missing its result, missing or unreadable facts on a tool with a facts step, or unreadable details |
 | `part add --from FILE` / `parts [--json]` / `search WORD... [--json]` | Parts library and word search over tools and parts |
 | `rules add\|for\|confirm\|hold\|forget\|promote\|list\|similar ...` | Learned rules with staging |
 | `knowledge add --fact TEXT --source TEXT` / `knowledge list` / `knowledge forget TEXT` | Facts the person taught, with sources |
@@ -101,7 +101,7 @@ Keep these names. Later code and the person's existing folders depend on them.
 | `data/records/building/<id>.json` | Start times of builds in progress |
 | `data/ledger.jsonl` | Published numbers |
 | `data/numbers/pending.jsonl` | Numbers waiting for approval |
-| `data/proofs/<id>/case-N/` | Saved examples: `inputs/`, the accepted output, `facts.json`, `meta.json` |
+| `data/proofs/<id>/case-N/` | Saved examples: `inputs/`, the accepted output `output.md`, `facts.json` (tools with a facts step), `meta.json` ({saved, inputs: file names in run order, received}). The input order comes only from `meta.json`; when it cannot be read the example is damaged and its inputs are never guessed from the folder |
 | `data/drafts/<id>/` | Working copies of a tool's files |
 | `data/last/` | The latest facts run per tool |
 | `data/upkeep.json` | Upkeep items from the last `upkeep --write` |

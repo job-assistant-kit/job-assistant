@@ -58,7 +58,7 @@ For a tool built here:
 3. Run `ja tool files <id>`. If it reports a problem, fix the draft and run it again.
 4. Run `ja proof run <id>`. For each saved example, write the result again and confirm every checklist item it prints.
 5. Run `ja tool improve <id> --change "<what changed, in plain words>" --reason "<why, in their words>"`.
-6. Run `ja check <id> --result pass --detail "<what you checked>"` when every example passes. Otherwise run `ja check <id> --result fail --detail "<what still fails>"` and tell them what is left.
+6. Run `ja check <id> --result pass --detail "<what you checked>"` when every example passes. Otherwise run `ja check <id> --result fail --detail "<what still fails>"` and tell them what is left. If the helper says there is no saved example to check against yet, record no check. Tell them the change is not checked and offer to keep the next result they accept as an example.
 7. If the cause was a document that changed, run `ja sources checked <source id>` once every tool that uses it has passed its check again. `ja tools` shows which tools still need an update.
 
 To make a tool more reliable (offered after it has had five accepted results): the change is a facts step. Follow items 1 to 6 to add `facts.py` in the draft folder and move the counting, adding up, and matching that the tool's steps do by hand into it. Its facts must give the same answers as the saved examples.
@@ -68,7 +68,7 @@ For a tool they inherited that lives somewhere else (a shared sheet, a web app, 
 1. Write the change as a draft in the inbox folder, such as `inbox/<id>-fix.md`: what to change, where, and why.
 2. Write numbered steps they or the owner can follow to apply it. Say who to ask if they cannot.
 3. Never push, deploy, or publish the change yourself. The assistant folder blocks those actions.
-4. Once they say it works again, run `ja check <id> --result pass --detail "<what they confirmed>"`. Until then, run `ja check <id> --result fail --detail "<the cause you found>"`.
+4. Once they say it works again, run `ja check <id> --result pass --detail "<what they confirmed>"`. If the helper says there is no saved example to check against yet, record no check and tell them the fix is not checked. Until it works again, run `ja check <id> --result fail --detail "<the cause you found>"`.
 5. Run `ja tool improve <id> --change "<what changed>" --reason "<why>"` after a fix is applied.
 
 ### 5. Close
