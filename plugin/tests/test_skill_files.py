@@ -268,3 +268,22 @@ def test_learn_triggers_and_flow():
 def test_built_tools_follow_their_rules_before_writing():
     text = (PLUGIN / "templates/built-skill.md").read_text(encoding="utf-8")
     assert text.index("ja rules for {{id}}") < text.index("## Write the result") < text.index("Rules used:")
+
+
+def test_core_page_helper_line_names_a_real_action():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("ja_cli_core", PLUGIN / "scripts/ja.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    text = (PLUGIN / "templates/workspace/CLAUDE.md").read_text(encoding="utf-8")
+    found = re.findall(r'uv run --script "<path>" ([a-z-]+) ([a-z-]+) --words', text)
+    assert found == [("record", "task")]
+    args = module.build_parser().parse_args(["record", "task", "--words", "x"])
+    assert args.func.__name__ == "cmd_record_task"
+
+
+def test_new_pages_ask_one_question_at_a_time_and_stay_drafts():
+    for name in ("learn", "check-number"):
+        body = frontmatter(PLUGIN / f"skills/{name}/SKILL.md")[1]
+        assert "Never show or say the words skill, plugin, script, repo, MCP, YAML, JSON, terminal, or command." in body
+        assert "${CLAUDE_PLUGIN_ROOT}/scripts/ja.py" in body
