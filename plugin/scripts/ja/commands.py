@@ -226,6 +226,16 @@ def cmd_record_run(args: argparse.Namespace) -> int:
 
 
 @_guard
+def cmd_record_task(args: argparse.Namespace) -> int:
+    paths = _paths(args)
+    try:
+        records.add_task(paths, args.words, ts=_stamp(args))
+    except ValueError as exc:
+        raise Stop(str(exc)) from None
+    return 0
+
+
+@_guard
 def cmd_record_build(args: argparse.Namespace) -> int:
     paths = _paths(args)
     _tool_exists(paths, args.tool)

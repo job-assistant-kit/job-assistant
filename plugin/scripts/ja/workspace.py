@@ -106,6 +106,11 @@ class Paths:
         return self.data_dir / "records" / "builds.jsonl"
 
     @property
+    def tasks(self) -> Path:
+        """Work done without a tool, one short line each."""
+        return self.data_dir / "records" / "tasks.jsonl"
+
+    @property
     def ledger(self) -> Path:
         return self.data_dir / "ledger.jsonl"
 

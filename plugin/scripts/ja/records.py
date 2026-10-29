@@ -100,6 +100,18 @@ def last_run(paths: Paths, tool: str) -> str | None:
     return max(dates).isoformat() if dates else None
 
 
+def add_task(paths: Paths, words: str, ts: str | None = None) -> None:
+    """Note work done without a tool, so repeated work can be spotted later."""
+    words = " ".join(words.split())
+    if not words:
+        raise ValueError("Say what the task was in a few words.")
+    append_line(paths.tasks, {"ts": ts or now_ts(), "event": "task", "words": words})
+
+
+def tasks(paths: Paths) -> list[dict[str, Any]]:
+    return [t for t in read_lines(paths.tasks) if t.get("event") == "task" and _ts_date(t.get("ts"))]
+
+
 def add_build(paths: Paths, *, tool: str, recipe: str | None, questions: int, corrections: int,
               minutes: int, ts: str | None = None) -> None:
     for name, value in (("questions", questions), ("corrections", corrections), ("minutes", minutes)):

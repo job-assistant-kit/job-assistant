@@ -77,3 +77,16 @@ def test_count_runs_until(ws):
     records.add_run(p, "t1", "run", ts="2026-12-31T10:00:00")
     records.add_run(p, "t1", "run", ts="2027-01-01T10:00:00")
     assert records.count_runs(p, "t1", since=date(2026, 10, 1), until=date(2026, 12, 31)) == 1
+
+
+def test_record_task_appends_words(ws, cli):
+    import json as _json
+    r = cli("--workspace", str(ws), "--today", "2026-10-29", "record", "task", "--words",
+            "drafted the weekly status email")
+    assert r.returncode == 0, r.text
+    lines = (ws / "data/records/tasks.jsonl").read_text(encoding="utf-8").splitlines()
+    entry = _json.loads(lines[-1])
+    assert entry["event"] == "task" and entry["words"] == "drafted the weekly status email"
+    assert entry["ts"].startswith("2026-10-29T")
+    r = cli("--workspace", str(ws), "record", "task", "--words", "  ")
+    assert r.returncode == 1 and "Say what the task was" in r.stderr

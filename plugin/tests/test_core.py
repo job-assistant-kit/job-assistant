@@ -97,3 +97,9 @@ def test_core_size_full(tmp_path, write_tool):
     text = p.claude_md.read_text(encoding="utf-8")
     assert len(registry.load_all(p)[0]) == 15
     assert len(text) < 9000, len(text)
+
+
+def test_core_asks_for_task_records(tmp_path):
+    text = make(tmp_path).claude_md.read_text(encoding="utf-8")
+    assert ("When you finish a task that none of their tools covers, record it in one short line with the helper "
+            "(record task) so repeated work can be spotted.") in text
