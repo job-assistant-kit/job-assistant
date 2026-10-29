@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass, field
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader
 
-from ja import profile, records, registry, sources, status, workspace
+from ja import profile, records, registry, sources, status, upkeep, workspace
 from ja.workspace import Paths
 
 TEMPLATES = Path(__file__).resolve().parent / "templates"
@@ -77,15 +77,8 @@ class View:
     rule_problems: list[str] = field(default_factory=list)
 
 
-def quarter_start(today: date) -> date:
-    return date(today.year, 3 * ((today.month - 1) // 3) + 1, 1)
-
-
-def quarter_end(today: date) -> date:
-    start = quarter_start(today)
-    if start.month == 10:
-        return date(start.year, 12, 31)
-    return date(start.year, start.month + 3, 1) - timedelta(days=1)
+quarter_start = upkeep.quarter_start
+quarter_end = upkeep.quarter_end
 
 
 def short_date(iso: str, today: date) -> str:
@@ -136,6 +129,9 @@ def _state_text(rule: profile.Rule) -> str:
     return ""
 
 
+_HEADINGS = {"inbox": "Your inbox"}
+
+
 def build_view(paths: Paths, today: date, ideas: list[str] | None = None,
                now: datetime | None = None) -> View:
     now = now or datetime.now()
@@ -147,7 +143,7 @@ def build_view(paths: Paths, today: date, ideas: list[str] | None = None,
     names = {t.id: t.name for t in tools}
     since, until = quarter_start(today), quarter_end(today)
 
-    working = needs_ok = uses_quarter = 0
+    working = uses_quarter = 0
     minutes_total = 0
     has_estimate = False
     attention: list[Attention] = []
@@ -167,10 +163,8 @@ def build_view(paths: Paths, today: date, ideas: list[str] | None = None,
         if eff == "working":
             working += 1
         if eff == "needs-update":
-            needs_ok += 1
             attention.append(Attention(t.name, status.reasons(t, by_id, today), f"update {t.name}"))
         elif eff == "draft-not-checked":
-            needs_ok += 1
             if status.check_outdated(t):
                 why = status.CHANGED
             elif status.check_passed(t):
@@ -198,6 +192,15 @@ def build_view(paths: Paths, today: date, ideas: list[str] | None = None,
             ],
         ))
 
+    # Upkeep items not already shown above: tools needing an update are listed from their status.
+    notes = upkeep.items(paths, today)
+    for item in notes:
+        if item.kind == "update" or item.kind in upkeep.IDEA_KINDS:
+            continue
+        attention.append(Attention(item.name or _HEADINGS.get(item.kind, ""), [item.text], item.say))
+    if ideas is None:
+        ideas = [item.line for item in notes if item.kind in upkeep.IDEA_KINDS]
+
     learned = [
         Learned(
             text=r.text,
@@ -213,7 +216,7 @@ def build_view(paths: Paths, today: date, ideas: list[str] | None = None,
         title=workspace.assistant_name(paths),
         updated=f"{today:%b} {today.day}, {today.year}, {now.hour % 12 or 12}:{now:%M %p}",
         working=working,
-        needs_ok=needs_ok,
+        needs_ok=len(attention),
         uses_quarter=uses_quarter,
         estimate_hours=f"{minutes_total / 60:.1f} hrs" if has_estimate else None,
         attention=attention,

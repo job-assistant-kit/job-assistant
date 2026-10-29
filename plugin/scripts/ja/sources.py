@@ -236,3 +236,15 @@ def describe(paths: Paths, today: date) -> list[dict[str, Any]]:
         rows.append({**s.to_dict(), "reached": reached, "age": text, "age_days": age,
                      "stale": s.is_stale(today)})
     return rows
+
+
+def set_changed(paths: Paths, sid: str, changed: bool) -> dict[str, Any]:
+    """Mark a source as changed since its tools were checked, or clear the mark. Returns the entry."""
+    items = _read_raw(paths)
+    found = [e for e in items if isinstance(e, dict) and e.get("id") == sid]
+    if not found:
+        raise SourceProblem(f"There is no source called {sid}.")
+    for e in found:
+        e["changed"] = changed
+    _write_raw(paths, items)
+    return {**found[0], "name": found[0].get("name") or sid}

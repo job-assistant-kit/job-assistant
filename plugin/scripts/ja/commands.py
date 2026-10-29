@@ -11,10 +11,10 @@ import json
 import shutil
 import subprocess
 import sys
-from datetime import date, datetime
+from datetime import date
 from pathlib import Path
 
-from ja import facts, helper, knowledge, numbers, profile, index, inputs, init, launcher, ledger, parts, proof, records, registry, role, runbook, settings, sources, status, tools, workspace
+from ja import facts, helper, knowledge, numbers, profile, index, inputs, init, launcher, ledger, parts, proof, records, registry, role, runbook, settings, sources, status, tools, upkeep, workspace
 from ja.registry import is_date
 from ja.workspace import Paths
 
@@ -264,46 +264,56 @@ def cmd_build_start(args: argparse.Namespace) -> int:
     return 0
 
 
-BUILD_STEPS = (("record", "tool record saved", "write the tool record"),
-               ("example", "example saved", "run it on their example and save it once they say it looks right"),
-               ("check", "check recorded", "record the check"))
-
-
-def _days_ago(n: int) -> str:
-    if n <= 0:
-        return "today"
-    return "yesterday" if n == 1 else f"{n} days ago"
-
-
 @_guard
 def cmd_build_unfinished(args: argparse.Namespace) -> int:
     """Builds that were started and never recorded, with the steps already done."""
-    paths = _paths(args)
-    today = _today(args)
-    rows = []
-    for b in records.unfinished_builds(paths):
-        tool_id = b["tool"]
-        try:
-            tool = registry.find(paths, tool_id)
-        except (registry.ToolNotFound, registry.InvalidTool):
-            tool = None
-        done = {"record": tool is not None,
-                "example": bool(proof.cases(paths, tool_id)),
-                "check": tool is not None and tool.last_check is not None}
-        nxt = next((todo for key, _, todo in BUILD_STEPS if not done[key]), "record the build")
-        started = datetime.fromisoformat(b["started"]).date()
-        rows.append({"tool": tool_id, "name": tool.name if tool else tool_id, "started": b["started"],
-                     "days_ago": (today - started).days, "done": done, "next": nxt})
+    rows = upkeep.unfinished(_paths(args), _today(args))
     if args.json:
         print(json.dumps(rows, indent=2, ensure_ascii=False))
         return 0
     if not rows:
         _say("No unfinished builds.")
     for r in rows:
-        started = datetime.fromisoformat(r["started"]).date()
-        done_words = ", ".join(word for key, word, _ in BUILD_STEPS if r["done"][key]) or "nothing"
-        _say(f"{r['name']}: started {started:%b} {started.day}, {_days_ago(r['days_ago'])}. "
-             f"Done so far: {done_words}. Next: {r['next']}.")
+        _say(upkeep.unfinished_line(r))
+    return 0
+
+
+@_guard
+def cmd_upkeep(args: argparse.Namespace) -> int:
+    """What needs the person's attention, most urgent first."""
+    paths = _paths(args)
+    today = _today(args)
+    found = upkeep.items(paths, today)
+    if args.write:
+        upkeep.write(paths, found, today)
+    if args.json:
+        print(json.dumps({"items": [i.to_dict() for i in found], "watch": upkeep.watch(paths)},
+                         indent=2, ensure_ascii=False))
+        return 0
+    if not found:
+        _say("Nothing needs your attention right now.")
+    for item in found:
+        _say(item.line)
+    return 0
+
+
+@_guard
+def cmd_inbox_clean(args: argparse.Namespace) -> int:
+    """List inbox files more than 30 days old, or delete them with --yes."""
+    paths = _paths(args)
+    today = _today(args)
+    old = upkeep.old_inbox_files(paths, today)
+    if not old:
+        _say(f"No files in your inbox are more than {upkeep.INBOX_DAYS} days old.")
+        return 0
+    if args.yes:
+        n = upkeep.clean_inbox(paths, today)
+        _say(f"Deleted {n} file{'' if n == 1 else 's'} from your inbox that {'was' if n == 1 else 'were'} "
+             f"more than {upkeep.INBOX_DAYS} days old.")
+        return 0
+    _say(f"These files in your inbox are more than {upkeep.INBOX_DAYS} days old:")
+    for f in old:
+        _say(f"  {f.relative_to(paths.inbox)}")
     return 0
 
 
@@ -457,6 +467,31 @@ def cmd_sources_exported(args: argparse.Namespace) -> int:
     src = sources.load(paths)[0].get(args.id)
     _say(f"Saved: your copy of {src.name if src else args.id} is from {args.date}.")
     return 0
+
+
+def _sources_flag(args: argparse.Namespace, changed: bool) -> int:
+    paths = _paths(args)
+    today = _today(args)
+    try:
+        src = sources.set_changed(paths, args.id, changed)
+    except sources.SourceProblem as exc:
+        raise Stop(str(exc)) from None
+    _refresh(paths, today)
+    if changed:
+        _say(f"Noted: {src['name']} changed. The tools that use it need a check before you rely on them.")
+    else:
+        _say(f"Noted: the tools that use {src['name']} were checked after its change.")
+    return 0
+
+
+@_guard
+def cmd_sources_changed(args: argparse.Namespace) -> int:
+    return _sources_flag(args, True)
+
+
+@_guard
+def cmd_sources_checked(args: argparse.Namespace) -> int:
+    return _sources_flag(args, False)
 
 
 @_guard
