@@ -14,7 +14,7 @@ import sys
 from datetime import date
 from pathlib import Path
 
-from ja import facts, helper, index, inputs, init, launcher, ledger, proof, records, registry, role, runbook, settings, sources, status, tools, workspace
+from ja import facts, helper, index, inputs, init, launcher, ledger, parts, proof, records, registry, role, runbook, settings, sources, status, tools, workspace
 from ja.registry import is_date
 from ja.workspace import Paths
 
@@ -568,6 +568,52 @@ def cmd_proof_run(args: argparse.Namespace) -> int:
         _say("")
         _say(f"Saved: the check of {tool.name} failed because the facts changed.")
         return 1
+    return 0
+
+
+@_guard
+def cmd_part_add(args: argparse.Namespace) -> int:
+    paths = _paths(args)
+    try:
+        part, used = parts.add_from_file(paths, Path(args.file))
+    except parts.PartProblem as exc:
+        raise Stop(str(exc)) from None
+    for f in used:
+        _tidy_inbox(paths, f)
+    _say(f"Added the part {part.name}. New tools can reuse it.")
+    return 0
+
+
+@_guard
+def cmd_parts(args: argparse.Namespace) -> int:
+    paths = _paths(args)
+    found, problems = parts.load_all(paths)
+    if args.json:
+        print(json.dumps({"parts": [p.to_dict() for p in found], "problems": problems}, indent=2,
+                         ensure_ascii=False))
+        return 0
+    if not found and not problems:
+        _say("No parts yet.")
+    names = {t.id: t.name for t in registry.load_all(paths)[0]}
+    for part in found:
+        used = ", ".join(names.get(t, t) for t in part.used_by) or "no tools yet"
+        _say(f"{part.name} ({part.kind}, id {part.id}): {part.does} Used by: {used}.")
+    _say_problems("Parts with problems:", problems, gap=bool(found))
+    return 0
+
+
+@_guard
+def cmd_search(args: argparse.Namespace) -> int:
+    paths = _paths(args)
+    hits = parts.search(paths, " ".join(args.words), today=_today(args))
+    if args.json:
+        print(json.dumps([{"kind": h.kind, "id": h.id, "name": h.name, "score": h.score, "matched": h.matched}
+                          for h in hits], indent=2, ensure_ascii=False))
+        return 0
+    if not hits:
+        _say("Nothing similar yet. A new tool is needed.")
+    for hit in hits:
+        _say(hit.line)
     return 0
 
 

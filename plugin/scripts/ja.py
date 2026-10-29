@@ -224,6 +224,21 @@ def build_parser() -> argparse.ArgumentParser:
     pp.add_argument("tool", metavar="TOOL")
     pp.set_defaults(func=commands.cmd_proof_list)
 
+    p = sub.add_parser("part", parents=[common], help="add a shared part")
+    psub = p.add_subparsers(dest="action", metavar="action", required=True)
+    pp = psub.add_parser("add", parents=[common], help="add a part from a record file")
+    pp.add_argument("--from", dest="file", required=True, metavar="FILE")
+    pp.set_defaults(func=commands.cmd_part_add)
+
+    p = sub.add_parser("parts", parents=[common], help="list shared parts")
+    p.add_argument("--json", action="store_true", help="output for code")
+    p.set_defaults(func=commands.cmd_parts)
+
+    p = sub.add_parser("search", parents=[common], help="find tools and parts by words")
+    p.add_argument("words", nargs="+", metavar="WORD")
+    p.add_argument("--json", action="store_true", help="output for code")
+    p.set_defaults(func=commands.cmd_search)
+
     p = sub.add_parser("runbook", parents=[common], help="write the backup person's guide")
     p.set_defaults(func=commands.cmd_runbook)
 

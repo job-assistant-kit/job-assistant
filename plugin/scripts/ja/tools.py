@@ -146,10 +146,17 @@ def add_from_file(paths: Paths, file: Path, today: date) -> tuple[Tool, list[str
                 raise ToolProblem(f"{tool.id}: {key} is missing")
     if _exists(paths, tool.id):
         raise ToolProblem(f"There is already a tool called {tool.id}.")
+    from ja import parts
+
+    try:
+        used_parts = parts.check_ids(paths, tool.extra.get("parts"))
+    except parts.PartProblem as exc:
+        raise ToolProblem(str(exc)) from None
     folder = paths.skills_dir / tool.id
     folder.mkdir(parents=True)
     tool.path = folder / RECORD_NAME
     registry.save(paths, tool)
+    parts.mark_used(paths, used_parts, tool.id)
     if tool.kind == "adopted":
         (folder / SKILL_NAME).write_text(adopted_skill(tool), encoding="utf-8")
     else:
