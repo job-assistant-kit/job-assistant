@@ -56,8 +56,8 @@ If the correction needs the counting or matching to change, it is not a rule. Ch
    4. Run `ja check <tool id> --result pass --detail "Saved examples still pass with the new rule"`.
    5. Redo the result they corrected with the rule, show it, and tell them in one sentence that you will do it this way from now on.
 6. When any example fails:
-   1. Run `ja rules hold <rule id> --reason "<which example would get worse, and how>"`.
-   2. Tell them plainly which earlier result would get worse and how, and ask how to go on: change the wording of the rule, keep it on hold, or use it anyway.
+   1. Tell them plainly which earlier result would get worse and how, and ask how to go on: change the wording of the rule, keep it on hold, or use it anyway. Until they answer, the rule keeps waiting and is not used.
+   2. To keep it on hold: `ja rules hold <rule id> --reason "<which example would get worse, and how>"`. A rule on hold cannot be put in use later; to use it, add it again and check it.
    3. To change the wording: `ja rules forget <rule id>`, then start this step again with the new wording.
    4. To use it anyway, only on their clear yes: `ja rules confirm <rule id>`, then the same record, improve, and check lines as in item 5, with the detail "Used on your say-so although an example changes". Offer to keep the next result they accept as a new example.
 7. When the tool has no saved examples:
@@ -74,10 +74,10 @@ Run `ja rules similar <the rule's words>`. If an active rule for another tool sa
 
 On yes:
 
-1. Run `ja rules promote <rule id>`. The rule now waits for a check on every tool.
-2. Run `ja tools`. For every tool with saved examples, run `ja proof run <id>` and check each example as in step 3, item 4.
-3. All pass: run `ja rules confirm <rule id>`, then `ja rules forget <other rule id>`, because the rule for every tool now covers it. Tell them it now applies to all their tools.
-4. Any fail: run `ja rules hold <rule id> --reason "<which tool's example would get worse, and how>"`. The rule goes back to the tool it came from. Tell them which tool would get worse and that the rule stays where it was.
+1. Run `ja rules promote <rule id>`. It adds a copy of the rule for every tool, with its own id (it ends in `-everywhere`), that waits for a check. The rule itself stays in use on its own tool meanwhile.
+2. Run `ja tools`. For every tool with saved examples, run `ja proof run <id>` and check each example with the copy as in step 3, item 4.
+3. All pass: run `ja rules confirm <copy id>`. The copy takes the place of the rule it came from. Then run `ja rules forget <other rule id>`, because the rule for every tool now covers it. Tell them it now applies to all their tools.
+4. Any fail: run `ja rules hold <copy id> --reason "<which tool's example would get worse, and how>"`. The copy is removed and the rule stays on the tool it came from. Tell them which tool would get worse and that the rule stays where it was.
 
 On no, leave both rules as they are.
 

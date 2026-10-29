@@ -850,9 +850,12 @@ def cmd_rules_forget(args: argparse.Namespace, paths: Paths, today: date) -> str
 
 @_rule_change
 def cmd_rules_promote(args: argparse.Namespace, paths: Paths, today: date) -> str:
-    rule = profile.promote(paths, args.id)
-    return ("The rule will apply to every tool once their saved examples are checked with it. "
-            f"Until then it is waiting for a check: {rule.text}")
+    copy = profile.promote(paths, args.id)
+    names = _tool_names(paths)
+    original = next((r for r in profile.load(paths)[0] if r.id == copy.replaces), None)
+    where = _scope_words(original, names) if original else "its own tools"
+    return (f"Added {copy.id}, a copy of the rule for every tool. It waits for a check on their saved examples. "
+            f"Until then the rule stays in use for {where} only: {copy.text}")
 
 
 def _rule_row(rule: profile.Rule, names: dict[str, str]) -> dict:

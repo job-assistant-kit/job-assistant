@@ -139,37 +139,79 @@ def test_forget_clears_archived_tools_too(ws, write_tool, cli):
     assert tool_rules(ws, "match", "archive") == [] and tool.rules == ["one"]
 
 
-def test_promote_waits_for_a_check_on_every_tool(ws, write_tool, cli):
+def test_promote_makes_a_waiting_copy_and_keeps_the_original(ws, write_tool, cli):
     write_tool(ws, id="match", name="Match the lists")
     write_tool(ws, id="brief", name="Check a brief")
     add(cli, ws, "name-files", "Name both files.")
     r = run(cli, ws, "promote", "name-files")
     assert r.returncode == 0, r.text
-    saved = rules_file(ws)[0]
-    assert saved["scope"] == "everywhere" and saved["state"] == "pending" and saved["scope_before"] == ["match"]
-    assert tool_rules(ws, "match") == []
+    assert "name-files-everywhere" in r.stdout and "Match the lists" in r.stdout
+    original, copy = rules_file(ws)
+    assert original["id"] == "name-files" and original["scope"] == ["match"] and original["state"] == "active"
+    assert copy["id"] == "name-files-everywhere" and copy["scope"] == "everywhere" and copy["state"] == "pending"
+    assert copy["replaces"] == "name-files" and copy["text"] == "Name both files."
+    assert tool_rules(ws, "match") == ["name-files"]
+    assert run(cli, ws, "for", "match").stdout.strip() == "name-files: Name both files."
     assert "name-files" not in run(cli, ws, "for", "brief").stdout
-    assert run(cli, ws, "confirm", "name-files").returncode == 0
-    saved = rules_file(ws)[0]
-    assert saved["state"] == "active" and "scope_before" not in saved
-    assert "name-files" in run(cli, ws, "for", "brief").stdout
     r = run(cli, ws, "promote", "name-files")
+    assert r.returncode == 1 and "already waiting for a check on every tool" in r.stderr
+    r = run(cli, ws, "confirm", "name-files-everywhere")
+    assert r.returncode == 0, r.text
+    assert "every tool" in r.stdout
+    (only,) = rules_file(ws)
+    assert only["id"] == "name-files-everywhere" and only["state"] == "active" and only["scope"] == "everywhere"
+    assert "replaces" not in only
+    assert tool_rules(ws, "match") == []
+    assert run(cli, ws, "for", "match").stdout.strip() == "name-files-everywhere: Name both files."
+    assert "name-files" in run(cli, ws, "for", "brief").stdout
+    r = run(cli, ws, "promote", "name-files-everywhere")
     assert r.returncode == 1 and "already used everywhere" in r.stderr
 
 
-def test_promotion_held_goes_back_to_its_tool(ws, write_tool, cli):
+def test_promotion_held_removes_the_copy(ws, write_tool, cli):
     write_tool(ws, id="match", name="Match the lists")
     write_tool(ws, id="brief", name="Check a brief")
     add(cli, ws, "name-files", "Name both files.")
     run(cli, ws, "promote", "name-files")
-    r = run(cli, ws, "hold", "name-files", "--reason", "Check a brief example 1 would get worse")
+    r = run(cli, ws, "hold", "name-files-everywhere", "--reason", "Check a brief example 1 would get worse")
     assert r.returncode == 0 and "Match the lists" in r.stdout
-    saved = rules_file(ws)[0]
-    assert saved["scope"] == ["match"] and saved["state"] == "active"
+    (saved,) = rules_file(ws)
+    assert saved["id"] == "name-files" and saved["scope"] == ["match"] and saved["state"] == "active"
     assert saved["held_reason"] == "Check a brief example 1 would get worse"
     assert tool_rules(ws, "match") == ["name-files"]
     assert "name-files" in run(cli, ws, "for", "match").stdout
     assert "name-files" not in run(cli, ws, "for", "brief").stdout
+
+
+def test_promotion_without_its_original(ws, write_tool, cli):
+    write_tool(ws, id="match", name="Match the lists")
+    add(cli, ws, "name-files", "Name both files.")
+    run(cli, ws, "promote", "name-files")
+    run(cli, ws, "forget", "name-files")
+    r = run(cli, ws, "hold", "name-files-everywhere", "--reason", "An example would get worse")
+    assert r.returncode == 0, r.text
+    (saved,) = rules_file(ws)
+    assert saved["id"] == "name-files-everywhere" and saved["state"] == "held"
+
+
+def test_confirm_takes_only_waiting_rules(ws, write_tool, cli):
+    write_tool(ws, id="match", name="Match the lists")
+    add(cli, ws, "drop-blanks", "Leave out rows with blanks.", "match", "--pending")
+    run(cli, ws, "hold", "drop-blanks", "--reason", "Example 1 would lose 6 rows")
+    r = run(cli, ws, "confirm", "drop-blanks")
+    assert r.returncode == 1 and "Only a rule waiting for a check can be put in use." in r.stderr
+    assert rules_file(ws)[0]["state"] == "held"
+
+
+def test_old_promotion_still_goes_back_on_hold(ws, write_tool, cli):
+    write_tool(ws, id="match", name="Match the lists")
+    (ws / "assistant/profile.yaml").write_text(yaml.safe_dump({"rules": [
+        {"id": "name-files", "text": "Name both files.", "reason": "r", "scope": "everywhere", "added": T,
+         "state": "pending", "held_reason": None, "scope_before": ["match"]}]}), encoding="utf-8")
+    r = run(cli, ws, "hold", "name-files", "--reason", "worse")
+    assert r.returncode == 0, r.text
+    saved = rules_file(ws)[0]
+    assert saved["scope"] == ["match"] and saved["state"] == "active"
 
 
 def test_promote_refuses_a_pending_rule(ws, write_tool, cli):

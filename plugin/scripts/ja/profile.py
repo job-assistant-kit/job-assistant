@@ -4,6 +4,10 @@ A new rule can wait for a check (pending) before it is used. The learning steps 
 tool's saved examples with the rule, then confirm it (active) or put it on hold (held).
 Only active rules are ever used. Active rules scoped to tools are also listed in those
 tools' records, so a tool folder carries the rules it depends on.
+
+Promoting a rule to every tool adds a waiting copy scoped everywhere; the original stays in
+use on its own tools until the copy is confirmed (the copy replaces it) or held (the copy
+is removed). So a rule is never out of use while it waits.
 """
 
 from __future__ import annotations
@@ -38,6 +42,7 @@ class Rule:
     state: str = "active"
     held_reason: str | None = None
     scope_before: list[str] | None = None
+    replaces: str | None = None
 
     @property
     def everywhere(self) -> bool:
@@ -56,6 +61,8 @@ class Rule:
                                "added": self.added, "state": self.state, "held_reason": self.held_reason}
         if self.scope_before is not None:
             out["scope_before"] = self.scope_before
+        if self.replaces is not None:
+            out["replaces"] = self.replaces
         return out
 
 
@@ -78,13 +85,15 @@ def _first_problem(d: dict[str, Any]) -> str | None:
         return "held_reason must be text or empty"
     if d.get("scope_before") is not None and not _is_tool_list(d["scope_before"]):
         return "scope_before must be a list of tools"
+    if d.get("replaces") is not None and not isinstance(d["replaces"], str):
+        return "replaces must be a rule id"
     return None
 
 
 def _from_dict(item: dict[str, Any]) -> Rule:
     return Rule(id=item["id"], text=item["text"], reason=item["reason"], scope=item["scope"],
                 added=item["added"], state=item.get("state") or "active", held_reason=item.get("held_reason"),
-                scope_before=item.get("scope_before"))
+                scope_before=item.get("scope_before"), replaces=item.get("replaces"))
 
 
 def load(paths: Paths) -> tuple[list[Rule], list[str]]:
@@ -215,14 +224,29 @@ def applying(paths: Paths, tool_id: str) -> list[Rule]:
     return mine + [r for r in rules if r.applies_to(tool_id) and r.everywhere]
 
 
+def _index(raw: dict[str, Any], rule_id: str | None) -> int | None:
+    for n, item in enumerate(raw["rules"]):
+        if isinstance(item, dict) and item.get("id") == rule_id:
+            return n
+    return None
+
+
 def confirm(paths: Paths, rule_id: str) -> Rule:
-    """A rule waiting for a check, or on hold, becomes active."""
+    """A rule waiting for a check becomes active. A copy made by promote replaces its original."""
     raw = _read_raw(paths)
     n, rule = _find(raw, rule_id)
     if rule.active:
         raise RuleProblem(f"The rule {rule_id} is already in use.")
-    rule.state, rule.held_reason, rule.scope_before = "active", None, None
-    _save(paths, raw, n, rule)
+    if rule.state != "pending":
+        raise RuleProblem(f"Only a rule waiting for a check can be put in use. The rule {rule_id} is on hold.")
+    original = rule.replaces
+    rule.state, rule.held_reason, rule.scope_before, rule.replaces = "active", None, None, None
+    raw["rules"][n] = rule.to_dict()
+    m = _index(raw, original) if original else None
+    if m is not None:
+        del raw["rules"][m]
+    _write_raw(paths, raw)
+    sync_tools(paths, {original} if m is not None else None)
     return rule
 
 
@@ -240,26 +264,48 @@ def hold(paths: Paths, rule_id: str, reason: str) -> Rule:
     if rule.state != "pending":
         raise RuleProblem(f"Only a rule waiting for a check can be put on hold. The rule {rule_id} is "
                           + ("in use." if rule.active else "already on hold."))
+    m = _index(raw, rule.replaces) if rule.replaces else None
+    if m is not None:
+        # A copy waiting to be used everywhere: drop it, and keep the original in use on its tools.
+        _, original = _find(raw, rule.replaces)
+        original.held_reason = reason
+        raw["rules"][m] = original.to_dict()
+        del raw["rules"][n]
+        _write_raw(paths, raw)
+        sync_tools(paths, {rule.id})
+        return original
     if rule.scope_before is not None:
+        # Promoted by an earlier version, which changed the rule in place.
         rule.scope, rule.scope_before, rule.state = rule.scope_before, None, "active"
     else:
-        rule.state = "held"
+        rule.state, rule.replaces = "held", None
     rule.held_reason = reason
     _save(paths, raw, n, rule)
     return rule
 
 
 def promote(paths: Paths, rule_id: str) -> Rule:
-    """An active rule for some tools becomes a rule for every tool, waiting for a check on all of them."""
+    """Add a copy of an active tool rule for every tool, waiting for a check on all of them.
+
+    The original stays in use on its own tools until the copy is confirmed or held.
+    """
     raw = _read_raw(paths)
     n, rule = _find(raw, rule_id)
     if rule.everywhere:
         raise RuleProblem(f"The rule {rule_id} is already used everywhere.")
     if not rule.active:
         raise RuleProblem(f"The rule {rule_id} is not in use yet. Check it on its own tool first.")
-    rule.scope_before, rule.scope, rule.state, rule.held_reason = list(rule.scope), EVERYWHERE, "pending", None
-    _save(paths, raw, n, rule)
-    return rule
+    if any(isinstance(e, dict) and e.get("replaces") == rule_id for e in raw["rules"]):
+        raise RuleProblem(f"The rule {rule_id} is already waiting for a check on every tool.")
+    known = _known_ids(raw)
+    copy_id, k = f"{rule_id}-everywhere", 2
+    while copy_id in known:
+        copy_id, k = f"{rule_id}-everywhere-{k}", k + 1
+    copy = Rule(id=copy_id, text=rule.text, reason=rule.reason, scope=EVERYWHERE, added=rule.added,
+                state="pending", replaces=rule_id)
+    raw["rules"].insert(n + 1, copy.to_dict())
+    _write_raw(paths, raw)
+    return copy
 
 
 def forget(paths: Paths, rule_id: str) -> Rule:
