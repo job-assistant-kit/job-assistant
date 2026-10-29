@@ -80,11 +80,31 @@ def latest(paths: Paths, metric: str) -> dict[str, Any] | None:
     return best
 
 
-def compare(paths: Paths, metric: str, value: Number) -> dict[str, Any]:
+class UnitMismatch(ValueError):
+    """The new number is in another unit than the last published one. The message is plain."""
+
+
+def _unit_words(unit: str) -> str:
+    if not unit.strip():
+        return "has no unit"
+    return f"is in {unit.strip()}"
+
+
+def check_unit(prev: dict[str, Any], unit: str) -> None:
+    """Refuse a comparison across units. Case and spaces around the unit do not count."""
+    before = str(prev.get("unit") or "")
+    if before.strip().casefold() == (unit or "").strip().casefold():
+        return
+    raise UnitMismatch(f"The last published number {_unit_words(before)} and this one "
+                       f"{_unit_words(unit or '')}. I cannot compare them. Check which unit is right.")
+
+
+def compare(paths: Paths, metric: str, value: Number, unit: str) -> dict[str, Any]:
     _check_number(value)
     prev = latest(paths, metric)
     if prev is None:
         return {"previous": None}
+    check_unit(prev, unit)
     value = _tidy(value)
     previous = prev["value"]
     change = _tidy(round(value - previous, 10))

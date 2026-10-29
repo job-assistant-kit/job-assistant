@@ -106,18 +106,18 @@ def test_record_unknown_tool(tmp_path):
 
 def test_ledger_add_and_compare(tmp_path):
     root = make(tmp_path)
-    r = run("ledger", "compare", "--metric", "ttm-days", "--value", "94", *TODAY, cwd=root)
+    r = run("ledger", "compare", "--metric", "ttm-days", "--value", "94", "--unit", "days", *TODAY, cwd=root)
     assert r.returncode == 0 and "No published value yet" in r.stdout
     r = run("ledger", "add", "--metric", "ttm-days", "--period", "2026-Q2", "--value", "112", "--unit", "days",
             "--source", "metrics-latest.json", "--method-notes", "Rows without awareness date excluded",
             "--tool", "ttm", "--date", "2026-07-10", *TODAY, cwd=root)
     assert r.returncode == 0, out(r)
-    r = run("ledger", "compare", "--metric", "ttm-days", "--value", "94", *TODAY, cwd=root)
+    r = run("ledger", "compare", "--metric", "ttm-days", "--value", "94", "--unit", "days", *TODAY, cwd=root)
     assert r.stdout.strip().splitlines() == [
         "Last published: 112 days for 2026-Q2. Change: -18 (-16.1%).",
         "This is a big change. Check the method before sending.",
     ]
-    r = run("ledger", "compare", "--metric", "ttm-days", "--value", "94", "--json", *TODAY, cwd=root)
+    r = run("ledger", "compare", "--metric", "ttm-days", "--value", "94", "--unit", "days", "--json", *TODAY, cwd=root)
     assert json.loads(r.stdout)["previous"] == 112
 
 
@@ -169,7 +169,7 @@ def test_bad_today(tmp_path):
 
 def test_outside_workspace(tmp_path):
     for args in (("tools",), ("index",), ("dashboard",), ("record", "run", "t1"), ("check", "t1", "--result", "pass"),
-                 ("ledger", "compare", "--metric", "m", "--value", "1")):
+                 ("ledger", "compare", "--metric", "m", "--value", "1", "--unit", "n")):
         r = run(*args, *TODAY, cwd=tmp_path)
         assert r.returncode == 1, args
         assert NOT_FOUND in out(r), args

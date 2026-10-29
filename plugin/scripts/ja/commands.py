@@ -335,7 +335,10 @@ def cmd_ledger_add(args: argparse.Namespace) -> int:
 @_guard
 def cmd_ledger_compare(args: argparse.Namespace) -> int:
     paths = _paths(args)
-    result = ledger.compare(paths, args.metric, args.value)
+    try:
+        result = ledger.compare(paths, args.metric, args.value, args.unit)
+    except ledger.UnitMismatch as exc:
+        raise Stop(str(exc)) from None
     if args.json:
         print(json.dumps(result, indent=2, ensure_ascii=False))
     else:

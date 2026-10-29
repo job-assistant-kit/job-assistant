@@ -33,7 +33,7 @@ Below, `ja <action>` means that line. Run each helper line on its own, from the 
 
 You need: the metric (a short name, such as `ttm-days`), the value, the unit, the period (such as `2026-Q3`), and the tool that made it. When a tool just ran, take them from its facts step: the facts it printed, and its counts of rows used, left out, and in total.
 
-If the person brings a number no tool made, ask where it came from. Without a tool you can still run `ja ledger compare --metric <metric> --value <value>` and read the method, but the number cannot be saved as approved. Offer to build a tool for it with the automate-this steps.
+If the person brings a number no tool made, ask where it came from. Without a tool you can still run `ja ledger compare --metric <metric> --value <value> --unit <unit>` and read the method, but the number cannot be saved as approved. Offer to build a tool for it with the automate-this steps.
 
 ### 2. Find the method document
 
@@ -55,6 +55,8 @@ ja numbers note --metric <metric> --value <value> --unit <unit> --period <period
 ```
 
 Leave out `--excluded` and `--total` only when the facts step gives no such counts.
+
+If the helper says the unit differs from the last published number, stop and tell the person. Ask which unit is right. Do not convert the number yourself.
 
 ### 5. Show the person
 

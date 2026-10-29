@@ -116,3 +116,13 @@ def test_approve_without_notes_names_the_method(ws, write_tool, cli):
     note(cli, ws)
     cli("--workspace", str(ws), "--today", T, "numbers", "approve", "--metric", "ttm-days", "--period", "2026-Q3")
     assert ledger.latest(workspace.Paths(ws), "ttm-days")["method_notes"] == "Method: TTM Methodology Explainer."
+
+
+def test_note_refuses_another_unit(ws, write_tool, cli):
+    seed(ws, write_tool)
+    r = cli("--workspace", str(ws), "--today", T, "numbers", "note", "--metric", "ttm-days", "--value", "94",
+            "--unit", "%", "--period", "2026-Q3", "--tool", "ttm", "--method-source", "ttm-method")
+    assert r.returncode == 1
+    assert r.stderr.strip() == ("The last published number is in days and this one is in %. "
+                                "I cannot compare them. Check which unit is right.")
+    assert pending(ws) == []

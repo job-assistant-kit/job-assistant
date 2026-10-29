@@ -101,7 +101,10 @@ def note(paths: Paths, *, metric: str, value: ledger.Number, unit: str, period: 
     src = by_id.get(method_source)
     if src is None:
         raise NumberProblem(f"The method document {method_source} is not on your sources list. Add it first.")
-    comparison = ledger.compare(paths, metric, value)
+    try:
+        comparison = ledger.compare(paths, metric, value, unit)
+    except ledger.UnitMismatch as exc:
+        raise NumberProblem(str(exc)) from None
     unit_text = f" {unit}" if unit else ""
     method, reachable = method_line(src, today)
     lines = [f"{metric}: {_num(value)}{unit_text} for {period}, from {tool.name}.", ledger.describe(comparison)]

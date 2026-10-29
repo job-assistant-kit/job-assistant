@@ -54,8 +54,8 @@ Run as `uv run --script plugin/scripts/ja.py <command>`. Every command accepts `
 | `record build --tool T --questions N --corrections N [--recipe R] [--minutes N]` | Record a finished build; minutes come from `build start` when not given |
 | `build start --id ID` | Note when a build started |
 | `build unfinished [--json]` | Builds started and not recorded, with the steps done and the next one |
-| `ledger add ...` / `ledger compare --metric M --value V [--json]` | Published-numbers ledger; compare warns past a 15 percent change |
-| `numbers note ...` / `numbers approve --metric M --period P [--method-notes TEXT]` | Number sign-off note, then approval into the ledger |
+| `ledger add ...` / `ledger compare --metric M --value V --unit U [--json]` | Published-numbers ledger; compare warns past a 15 percent change and refuses when the unit differs from the last published number |
+| `numbers note ...` / `numbers approve --metric M --period P [--method-notes TEXT]` | Number sign-off note, then approval into the ledger; the note refuses when the unit differs from the last published number |
 | `check TOOL --result pass\|fail [--detail TEXT]` | Record a check result with today's date |
 | `role set --file PATH` | Replace the role description between its markers |
 | `settings deny NAME...` / `settings show` | Block connector write actions; list blocked and allowed actions |

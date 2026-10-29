@@ -38,7 +38,7 @@ def test_record_honors_today(ws, write_tool, cli):
 
 def test_ledger_value_not_a_number(ws, cli):
     for bad in ("nan", "inf", "ninety"):
-        r = cli("ledger", "compare", "--metric", "m", "--value", bad, *TODAY, cwd=ws)
+        r = cli("ledger", "compare", "--metric", "m", "--value", bad, "--unit", "n", *TODAY, cwd=ws)
         assert r.returncode == 1
         assert r.stderr.strip() == "The value must be a number, like 94 or 12.5."
         assert "usage:" not in r.text

@@ -135,6 +135,7 @@ def build_parser() -> argparse.ArgumentParser:
     lp = lsub.add_parser("compare", parents=[common], help="compare with the last published value")
     lp.add_argument("--metric", required=True)
     lp.add_argument("--value", type=number, required=True)
+    lp.add_argument("--unit", required=True)
     lp.add_argument("--json", action="store_true", help="output for code")
     lp.set_defaults(func=commands.cmd_ledger_compare)
 
