@@ -113,7 +113,10 @@ def test_ledger_add_and_compare(tmp_path):
             "--tool", "ttm", "--date", "2026-07-10", *TODAY, cwd=root)
     assert r.returncode == 0, out(r)
     r = run("ledger", "compare", "--metric", "ttm-days", "--value", "94", *TODAY, cwd=root)
-    assert r.stdout.strip() == "Last published: 112 days for 2026-Q2. Change: -18 (-16.1%)."
+    assert r.stdout.strip().splitlines() == [
+        "Last published: 112 days for 2026-Q2. Change: -18 (-16.1%).",
+        "This is a big change. Check the method before sending.",
+    ]
     r = run("ledger", "compare", "--metric", "ttm-days", "--value", "94", "--json", *TODAY, cwd=root)
     assert json.loads(r.stdout)["previous"] == 112
 
