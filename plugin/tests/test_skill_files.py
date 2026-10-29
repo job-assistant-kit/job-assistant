@@ -39,7 +39,7 @@ RECIPE_HEADINGS = ["When it fits", "What to ask", "Inputs and checks", "Facts st
 
 
 def test_there_are_skills():
-    assert [p.parent.name for p in SKILLS] == ["automate-this", "check-number", "fix-tool", "set-me-up"]
+    assert [p.parent.name for p in SKILLS] == ["automate-this", "check-number", "fix-tool", "learn", "set-me-up"]
 
 
 def test_frontmatter_valid():
@@ -248,3 +248,23 @@ def test_exec_number_tools_point_to_the_sign_off_steps():
     assert "follow the check-number steps" in text and "this tool (ttm-report)" in text
     automate = (PLUGIN / "skills/automate-this/SKILL.md").read_text(encoding="utf-8")
     assert "follow the check-number steps" in automate
+
+
+def test_learn_triggers_and_flow():
+    front, body = frontmatter(PLUGIN / "skills/learn/SKILL.md")
+    for phrase in ("that was wrong", "change it so", "always", "never", "remember that", "what have you learned",
+                   "forget that"):
+        assert phrase in front["description"]
+    order = ["ja tools", "ja knowledge add", "Should I do it this way every time?", "ja rules add", "--pending",
+             "ja proof run <tool id>", "ja rules confirm <rule id>", "ja record corrected <tool id>",
+             "ja tool improve <tool id>", "ja check <tool id> --result pass", "ja rules hold <rule id>",
+             "ja rules similar", "Should I do this everywhere?", "ja rules promote", "ja rules list",
+             "ja knowledge list", "ja rules forget <rule id>`.", "ja knowledge forget"]
+    positions = [body.index(step) for step in order]
+    assert positions == sorted(positions)
+    assert "never overrides the rules that always apply" in body
+
+
+def test_built_tools_follow_their_rules_before_writing():
+    text = (PLUGIN / "templates/built-skill.md").read_text(encoding="utf-8")
+    assert text.index("ja rules for {{id}}") < text.index("## Write the result") < text.index("Rules used:")

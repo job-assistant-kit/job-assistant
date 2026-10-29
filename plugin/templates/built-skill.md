@@ -36,6 +36,10 @@ Run `ja facts run {{id}} <files>`. Use the facts exactly as it prints them, with
 
 It also prints when each file was received. In the result, give each file's export date if the person told you. Otherwise write "Export date: unknown" and the date it was received.
 
+## Learned rules
+
+Run `ja rules for {{id}}` before you write the result. Follow every rule it prints. They come from the person's own corrections.
+
 ## Write the result
 
 <!-- fill: how to write the result. Say what goes in it, in what order, for which reader, and where each fact goes. -->
@@ -43,6 +47,6 @@ It also prints when each file was received. In the result, give each file's expo
 ## Finish
 
 1. Check the result against every item in `checklist.yaml` in this folder before showing it.
-2. End with "Sources:" naming each source used. When learned rules were applied, add "Rules used:" with their short names.
+2. End with "Sources:" naming each source used. When `ja rules for {{id}}` printed rules, add "Rules used:" with the short name of each one you followed.
 3. Ask: "Does this look right?" On corrections, fix the result and show it again.
 4. When they say it looks right, run `ja record accepted {{id}}`. Offer to keep it as an example for future checks. On yes, save the result as `inbox/{{id}}-result.md` and run `ja proof save {{id}} --input <files> --output inbox/{{id}}-result.md`.
