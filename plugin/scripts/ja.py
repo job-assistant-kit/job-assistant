@@ -113,6 +113,9 @@ def build_parser() -> argparse.ArgumentParser:
     bp = bsub.add_parser("start", parents=[common], help="note when building a tool started")
     bp.add_argument("--id", required=True, metavar="ID")
     bp.set_defaults(func=commands.cmd_build_start)
+    bp = bsub.add_parser("unfinished", parents=[common], help="list builds that were started and not finished")
+    bp.add_argument("--json", action="store_true", help="output for code")
+    bp.set_defaults(func=commands.cmd_build_unfinished)
 
     p = sub.add_parser("ledger", parents=[common], help="published-numbers ledger")
     lsub = p.add_subparsers(dest="action", metavar="action", required=True)

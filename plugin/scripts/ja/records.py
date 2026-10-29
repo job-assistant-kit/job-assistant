@@ -143,3 +143,27 @@ def end_build(paths: Paths, tool: str) -> None:
         _building_file(paths, tool).unlink()
     except FileNotFoundError:
         pass
+
+
+def unfinished_builds(paths: Paths) -> list[dict[str, str]]:
+    """Builds that were started and have no build record since, oldest first."""
+    if not paths.building_dir.is_dir():
+        return []
+    recorded: dict[str, list[datetime]] = {}
+    for b in builds(paths):
+        try:
+            recorded.setdefault(str(b.get("tool")), []).append(datetime.fromisoformat(b["ts"]))
+        except (KeyError, TypeError, ValueError):
+            continue
+    out = []
+    for f in sorted(paths.building_dir.glob("*.json")):
+        try:
+            data = json.loads(f.read_text(encoding="utf-8"))
+            started = datetime.fromisoformat(data["started"])
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError, KeyError, TypeError, ValueError):
+            continue
+        tool = f.stem
+        if any(ts >= started for ts in recorded.get(tool, [])):
+            continue
+        out.append({"tool": tool, "started": started.isoformat()})
+    return sorted(out, key=lambda b: b["started"])

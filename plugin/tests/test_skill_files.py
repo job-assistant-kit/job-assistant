@@ -134,7 +134,7 @@ def test_automate_this_names_every_recipe():
 
 def test_automate_this_flow():
     text = (PLUGIN / "skills/automate-this/SKILL.md").read_text(encoding="utf-8")
-    order = ["ja build start", "ja search", "Does this contain anything confidential, such as unannounced "
+    order = ["ja build unfinished", "Shall I finish it?", "ja build start", "ja search", "Does this contain anything confidential, such as unannounced "
              "offerings, partners, or pricing?", "ja tool add --from data/drafts/", "ja tool files",
              "ja input check", "ja facts run", "Does this look right?", "ja proof save", "ja proof run",
              "ja check <id> --result pass", "ja tool status <id> working", "ja record build"]

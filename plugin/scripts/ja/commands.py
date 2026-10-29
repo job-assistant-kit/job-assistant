@@ -11,7 +11,7 @@ import json
 import shutil
 import subprocess
 import sys
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 
 from ja import facts, helper, index, inputs, init, launcher, ledger, parts, proof, records, registry, role, runbook, settings, sources, status, tools, workspace
@@ -249,8 +249,51 @@ def cmd_build_start(args: argparse.Namespace) -> int:
     paths = _paths(args)
     if not registry.ID_PATTERN.match(args.id):
         raise Stop("The tool id must use only lowercase letters, numbers, and hyphens.")
-    records.start_build(paths, args.id)
+    records.start_build(paths, args.id, ts=_stamp(args))
     _say("Noted the start time for this build.")
+    return 0
+
+
+BUILD_STEPS = (("record", "tool record saved", "write the tool record"),
+               ("example", "example saved", "run it on their example and save it once they say it looks right"),
+               ("check", "check recorded", "record the check"))
+
+
+def _days_ago(n: int) -> str:
+    if n <= 0:
+        return "today"
+    return "yesterday" if n == 1 else f"{n} days ago"
+
+
+@_guard
+def cmd_build_unfinished(args: argparse.Namespace) -> int:
+    """Builds that were started and never recorded, with the steps already done."""
+    paths = _paths(args)
+    today = _today(args)
+    rows = []
+    for b in records.unfinished_builds(paths):
+        tool_id = b["tool"]
+        try:
+            tool = registry.find(paths, tool_id)
+        except (registry.ToolNotFound, registry.InvalidTool):
+            tool = None
+        done = {"record": tool is not None,
+                "example": bool(proof.cases(paths, tool_id)),
+                "check": tool is not None and tool.last_check is not None}
+        nxt = next((todo for key, _, todo in BUILD_STEPS if not done[key]), "record the build")
+        started = datetime.fromisoformat(b["started"]).date()
+        rows.append({"tool": tool_id, "name": tool.name if tool else tool_id, "started": b["started"],
+                     "days_ago": (today - started).days, "done": done, "next": nxt})
+    if args.json:
+        print(json.dumps(rows, indent=2, ensure_ascii=False))
+        return 0
+    if not rows:
+        _say("No unfinished builds.")
+    for r in rows:
+        started = datetime.fromisoformat(r["started"]).date()
+        done_words = ", ".join(word for key, word, _ in BUILD_STEPS if r["done"][key]) or "nothing"
+        _say(f"{r['name']}: started {started:%b} {started.day}, {_days_ago(r['days_ago'])}. "
+             f"Done so far: {done_words}. Next: {r['next']}.")
     return 0
 
 

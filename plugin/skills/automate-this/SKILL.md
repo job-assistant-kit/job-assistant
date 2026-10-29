@@ -33,6 +33,8 @@ The tool's own folder (`.claude/skills/<id>/`) is protected: never write there y
 
 ### 1. Start
 
+First run `ja build unfinished`. If it lists a build, ask: "You started <name> on <date>. Shall I finish it?" On yes, use that id, skip `ja build start`, and pick up at the step it names as next: write the tool record (step 5), run it on their example (step 6), or record the check and the build (step 7). Read the tool's files in `data/drafts/<id>/` and its saved example, if any, before you go on. On no, start the new request below.
+
 Pick a short id for the new tool: lowercase words joined by hyphens that say what it does, such as `match-offering-lists`. Run `ja build start --id <id>`.
 
 Read what they gave you:
