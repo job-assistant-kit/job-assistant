@@ -11,6 +11,7 @@ It works inside Claude Code, on a Mac or a Linux computer.
 - Claude Code, installed and signed in. Version 2.1.295 or later is best: older versions ask before each save to Drive if the Drive check fails to run.
 - uv, the program that runs the assistant's helper. Install it from https://docs.astral.sh/uv/.
 - git, for version history of the assistant folder. Without git the assistant still works, with no history.
+- Optional: Google Drive connected in your claude.ai account settings (Connectors), for the drafts folder in Drive. This works only when Claude Code signs in with a claude.ai account. When it signs in through Google Vertex AI, Amazon Bedrock, or an API key, connectors do not appear and drafts stay in the assistant folder.
 
 ### Install
 
@@ -28,7 +29,7 @@ It works inside Claude Code, on a Mac or a Linux computer.
    claude plugin install job-assistant@job-assistant
    ```
 
-3. Check that `claude plugin list` shows `job-assistant`.
+3. Check that `claude plugin list` shows `job-assistant`, then start a new Claude session. If you installed or updated from inside a running session, run `/reload-plugins` there instead.
 
 ### Update
 
@@ -36,6 +37,8 @@ It works inside Claude Code, on a Mac or a Linux computer.
 claude plugin marketplace update job-assistant
 claude plugin update job-assistant@job-assistant
 ```
+
+Then start a new session, or run `/reload-plugins` in an open one.
 
 Then close and reopen Claude Code. An update never changes the person's assistant folder: their tools, rules, sources, and files stay as they are.
 

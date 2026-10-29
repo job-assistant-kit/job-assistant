@@ -335,7 +335,8 @@ def test_pages_that_read_files_forbid_shell_looking():
 def test_drive_drafts_steps():
     setup = (PLUGIN / "skills/set-me-up/SKILL.md").read_text(encoding="utf-8")
     for line in ("ja drive start", "ja drive set --folder", "ja drive off", "inheritedPermissionsDisabled",
-                 "The one exception is creating the drafts folder", "so do not judge by whether you can see it"):
+                 "The one exception is creating the drafts folder", "so do not judge by whether you can see it", "save my drafts to Drive",
+                 "claude.ai connectors are not available"):
         assert line in setup, line
     assert "start or stop saving drafts to Google Drive" in setup.split("---")[1]
     for page in ("templates/built-skill.md", "skills/automate-this/SKILL.md"):

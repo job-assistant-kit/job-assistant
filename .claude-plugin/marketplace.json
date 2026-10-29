@@ -11,7 +11,7 @@
       "name": "job-assistant",
       "description": "Build and keep the automations your job needs, from plain requests.",
       "source": "./plugin",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "category": "productivity",
       "tags": [
         "automation",

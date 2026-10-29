@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -1073,13 +1074,37 @@ def cmd_launcher(args: argparse.Namespace) -> int:
 PROGRAMS = ("git", "python3", "uv", "claude")
 
 
+# claude.ai connectors (such as Google Drive) reach Claude Code only when it signs in with a
+# claude.ai account. These settings send it through another route, where they never appear.
+OTHER_ROUTES = (("CLAUDE_CODE_USE_VERTEX", "Google Vertex AI"), ("CLAUDE_CODE_USE_BEDROCK", "Amazon Bedrock"),
+                ("CLAUDE_CODE_USE_FOUNDRY", "Microsoft Foundry"))
+
+
+def sign_in_route() -> str | None:
+    """The route Claude Code signs in through when it is not a claude.ai account, else None."""
+    for name, route in OTHER_ROUTES:
+        if os.environ.get(name, "").strip().lower() in ("1", "true", "yes"):
+            return route
+    if os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN"):
+        return "an API key"
+    return None
+
+
 @_guard
 def cmd_env(args: argparse.Namespace) -> int:
-    """Which programs the assistant relies on are installed. Changes nothing."""
-    found = {name: shutil.which(name) is not None for name in PROGRAMS}
+    """Which programs the assistant relies on are installed, and whether claude.ai connectors can appear."""
+    found: dict[str, object] = {name: shutil.which(name) is not None for name in PROGRAMS}
+    route = sign_in_route()
     if args.json:
+        found["claude_ai_connectors"] = route is None
+        found["sign_in_route"] = route
         print(json.dumps(found, indent=2))
         return 0
     for name in PROGRAMS:
         _say(f"{name}: {'installed' if found[name] else 'not installed'}")
+    if route:
+        _say(f"claude.ai connectors: not available. Claude signs in through {route}, so connectors such as "
+             "Google Drive cannot be added.")
+    else:
+        _say("claude.ai connectors: available when connected in claude.ai.")
     return 0

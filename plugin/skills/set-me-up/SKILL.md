@@ -71,7 +71,7 @@ Tell them in one or two sentences what you can read, and that changes to their o
 
 ### 5b. Drafts folder in Drive (optional)
 
-Do this only when Google Drive is connected: some tool names contain `Google_Drive`. The Drive create action is blocked, and so hidden from you, until step 1 below unblocks it, so do not judge by whether you can see it. If no Drive tools are connected, skip this step, and if they ask for it, tell them to connect Google Drive in Claude first.
+Skip this step without mentioning Drive when `ja env` said claude.ai connectors are not available; the drafts folder cannot work there. Otherwise do it only when Google Drive is connected: some tool names contain `Google_Drive`. The Drive create action is blocked, and so hidden from you, until step 1 below unblocks it, so do not judge by whether you can see it. If no Drive tools are connected, say in one sentence: "If you connect Google Drive in your Claude account settings later, I can save the drafts you approve into a private folder there. Just say 'save my drafts to Drive'." Then go on to step 6.
 
 Ask: "Would you like me to save each result you approve into a private folder in your Google Drive? You would find every draft there, ready to open and share yourself. I can only add new files to that one folder. I cannot change, share, or delete anything in your Drive."
 

@@ -238,5 +238,5 @@ The first looks for the em dash character (U+2014) and must print nothing; the t
 
 1. Raise `version` in `plugin/.claude-plugin/plugin.json` and in the plugin entry of `.claude-plugin/marketplace.json`. Keep them equal.
 2. Run the tests and both validate lines.
-3. Commit, then `claude plugin tag plugin --dry-run` and `claude plugin tag plugin` create the `job-assistant--v<version>` git tag after checking that the two versions agree. Never pass `--push` from this repository; it has no remote.
-4. People update with `claude plugin marketplace update job-assistant` and `claude plugin update job-assistant@job-assistant`, then restart Claude Code.
+3. Commit, then `claude plugin tag plugin --dry-run` and `claude plugin tag plugin` create the `job-assistant--v<version>` git tag after checking that the two versions agree. Push the tag with `git push origin job-assistant--v<version>`. The manifest pins the version, so people get no update until it changes.
+4. People update with `claude plugin marketplace update job-assistant` and `claude plugin update job-assistant@job-assistant`, then start a new session or run `/reload-plugins`.

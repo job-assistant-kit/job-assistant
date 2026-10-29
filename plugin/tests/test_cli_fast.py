@@ -2,6 +2,7 @@
 
 import json
 
+import pytest
 import yaml
 
 TODAY = ("--today", "2026-10-28")
@@ -239,6 +240,28 @@ def test_env_reports_programs(ws, cli, monkeypatch):
     assert "git: installed" in r.stdout and "uv: not installed" in r.stdout
     data = json.loads(cli("env", "--json", cwd=ws).stdout)
     assert data["uv"] is False and data["claude"] is True
+
+
+@pytest.mark.parametrize("env, route", [
+    ({}, None),
+    ({"CLAUDE_CODE_USE_VERTEX": "1"}, "Google Vertex AI"),
+    ({"CLAUDE_CODE_USE_BEDROCK": "true"}, "Amazon Bedrock"),
+    ({"CLAUDE_CODE_USE_VERTEX": "0"}, None),
+    ({"ANTHROPIC_API_KEY": "x"}, "an API key"),
+])
+def test_env_reports_whether_connectors_can_appear(ws, cli, monkeypatch, env, route):
+    for name in ("CLAUDE_CODE_USE_VERTEX", "CLAUDE_CODE_USE_BEDROCK", "CLAUDE_CODE_USE_FOUNDRY",
+                 "ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN"):
+        monkeypatch.delenv(name, raising=False)
+    for name, value in env.items():
+        monkeypatch.setenv(name, value)
+    out = cli("env", cwd=ws).stdout
+    data = json.loads(cli("env", "--json", cwd=ws).stdout)
+    assert data["sign_in_route"] == route and data["claude_ai_connectors"] is (route is None)
+    if route:
+        assert f"not available. Claude signs in through {route}" in out
+    else:
+        assert "claude.ai connectors: available" in out
 
 
 def test_file_errors_are_plain(ws, write_tool, cli, monkeypatch):
