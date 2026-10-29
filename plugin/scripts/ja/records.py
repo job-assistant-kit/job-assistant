@@ -113,3 +113,33 @@ def add_build(paths: Paths, *, tool: str, recipe: str | None, questions: int, co
 
 def builds(paths: Paths) -> list[dict[str, Any]]:
     return read_lines(paths.builds)
+
+
+def _building_file(paths: Paths, tool: str) -> Path:
+    return paths.building_dir / f"{tool}.json"
+
+
+def start_build(paths: Paths, tool: str, ts: str | None = None) -> Path:
+    """Note when building a tool started, so the build record can say how long it took."""
+    target = _building_file(paths, tool)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(json.dumps({"tool": tool, "started": ts or now_ts()}) + "\n", encoding="utf-8")
+    return target
+
+
+def build_minutes(paths: Paths, tool: str, now: datetime | None = None) -> int | None:
+    """Whole minutes since the build started (at least 1), or None when no start was noted."""
+    try:
+        data = json.loads(_building_file(paths, tool).read_text(encoding="utf-8"))
+        started = datetime.fromisoformat(data["started"])
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError, KeyError, TypeError, ValueError):
+        return None
+    seconds = ((now or datetime.now()) - started).total_seconds()
+    return max(1, round(seconds / 60))
+
+
+def end_build(paths: Paths, tool: str) -> None:
+    try:
+        _building_file(paths, tool).unlink()
+    except FileNotFoundError:
+        pass

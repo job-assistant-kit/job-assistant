@@ -229,11 +229,28 @@ def cmd_record_run(args: argparse.Namespace) -> int:
 def cmd_record_build(args: argparse.Namespace) -> int:
     paths = _paths(args)
     _tool_exists(paths, args.tool)
+    minutes = args.minutes
+    if minutes is None:
+        minutes = records.build_minutes(paths, args.tool)
+        if minutes is None:
+            raise Stop("I do not know when this build started. Give the minutes it took.")
     try:
         records.add_build(paths, tool=args.tool, recipe=args.recipe, questions=args.questions,
-                          corrections=args.corrections, minutes=args.minutes, ts=_stamp(args))
+                          corrections=args.corrections, minutes=minutes, ts=_stamp(args))
     except ValueError as exc:
         raise Stop(f"I could not save the build record: {exc}.") from None
+    records.end_build(paths, args.tool)
+    _say(f"Saved the build record: {minutes} minute{'' if minutes == 1 else 's'} to a working tool.")
+    return 0
+
+
+@_guard
+def cmd_build_start(args: argparse.Namespace) -> int:
+    paths = _paths(args)
+    if not registry.ID_PATTERN.match(args.id):
+        raise Stop("The tool id must use only lowercase letters, numbers, and hyphens.")
+    records.start_build(paths, args.id)
+    _say("Noted the start time for this build.")
     return 0
 
 

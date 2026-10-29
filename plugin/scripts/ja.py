@@ -105,8 +105,14 @@ def build_parser() -> argparse.ArgumentParser:
     rp.add_argument("--recipe", default=None)
     rp.add_argument("--questions", type=whole, required=True)
     rp.add_argument("--corrections", type=whole, required=True)
-    rp.add_argument("--minutes", type=whole, required=True)
+    rp.add_argument("--minutes", type=whole, default=None)
     rp.set_defaults(func=commands.cmd_record_build)
+
+    p = sub.add_parser("build", parents=[common], help="time a tool build")
+    bsub = p.add_subparsers(dest="action", metavar="action", required=True)
+    bp = bsub.add_parser("start", parents=[common], help="note when building a tool started")
+    bp.add_argument("--id", required=True, metavar="ID")
+    bp.set_defaults(func=commands.cmd_build_start)
 
     p = sub.add_parser("ledger", parents=[common], help="published-numbers ledger")
     lsub = p.add_subparsers(dest="action", metavar="action", required=True)
