@@ -1,6 +1,6 @@
 ---
 name: fix-tool
-description: Find out why one of the person's tools broke or gave a wrong answer, explain it in plain words, and fix it. Use when the person says "this broke", "the metrics tool is not working", "this gave the wrong answer", "it failed", "something is off with", or pastes an error message, for tools built here and tools they inherited.
+description: Find out why one of the person's tools broke or gave a wrong answer, explain it in plain words, and fix it. Use when the person says "this broke", "the metrics tool is not working", "this gave the wrong answer", "it failed", "something is off with", "update" followed by a tool's name, or "make" a tool "more reliable", or pastes an error message, for tools built here and tools they inherited.
 allowed-tools:
   - Bash(uv run --script "${CLAUDE_PLUGIN_ROOT}/scripts/ja.py" *)
   - Bash(uv run --script ${CLAUDE_PLUGIN_ROOT}/scripts/ja.py *)
@@ -59,6 +59,9 @@ For a tool built here:
 4. Run `ja proof run <id>`. For each saved example, write the result again and confirm every checklist item it prints.
 5. Run `ja tool improve <id> --change "<what changed, in plain words>" --reason "<why, in their words>"`.
 6. Run `ja check <id> --result pass --detail "<what you checked>"` when every example passes. Otherwise run `ja check <id> --result fail --detail "<what still fails>"` and tell them what is left.
+7. If the cause was a document that changed, run `ja sources checked <source id>` once every tool that uses it has passed its check again. `ja tools` shows which tools still need an update.
+
+To make a tool more reliable (offered after it has had five accepted results): the change is a facts step. Follow items 1 to 6 to add `facts.py` in the draft folder and move the counting, adding up, and matching that the tool's steps do by hand into it. Its facts must give the same answers as the saved examples.
 
 For a tool they inherited that lives somewhere else (a shared sheet, a web app, a scheduled job):
 

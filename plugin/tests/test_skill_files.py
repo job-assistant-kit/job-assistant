@@ -39,7 +39,8 @@ RECIPE_HEADINGS = ["When it fits", "What to ask", "Inputs and checks", "Facts st
 
 
 def test_there_are_skills():
-    assert [p.parent.name for p in SKILLS] == ["automate-this", "check-number", "fix-tool", "learn", "set-me-up"]
+    assert [p.parent.name for p in SKILLS] == ["automate-this", "check-number", "fix-tool", "learn", "set-me-up",
+                                               "show-tools", "upkeep"]
 
 
 def test_frontmatter_valid():
@@ -283,7 +284,38 @@ def test_core_page_helper_line_names_a_real_action():
 
 
 def test_new_pages_ask_one_question_at_a_time_and_stay_drafts():
-    for name in ("learn", "check-number"):
+    for name in ("learn", "check-number", "upkeep", "show-tools"):
         body = frontmatter(PLUGIN / f"skills/{name}/SKILL.md")[1]
         assert "Never show or say the words skill, plugin, script, repo, MCP, YAML, JSON, terminal, or command." in body
         assert "${CLAUDE_PLUGIN_ROOT}/scripts/ja.py" in body
+
+
+def test_upkeep_triggers_and_flow():
+    front, body = frontmatter(PLUGIN / "skills/upkeep/SKILL.md")
+    for phrase in ("anything I should know", "what needs my attention", "clean my inbox"):
+        assert phrase in front["description"]
+    order = ["ja upkeep --json", "watch", "ja sources changed <id>", "Run `ja upkeep`.", "at most three",
+             "ja inbox clean", "ja inbox clean --yes", "ja sources exported", "ja sources checked <id>"]
+    positions = [body.index(step) for step in order]
+    assert positions == sorted(positions)
+    assert "Never delete" in body
+
+
+def test_show_tools_triggers_and_flow():
+    front, body = frontmatter(PLUGIN / "skills/show-tools/SKILL.md")
+    for phrase in ("show my tools", "what can you do for me", "what tools do I have", "retire", "bring back"):
+        assert phrase in front["description"]
+    order = ["ja dashboard --open", "ja tools", "ja tool retire <id>", "ja tool restore <id>"]
+    positions = [body.index(step) for step in order]
+    assert positions == sorted(positions)
+
+
+def test_upkeep_words_reach_a_page_that_handles_them():
+    """Each thing upkeep tells the person to say is handled by one of the assistant's pages."""
+    descriptions = {p.parent.name: frontmatter(p)[0]["description"] for p in SKILLS}
+    assert "update" in descriptions["fix-tool"] and "more reliable" in descriptions["fix-tool"]
+    assert "finish" in descriptions["automate-this"]
+    assert "retire" in descriptions["show-tools"]
+    assert "clean my inbox" in descriptions["upkeep"] and "fix my sources" in descriptions["upkeep"]
+    fix = frontmatter(PLUGIN / "skills/fix-tool/SKILL.md")[1]
+    assert "ja sources checked" in fix and "more reliable" in fix

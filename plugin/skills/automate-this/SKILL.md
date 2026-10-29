@@ -1,6 +1,6 @@
 ---
 name: automate-this
-description: Build a new tool from one real example of the person's work, check it on that example, and keep it for next time. Use when the person says "automate this", "make this automatic", "can you do this for me every time", "build me a tool", "I do this every week", or shares a screenshot, file, link, or pasted text and asks for it to be done automatically from now on.
+description: Build a new tool from one real example of the person's work, check it on that example, and keep it for next time. Use when the person says "automate this", "make this automatic", "can you do this for me every time", "build me a tool", "I do this every week", "finish" followed by the name of a tool that was started and not finished, or shares a screenshot, file, link, or pasted text and asks for it to be done automatically from now on.
 allowed-tools:
   - Bash(uv run --script "${CLAUDE_PLUGIN_ROOT}/scripts/ja.py" *)
   - Bash(uv run --script ${CLAUDE_PLUGIN_ROOT}/scripts/ja.py *)
