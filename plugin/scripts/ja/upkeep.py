@@ -230,7 +230,7 @@ def _inbox(paths: Paths, today: date) -> Item | None:
         return None
     verb = "is" if len(old) == 1 else "are"
     return Item("inbox", f"{_plural(len(old), 'file')} in your inbox {verb} more than {INBOX_DAYS} days old. "
-                         "I delete them only when you say yes.", "clean my inbox")
+                         "I delete old files only when you say yes.", "clean my inbox")
 
 
 def items(paths: Paths, today: date) -> list[Item]:
