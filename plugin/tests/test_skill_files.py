@@ -184,3 +184,42 @@ def test_fix_tool_triggers_and_flow():
     positions = [body.index(step) for step in order]
     assert positions == sorted(positions)
     assert "Never push, deploy, or publish" in body and "RUNBOOK.md" in body
+
+
+def _banned_in_quotes(text):
+    bad = []
+    for phrase in re.findall(r'"([^"\n]+)"', prose(text)):
+        if [w for w in BANNED if w in re.findall(r"[a-z]+", phrase.lower())]:
+            bad.append(phrase)
+    return bad
+
+
+def test_every_skill_allows_the_helper_line_it_uses():
+    for path in SKILLS:
+        front, body = frontmatter(path)
+        if "uv run --script" not in body:
+            continue
+        rules = front.get("allowed-tools") or []
+        assert 'Bash(uv run --script "${CLAUDE_PLUGIN_ROOT}/scripts/ja.py" *)' in rules, path
+        assert 'Bash(uv run --script ${CLAUDE_PLUGIN_ROOT}/scripts/ja.py *)' in rules, path
+        assert 'uv run --script "${CLAUDE_PLUGIN_ROOT}/scripts/ja.py" <action>' in body, path
+
+
+def test_rendered_built_page_is_valid_and_plain():
+    from ja import tools
+    from ja.registry import Tool
+
+    for exec_numbers in (False, True):
+        tool = Tool(id="match-lists", name="Match the lists", does="Matches the export to the inventory.",
+                    examples=["match the lists"], kind="built", status="being-built", rhythm="monthly",
+                    data_path="Two exports", created="2026-10-28", exec_numbers=exec_numbers)
+        text = tools.built_skill(tool, "/kit/scripts/ja.py")
+        front = yaml.safe_load(text.split("---\n", 2)[1])
+        assert front["name"] == "match-lists" and len(front["description"]) < 1024
+        assert _banned_in_quotes(text) == []
+        assert "\u2014" not in text and not re.search(r"\s--\s", prose(text))
+
+
+def test_recipes_and_steps_quote_plain_words():
+    for page in [*RECIPES, *SKILLS]:
+        assert _banned_in_quotes(page.read_text(encoding="utf-8")) == [], page.name
