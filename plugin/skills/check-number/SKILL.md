@@ -1,6 +1,6 @@
 ---
 name: check-number
-description: Check a number before it goes to a leader, a review, or a published page, and save it once the person approves it. Use when the person asks "is this number safe to send", "check this number", "sign off this number", "can I send this to my VP", and whenever a tool whose numbers go to leaders has produced a number.
+description: Check a number before it goes to a leader, a review, or a published page, and save it once the person approves it. Use when the person asks "is this number safe to send", "check this number", "sign off this number", "can I send this to my VP", and whenever a tool whose numbers go to leaders has produced a number. Only in a job assistant folder (one that has assistant/.job-assistant); in any other folder, do not use this.
 allowed-tools:
   - Bash(uv run --script "${CLAUDE_PLUGIN_ROOT}/scripts/ja.py" *)
   - Bash(uv run --script ${CLAUDE_PLUGIN_ROOT}/scripts/ja.py *)

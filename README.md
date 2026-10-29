@@ -47,11 +47,11 @@ Then close and reopen Claude Code. An update never changes the person's assistan
 ### The first session
 
 1. Open Claude Code in an empty folder.
-2. Say "set me up" and paste or share your job description.
+2. Say "set up my job assistant" and paste or share your job description.
 3. The assistant asks where to keep your assistant folder and offers a shortcut that opens it with one click. Say yes to the shortcut.
 4. Close the window and open the assistant from the shortcut.
 5. The first time the assistant folder opens, Claude Code asks whether you trust this folder. Answer yes. The folder's settings, including the blocks on changes to your other systems and the permission for the assistant's own steps to run without asking, apply only after you say yes.
-6. Say "set me up" again. The assistant interviews you one question at a time, notes the tools you already look after, and suggests the first tasks to automate.
+6. Say "set up my job assistant" again. The assistant interviews you one question at a time, notes the tools you already look after, and suggests the first tasks to automate.
 
 Always open the assistant from the shortcut, so it starts in your folder.
 
@@ -59,7 +59,7 @@ Always open the assistant from the shortcut, so it starts in your folder.
 
 | Say | What happens |
 |---|---|
-| "set me up" | Setup: your role, your documents, the tools you already look after |
+| "set up my job assistant" | Setup: your role, your documents, the tools you already look after |
 | "automate this" with a file, screenshot, link, or pasted text | A new tool, built and checked on your example |
 | The words a tool lists, such as "check this brief" | The tool runs |
 | "this broke" or "this gave the wrong answer" | The assistant finds the cause and explains it plainly |

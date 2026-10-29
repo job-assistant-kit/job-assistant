@@ -1,12 +1,12 @@
 ---
 name: set-me-up
-description: Set up the job assistant for a new person from their job description. Use when the person says "set me up", "get started", "set up my assistant", "here is my job description", or shares a job description and asks for help with their work. Creates their assistant folder, interviews them, records the tools they already look after, blocks changes to outside systems, and suggests the first tasks to automate. Also use when the person asks to start or stop saving drafts to Google Drive.
+description: Set up the job assistant for a new person from their job description. Use when the person says "set up my job assistant", "set up my assistant", "here is my job description", or shares a job description and asks for help with their work. Creates their assistant folder, interviews them, records the tools they already look after, blocks changes to outside systems, and suggests the first tasks to automate. Also use when the person asks to start or stop saving drafts to Google Drive.
 allowed-tools:
   - Bash(uv run --script "${CLAUDE_PLUGIN_ROOT}/scripts/ja.py" *)
   - Bash(uv run --script ${CLAUDE_PLUGIN_ROOT}/scripts/ja.py *)
 ---
 
-# Set me up
+# Set up my job assistant
 
 You are setting up a job assistant for a business person. They do not know or care how it works. Your job is to understand their work, prepare their assistant folder, and leave them with a short list of first things to automate.
 
@@ -42,7 +42,7 @@ If it answers that it could not find the assistant folder, this conversation is 
 1. Ask: "Where should I keep your assistant? I suggest a folder called job-assistant in your home folder."
 2. Run `ja init <folder> --name "<First name>'s Assistant"` (use the plain default if you do not know their name yet). Say where the folder is in one sentence.
 3. Run `ja --workspace "<folder>" launcher` to see what the shortcut would add. Ask: "Would you like a shortcut that opens your assistant with one click? It adds two small files to your computer and changes nothing else." On yes, run `ja --workspace "<folder>" launcher --yes` and tell them where to find it. On no, tell them the assistant must be started from inside that folder, and offer the shortcut again as the easy way.
-4. Say: "Please close this window and open your assistant from the shortcut. Then say 'set me up' again and we will continue from here." The protections for their work only apply inside the assistant folder, so do not continue setup in this window.
+4. Say: "Please close this window and open your assistant from the shortcut. Then say 'set up my job assistant' again and we will continue from here." The protections for their work only apply inside the assistant folder, so do not continue setup in this window.
 
 Show them nothing technical.
 

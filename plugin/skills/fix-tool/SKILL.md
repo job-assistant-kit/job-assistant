@@ -1,6 +1,6 @@
 ---
 name: fix-tool
-description: Find out why one of the person's tools broke or gave a wrong answer, explain it in plain words, and fix it. Use when the person says "this broke", "the metrics tool is not working", "this gave the wrong answer", "it failed", "something is off with", "update" or "check" followed by a tool's name, or "make" a tool "more reliable", or pastes an error message, for tools built here and tools they inherited.
+description: Find out why one of the person's tools broke or gave a wrong answer, explain it in plain words, and fix it. Use when the person says "this broke", "the metrics tool is not working", "this gave the wrong answer", "it failed", "something is off with", "update" or "check" followed by a tool's name, or "make" a tool "more reliable", or pastes an error message, for tools built here and tools they inherited. Only in a job assistant folder (one that has assistant/.job-assistant); in any other folder, do not use this.
 allowed-tools:
   - Bash(uv run --script "${CLAUDE_PLUGIN_ROOT}/scripts/ja.py" *)
   - Bash(uv run --script ${CLAUDE_PLUGIN_ROOT}/scripts/ja.py *)

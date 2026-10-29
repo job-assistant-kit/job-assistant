@@ -1,6 +1,6 @@
 ---
 name: show-tools
-description: Show the person their tools page and a plain list of their tools with the words that start each one, and retire or bring back a tool when they ask. Use when the person says "show my tools", "what can you do for me", "what tools do I have", "open my tools page", "retire" followed by a tool's name, or "bring back" followed by a tool's name.
+description: Show the person their tools page and a plain list of their tools with the words that start each one, and retire or bring back a tool when they ask. Use when the person says "show my tools", "what can you do for me", "what tools do I have", "open my tools page", "retire" followed by a tool's name, or "bring back" followed by a tool's name. Only in a job assistant folder (one that has assistant/.job-assistant); in any other folder, do not use this.
 allowed-tools:
   - Bash(uv run --script "${CLAUDE_PLUGIN_ROOT}/scripts/ja.py" *)
   - Bash(uv run --script ${CLAUDE_PLUGIN_ROOT}/scripts/ja.py *)

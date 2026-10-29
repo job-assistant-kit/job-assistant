@@ -1,6 +1,6 @@
 ---
 name: upkeep
-description: Tell the person what needs their attention, at most three things, and help with each one. Use when the person says "anything I should know", "what needs my attention", "what is coming up", "anything due", "clean my inbox", or "fix my sources", or opens the assistant with a greeting and no task.
+description: Tell the person what needs their attention, at most three things, and help with each one. Use when the person says "anything I should know", "what needs my attention", "what is coming up", "anything due", "clean my inbox", or "fix my sources", or opens the assistant with a greeting and no task. Only in a job assistant folder (one that has assistant/.job-assistant); in any other folder, do not use this.
 allowed-tools:
   - Bash(uv run --script "${CLAUDE_PLUGIN_ROOT}/scripts/ja.py" *)
   - Bash(uv run --script ${CLAUDE_PLUGIN_ROOT}/scripts/ja.py *)

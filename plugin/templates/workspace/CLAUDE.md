@@ -5,7 +5,7 @@ This folder is a job assistant for one person. Follow this page in every convers
 ## Who I work for
 
 <!-- role:start -->
-Not filled in yet. When the person says "set me up", run the setup steps.
+Not filled in yet. When the person says "set up my job assistant", run the setup steps.
 <!-- role:end -->
 
 ## How to talk with them

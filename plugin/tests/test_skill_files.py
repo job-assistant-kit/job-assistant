@@ -52,10 +52,24 @@ def test_frontmatter_valid():
         assert body.strip()
 
 
+GUARD = "Only in a job assistant folder (one that has assistant/.job-assistant); in any other folder, do not use this."
+
+
 def test_set_me_up_triggers():
     front, _ = frontmatter(PLUGIN / "skills/set-me-up/SKILL.md")
-    for phrase in ("set me up", "get started", "here is my job description", "set up my assistant"):
+    for phrase in ("set up my job assistant", "here is my job description", "set up my assistant"):
         assert phrase in front["description"]
+    # The kit is on in every session, so setup must not start on everyday words.
+    for phrase in ("set me up", "get started"):
+        assert phrase not in front["description"]
+
+
+def test_skills_other_than_setup_stay_in_the_assistant_folder():
+    for path in SKILLS:
+        if path.parent.name == "set-me-up":
+            continue
+        front, _ = frontmatter(path)
+        assert front["description"].rstrip().endswith(GUARD), path
 
 
 def test_helper_path_resolves():

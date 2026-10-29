@@ -1,6 +1,6 @@
 ---
 name: learn
-description: Learn from the person's corrections and teaching, check each new way of working on the saved examples before using it, and say what has been learned or forget it. Use when the person says "that was wrong", "change it so", "always", "never", "remember that", "from now on", "what have you learned", "forget that", or corrects a result a tool just gave.
+description: Learn from the person's corrections and teaching, check each new way of working on the saved examples before using it, and say what has been learned or forget it. Use when the person says "that was wrong", "change it so", "always", "never", "remember that", "from now on", "what have you learned", "forget that", or corrects a result a tool just gave. Only in a job assistant folder (one that has assistant/.job-assistant); in any other folder, do not use this.
 allowed-tools:
   - Bash(uv run --script "${CLAUDE_PLUGIN_ROOT}/scripts/ja.py" *)
   - Bash(uv run --script ${CLAUDE_PLUGIN_ROOT}/scripts/ja.py *)
