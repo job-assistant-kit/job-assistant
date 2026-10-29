@@ -4,6 +4,7 @@
 # dependencies = [
 #     "pyyaml>=6",
 #     "jinja2>=3.1",
+#     "openpyxl>=3.1",
 # ]
 # ///
 """Command line entry for the job assistant. Parses arguments and dispatches only."""
@@ -192,6 +193,21 @@ def build_parser() -> argparse.ArgumentParser:
     tp = tsub.add_parser("restore", parents=[common], help="bring a tool back from the archive")
     tp.add_argument("tool", metavar="ID")
     tp.set_defaults(func=commands.cmd_tool_restore)
+
+    p = sub.add_parser("input", parents=[common], help="check the files given to a tool")
+    isub = p.add_subparsers(dest="action", metavar="action", required=True)
+    ip = isub.add_parser("check", parents=[common], help="check that the files fit what the tool expects")
+    ip.add_argument("tool", metavar="TOOL")
+    ip.add_argument("files", nargs="+", metavar="FILE")
+    ip.set_defaults(func=commands.cmd_input_check)
+
+    p = sub.add_parser("facts", parents=[common], help="a tool's facts step")
+    fsub = p.add_subparsers(dest="action", metavar="action", required=True)
+    fp = fsub.add_parser("run", parents=[common], help="run the facts step on the files")
+    fp.add_argument("tool", metavar="TOOL")
+    fp.add_argument("files", nargs="+", metavar="FILE")
+    fp.add_argument("--json", action="store_true", help="output for code")
+    fp.set_defaults(func=commands.cmd_facts_run)
 
     p = sub.add_parser("runbook", parents=[common], help="write the backup person's guide")
     p.set_defaults(func=commands.cmd_runbook)

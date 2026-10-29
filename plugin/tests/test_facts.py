@@ -1,0 +1,96 @@
+"""Running a tool's facts step and checking what it prints."""
+
+import json
+import shutil
+from pathlib import Path
+
+import pytest
+
+from ja import facts, workspace
+
+SYN = Path(__file__).parent / "fixtures" / "synthetic"
+RECONCILE = Path(__file__).parent / "fixtures" / "facts" / "reconcile.py"
+FILES = [str(SYN / "servicenow-export.csv"), str(SYN / "inventory.csv")]
+
+
+@pytest.fixture
+def tool(ws, write_tool):
+    write_tool(ws, id="match", name="Match the lists")
+    shutil.copyfile(RECONCILE, ws / ".claude/skills/match/facts.py")
+    return ws
+
+
+def step(ws, code):
+    (ws / ".claude/skills/match/facts.py").write_text(code, encoding="utf-8")
+
+
+def test_run_prints_facts_and_keeps_them(tool, cli):
+    r = cli("--workspace", str(tool), "facts", "run", "match", *FILES)
+    assert r.returncode == 0, r.text
+    assert "Rows in the export: 40 rows (source: servicenow-export.csv)" in r.stdout
+    assert "Offerings not in the inventory: 2 offerings" in r.stdout
+    assert "Rows with no governance date: 6 rows" in r.stdout
+    assert "Counts:\n  blank_governance: 6" in r.stdout
+    saved = json.loads((tool / "data/last/match.json").read_text(encoding="utf-8"))
+    assert [f["id"] for f in saved["facts"]] == ["export-rows", "unmatched", "blank-governance"]
+    inputs = json.loads((tool / "data/last/match.inputs.json").read_text(encoding="utf-8"))
+    assert [i["name"] for i in inputs] == ["servicenow-export.csv", "inventory.csv"]
+
+
+def test_json_output(tool, cli):
+    r = cli("--workspace", str(tool), "facts", "run", "match", *FILES, "--json")
+    assert json.loads(r.stdout)["counts"] == {"blank_governance": 6}
+
+
+def test_crash_is_plain_and_records_nothing(tool, cli):
+    step(tool, "raise ValueError('the Stage column is empty')\n")
+    r = cli("--workspace", str(tool), "facts", "run", "match", *FILES)
+    assert r.returncode == 1
+    assert "The facts step for Match the lists failed: ValueError: the Stage column is empty" in r.stderr
+    assert not (tool / "data/last/match.json").exists()
+
+
+@pytest.mark.parametrize("output, reason", [
+    ("print('hello')", "it did not print results"),
+    ("print('{\"facts\": 3}')", "there is no list of facts"),
+    ("import json; print(json.dumps({'facts': [{'id': 'a', 'label': 'A', 'value': 1}, "
+     "{'id': 'a', 'label': 'B', 'value': 2}]}))", "two facts have the id a"),
+    ("import json; print(json.dumps({'facts': [{'id': 'a', 'label': 'A'}]}))", "the fact A has no usable value"),
+    ("print('{\"facts\": [{\"id\": \"a\", \"label\": \"A\", \"value\": NaN}]}')", "no usable value"),
+    ("import json; print(json.dumps({'facts': [], 'counts': {'x': 1.5}}))", "counts must be whole numbers"),
+])
+def test_invalid_output(tool, cli, output, reason):
+    step(tool, output + "\n")
+    r = cli("--workspace", str(tool), "facts", "run", "match", *FILES)
+    assert r.returncode == 1 and reason in r.stderr, r.text
+    assert "gave results I could not use" in r.stderr
+
+
+def test_refuses_network_and_programs(tool, cli):
+    step(tool, "import urllib.request\nprint('{}')\n")
+    r = cli("--workspace", str(tool), "facts", "run", "match", *FILES)
+    assert r.returncode == 1 and "tries to reach other systems or run programs" in r.stderr
+
+
+def test_time_limit(tool):
+    step(tool, "import time\ntime.sleep(30)\n")
+    with pytest.raises(facts.FactsProblem, match="took too long"):
+        facts.run(workspace.Paths(tool), "match", "Match the lists", [Path(f) for f in FILES], timeout=3)
+
+
+def test_no_step(ws, write_tool, cli):
+    write_tool(ws, id="plain")
+    r = cli("--workspace", str(ws), "facts", "run", "plain", str(SYN / "faq.md"))
+    assert r.returncode == 0 and "This tool has no facts step." in r.stdout
+
+
+def test_missing_file(tool, cli, tmp_path):
+    r = cli("--workspace", str(tool), "facts", "run", "match", str(tmp_path / "gone.csv"))
+    assert r.returncode == 1 and "I could not find the file gone.csv." in r.stderr
+
+
+def test_step_sees_the_workspace(tool, cli):
+    step(tool, "import json, os\nprint(json.dumps({'facts': [{'id': 'w', 'label': 'Where', "
+               "'value': os.environ['JA_WORKSPACE']}]}))\n")
+    r = cli("--workspace", str(tool), "facts", "run", "match", *FILES)
+    assert f"Where: {tool.resolve()}" in r.stdout

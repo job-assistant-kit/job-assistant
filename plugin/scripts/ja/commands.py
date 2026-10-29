@@ -14,7 +14,7 @@ import sys
 from datetime import date
 from pathlib import Path
 
-from ja import helper, index, init, launcher, ledger, records, registry, role, runbook, settings, sources, status, tools, workspace
+from ja import facts, helper, index, inputs, init, launcher, ledger, records, registry, role, runbook, settings, sources, status, tools, workspace
 from ja.registry import is_date
 from ja.workspace import Paths
 
@@ -437,6 +437,68 @@ def cmd_tool_retire(args: argparse.Namespace, paths: Paths, today: date) -> str:
 def cmd_tool_restore(args: argparse.Namespace, paths: Paths, today: date) -> str:
     tool = tools.restore(paths, args.tool)
     return f"Restored {tool.name}. It shows as {_shows_as(paths, tool, today)}."
+
+
+def _tool(paths: Paths, tool_id: str) -> registry.Tool:
+    try:
+        return tools.find(paths, tool_id)
+    except tools.ToolProblem as exc:
+        raise Stop(str(exc)) from None
+
+
+def _files(names: list[str]) -> list[Path]:
+    return [Path(n).expanduser() for n in names]
+
+
+@_guard
+def cmd_input_check(args: argparse.Namespace) -> int:
+    paths = _paths(args)
+    tool = _tool(paths, args.tool)
+    try:
+        spec = inputs.load_spec(paths.skills_dir / tool.id)
+    except inputs.SpecProblem as exc:
+        raise Stop(f"{exc} Say \"fix {tool.name}\" to look at it.") from None
+    report = inputs.check(spec, _files(args.files))
+    if report.problems:
+        for problem in report.problems:
+            _say(problem)
+        if tool.manual_steps:
+            _say("")
+            _say("To get the right file:")
+            for n, step in enumerate(tool.manual_steps, start=1):
+                _say(f"{n}. {step}")
+        return 1
+    if report.matched:
+        _say("The files look right: " + "; ".join(f"{f} for {name}" for name, f in report.matched) + ".")
+    else:
+        _say("The files are there and can be read.")
+    for name in report.unused:
+        _say(f"I will not use {name} for this tool.")
+    return 0
+
+
+@_guard
+def cmd_facts_run(args: argparse.Namespace) -> int:
+    paths = _paths(args)
+    tool = _tool(paths, args.tool)
+    if not facts.has_step(paths, tool.id):
+        _say(facts.NO_STEP)
+        return 0
+    files = _files(args.files)
+    missing = [f.name for f in files if not f.is_file()]
+    if missing:
+        raise Stop(f"I could not find the file {missing[0]}.")
+    try:
+        result = facts.run(paths, tool.id, tool.name, files)
+    except facts.FactsProblem as exc:
+        raise Stop(str(exc)) from None
+    facts.save_last(paths, tool.id, result, files)
+    if args.json:
+        print(json.dumps(result.data, indent=2, ensure_ascii=False))
+        return 0
+    for line in facts.describe(result):
+        _say(line)
+    return 0
 
 
 @_guard
