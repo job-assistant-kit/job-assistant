@@ -153,7 +153,8 @@ def unfinished(paths: Paths, today: date) -> list[dict[str, Any]]:
             tool = None
         done = {"record": tool is not None,
                 "example": bool(proof.cases(paths, tool_id)),
-                "check": tool is not None and tool.last_check is not None}
+                "check": tool is not None and isinstance(tool.last_check, dict)
+                and tool.last_check.get("result") == "pass"}
         nxt = next((todo for key, _, todo in BUILD_STEPS if not done[key]), "record the build")
         started = datetime.fromisoformat(b["started"]).date()
         rows.append({"tool": tool_id, "name": tool.name if tool else tool_id, "started": b["started"],

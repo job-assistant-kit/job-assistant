@@ -122,7 +122,7 @@ def test_forget_removes_it_everywhere(ws, write_tool, cli):
     write_tool(ws, id="old", status="retired", folder="archive")
     add(cli, ws, "unmatched-first", "List unmatched rows first.")
     r = run(cli, ws, "forget", "unmatched-first")
-    assert r.returncode == 0 and r.stdout.strip() == "I will no longer list unmatched rows first."
+    assert r.returncode == 0 and r.stdout.strip() == "I will stop applying this rule: List unmatched rows first."
     assert rules_file(ws) == [] and tool_rules(ws, "match") == ["keep-me"]
     r = run(cli, ws, "forget", "unmatched-first")
     assert r.returncode == 1 and "There is no learned rule called unmatched-first." in r.stderr

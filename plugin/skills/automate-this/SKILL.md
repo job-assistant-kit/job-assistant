@@ -87,7 +87,7 @@ If none fits, build from the closest one and note in the tool record's `does` wh
 2. Write the tool record to `data/drafts/<id>/tool.yaml` with these fields:
    - `id`, `name` (their words), `does` (one sentence)
    - `examples`: two or three phrases they would say to run it
-   - `kind: built`, `recipe: <recipe file name without .md>`, `status: being-built`
+   - `kind: built`, `recipe: <recipe file name without .md>`, `status: being-built`. For the `keep-it-running` recipe, use `kind: adopted` instead and add `lives_at` and `how_to_run` (where the inherited tool lives and how it is run)
    - `rhythm`: on-demand, daily, weekly, monthly, or quarterly
    - `sources`: the source ids from the list
    - `data_path`: where its input comes from, in plain words

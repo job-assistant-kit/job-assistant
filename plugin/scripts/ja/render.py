@@ -11,7 +11,8 @@ PLACEHOLDER = re.compile(r"\{\{(\w+)\}\}")
 
 
 def one_line(value: Any) -> str:
-    return " ".join(str(value).split())
+    """One line of text with comment markers removed, so it cannot open a fill-in note or a marked block."""
+    return " ".join(no_comments(str(value)).split())
 
 
 def no_comments(text: str) -> str:

@@ -318,11 +318,8 @@ def forget(paths: Paths, rule_id: str) -> Rule:
 
 
 def no_longer(rule: Rule) -> str:
-    """'I will no longer <text>.' with the rule's own words."""
-    text = rule.text.strip().rstrip(".")
-    if len(text) > 1 and not text[:2].isupper():
-        text = text[0].lower() + text[1:]
-    return f"I will no longer {text}."
+    """'I will stop applying this rule: <text>.' with the rule's own words."""
+    return f"I will stop applying this rule: {rule.text.strip().rstrip('.')}."
 
 
 def similar(paths: Paths, text: str, limit: int = 3) -> list[tuple[Rule, list[str]]]:

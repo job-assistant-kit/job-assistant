@@ -14,7 +14,8 @@ import yaml
 from ja.workspace import Paths
 
 RECORD_NAME = "tool.yaml"
-ID_PATTERN = re.compile(r"^[a-z0-9-]+$")
+ID_PATTERN = re.compile(r"^[a-z0-9-]+\Z")
+RESERVED_IDS = frozenset({"parts"})
 KINDS = ("built", "adopted")
 STATUSES = ("working", "draft-not-checked", "being-built", "paused", "retired")
 RHYTHMS = ("on-demand", "daily", "weekly", "monthly", "quarterly")
@@ -124,6 +125,8 @@ def _first_problem(d: dict[str, Any], folder: str | None) -> str | None:
             return f"{name} is missing"
     if not isinstance(d["id"], str) or not ID_PATTERN.match(d["id"]):
         return "id must use only lowercase letters, numbers, and hyphens"
+    if d["id"] in RESERVED_IDS:
+        return f"id {d['id']} is kept for the assistant's own use"
     if folder is not None and d["id"] != folder:
         return "id must match its folder name"
     for name in ("name", "does", "data_path"):

@@ -1,6 +1,6 @@
 ---
 name: fix-tool
-description: Find out why one of the person's tools broke or gave a wrong answer, explain it in plain words, and fix it. Use when the person says "this broke", "the metrics tool is not working", "this gave the wrong answer", "it failed", "something is off with", "update" followed by a tool's name, or "make" a tool "more reliable", or pastes an error message, for tools built here and tools they inherited.
+description: Find out why one of the person's tools broke or gave a wrong answer, explain it in plain words, and fix it. Use when the person says "this broke", "the metrics tool is not working", "this gave the wrong answer", "it failed", "something is off with", "update" or "check" followed by a tool's name, or "make" a tool "more reliable", or pastes an error message, for tools built here and tools they inherited.
 allowed-tools:
   - Bash(uv run --script "${CLAUDE_PLUGIN_ROOT}/scripts/ja.py" *)
   - Bash(uv run --script ${CLAUDE_PLUGIN_ROOT}/scripts/ja.py *)
@@ -74,3 +74,7 @@ For a tool they inherited that lives somewhere else (a shared sheet, a web app, 
 ### 5. Close
 
 Tell them in one sentence whether the tool works again, and if not, what is still needed and from whom.
+
+### 6. When they only ask to check a tool
+
+When they say "check" and a tool's name, they want to know it still works. Run the saved examples with the proof run, write the result again for each one, and confirm every checklist item. Then record the outcome with the check action: a pass, or a fail with what failed. Tell them the result in one sentence. If something failed, go back to step 2.

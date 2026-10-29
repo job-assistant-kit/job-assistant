@@ -876,13 +876,18 @@ def cmd_rules_for(args: argparse.Namespace) -> int:
     paths = _paths(args)
     tool = _tool(paths, args.tool)
     found = profile.applying(paths, tool.id)
+    _, problems = profile.load(paths)
     if args.json:
         print(json.dumps([{"id": r.id, "text": r.text} for r in found], indent=2, ensure_ascii=False))
+        for problem in problems:
+            print(f"Some learned rules could not be read: {problem}.", file=sys.stderr)
         return 0
     if not found:
         _say(f"No learned rules apply to {tool.name}.")
     for r in found:
         _say(f"{r.id}: {r.text}")
+    if problems:
+        _say("Some learned rules could not be read, so this list may be incomplete: " + "; ".join(problems) + ".")
     return 0
 
 
