@@ -12,6 +12,7 @@ The person's own content lives in a separate assistant folder that `ja init` cre
 
 ```
 .claude-plugin/marketplace.json        local marketplace listing the plugin
+install.sh                             one-command install, update, and first session (see the README)
 plugin/
   .claude-plugin/plugin.json           plugin manifest (name, version)
   hooks/hooks.json                     session start and after-tool hooks
@@ -240,6 +241,7 @@ The first looks for the em dash character (U+2014) and must print nothing; the t
 ## Release
 
 1. Raise `version` in `plugin/.claude-plugin/plugin.json` and in the plugin entry of `.claude-plugin/marketplace.json`. Keep them equal.
-2. Run the tests and both validate lines.
+2. Run the tests and both validate lines, and `shellcheck install.sh`.
 3. Commit, then `claude plugin tag plugin --dry-run` and `claude plugin tag plugin` create the `job-assistant--v<version>` git tag after checking that the two versions agree. Push the tag with `git push origin job-assistant--v<version>`. The manifest pins the version, so people get no update until it changes.
-4. People update with `claude plugin marketplace update job-assistant` and `claude plugin update job-assistant@job-assistant`, then start a new session or run `/reload-plugins`.
+4. People update by running `install.sh` again, or by hand with `claude plugin marketplace update job-assistant` and `claude plugin update job-assistant@job-assistant`, then a new session or `/reload-plugins`.
+5. To test `install.sh` without touching your own setup, run it with `CLAUDE_CONFIG_DIR` pointed at an empty folder, `--folder` pointed at a scratch folder, and `--no-start`, and answer no to the shortcut.

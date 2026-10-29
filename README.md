@@ -15,6 +15,21 @@ It works inside Claude Code, on a Mac or a Linux computer.
 
 ### Install
 
+One script does the whole install and opens the first session. It checks for Claude Code and git, installs uv if it is missing, signs in to GitHub if needed (the repository is private), installs the plugin, creates the assistant folder, adds the shortcut, and starts Claude Code there with "set up my job assistant".
+
+Get the script one of two ways:
+
+- Someone who has the kit sends you `install.sh`. Run `bash ~/Downloads/install.sh` (use the folder where you saved it).
+- If you are already signed in to GitHub with `gh`, fetch and run it in one command:
+
+  ```
+  gh api -H "Accept: application/vnd.github.raw" repos/job-assistant-kit/job-assistant/contents/install.sh | bash
+  ```
+
+The script asks at most three things: your first name (to name the assistant), whether to add the shortcut, and whether to install uv if it is missing. Options: `--folder PATH` keeps the assistant somewhere other than `~/job-assistant`, `--source PATH` installs from a local copy of the kit, `--no-start` stops before opening Claude Code, and `--yes` answers yes to every question.
+
+### Install by hand
+
 1. Add the kit to Claude Code:
 
    ```
@@ -33,25 +48,30 @@ It works inside Claude Code, on a Mac or a Linux computer.
 
 ### Update
 
+Run the install script again. It updates the plugin, keeps the assistant folder as it is, and opens the assistant. By hand:
+
 ```
 claude plugin marketplace update job-assistant
 claude plugin update job-assistant@job-assistant
 ```
 
-Then start a new session, or run `/reload-plugins` in an open one.
-
-Then close and reopen Claude Code. An update never changes the person's assistant folder: their tools, rules, sources, and files stay as they are.
+Then start a new session, or run `/reload-plugins` in an open one. An update never changes the person's assistant folder: their tools, rules, sources, and files stay as they are.
 
 ## For the person who uses it
 
 ### The first session
 
-1. Open Claude Code in an empty folder.
-2. Say "set up my job assistant" and paste or share your job description.
-3. The assistant asks where to keep your assistant folder and offers a shortcut that opens it with one click. Say yes to the shortcut.
-4. Close the window and open the assistant from the shortcut.
-5. The first time the assistant folder opens, Claude Code asks whether you trust this folder. Answer yes. The folder's settings, including the blocks on changes to your other systems and the permission for the assistant's own steps to run without asking, apply only after you say yes.
-6. Say "set up my job assistant" again. The assistant reads your job description, asks two or three questions, notes the tools you already look after, and suggests the first tasks to automate. It learns the rest as you work: when you ask it to automate something, it asks only what it does not know yet, and remembers the answers.
+After the install script:
+
+1. Claude Code opens in your assistant folder and asks whether you trust this folder. Answer yes. The folder's settings, including the blocks on changes to your other systems and the permission for the assistant's own steps to run without asking, apply only after you say yes.
+2. Paste or share your job description when the assistant asks for it.
+3. The assistant asks two or three questions, notes the tools you already look after, and gives you a link to your tools page with your first steps. It learns the rest as you work: when you ask it to automate something, it asks only what it does not know yet, and remembers the answers.
+
+After an install by hand:
+
+1. Open Claude Code in an empty folder and say "set up my job assistant".
+2. The assistant asks where to keep your assistant folder and offers a shortcut that opens it with one click. Say yes to the shortcut.
+3. Close the window, open the assistant from the shortcut, answer yes when Claude Code asks whether you trust the folder, and say "set up my job assistant" again. Then continue as above.
 
 Always open the assistant from the shortcut, so it starts in your folder.
 
