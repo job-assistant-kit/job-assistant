@@ -28,9 +28,9 @@ STABLE_ACCEPTED = 5
 SKIP_FILES = (".keep",)
 
 # Lower comes first. Time-bound items lead, proposals come last.
-ORDER = ("due", "update", "unfinished", "inbox", "idea", "stable", "retire")
+ORDER = ("due", "update", "unfinished", "inbox", "idea", "stable", "retire", "nocopy")
 # Items shown under "Ideas" on the tools page; the rest go under "Needs your OK".
-IDEA_KINDS = ("idea", "stable")
+IDEA_KINDS = ("idea", "stable", "nocopy")
 
 BUILD_STEPS = (("record", "tool record saved", "write the tool record"),
                ("example", "example saved", "run it on their example and save it once they say it looks right"),
@@ -47,7 +47,7 @@ class Item:
 
     @property
     def line(self) -> str:
-        return f'{self.text} Say "{self.say}".'
+        return f'{self.text} Say "{self.say}".' if self.say else self.text
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -250,6 +250,11 @@ def items(paths: Paths, today: date) -> list[Item]:
             found.append(stable)
         if (retire := _retire(paths, t, today)) is not None:
             found.append(retire)
+    in_use = {sid for t in tools if t.status not in status.HELD and t.status != "retired" for sid in t.sources}
+    for s in sorted(by_id.values(), key=lambda x: x.name.lower()):
+        if s.no_copy_yet and s.id in in_use:
+            found.append(Item("nocopy", f"I do not have a copy of {s.name} yet. "
+                              "Drop one in the inbox when you next use it.", ""))
     for problem in source_problems:
         found.append(Item("update", f"An entry in your sources list has a mistake ({problem}).", "fix my sources"))
     for row in unfinished(paths, today):

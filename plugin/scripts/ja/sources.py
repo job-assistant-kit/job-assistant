@@ -50,14 +50,20 @@ class Source:
     def is_stale(self, today: date) -> bool:
         """A living source read from a file copy is stale once the copy passes its freshness limit.
 
-        An export date in the future is a mistake, so it always counts as stale.
+        An export date in the future is a mistake, so it always counts as stale. A copy that has
+        not been given yet is not stale; upkeep reminds the person once instead.
         """
         if self.in_future(today):
             return True
         if self.access != "file" or self.kind != "living":
             return False
         age = self.age_days(today)
-        return age is None or age > self.fresh_days
+        return age is not None and age > self.fresh_days
+
+    @property
+    def no_copy_yet(self) -> bool:
+        """A document read from a copy the person has not given yet."""
+        return self.access == "file" and self.exported is None
 
 
 def _first_problem(d: dict[str, Any]) -> str | None:

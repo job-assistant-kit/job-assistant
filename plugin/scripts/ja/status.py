@@ -51,11 +51,7 @@ def _problems(tool: Tool, sources_by_id: dict[str, Source], today: date) -> list
         if src.in_future(today):
             out.append(f"The export date for {src.name} is in the future. Check the date.")
         elif src.is_stale(today):
-            age = src.age_days(today)
-            if age is None:
-                out.append(f"I do not know how old your copy of {src.name} is")
-            else:
-                out.append(f"Your copy of {src.name} is {age} days old")
+            out.append(f"Your copy of {src.name} is {src.age_days(today)} days old")
         if src.changed:
             out.append(f"{src.name} changed since this tool was checked")
     return out

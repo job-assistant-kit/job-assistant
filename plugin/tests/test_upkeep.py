@@ -234,3 +234,15 @@ def test_dashboard_shows_upkeep_items(ws, write_tool):
     ideas = html.split(">Ideas</h2>", 1)[1].split("<h2", 1)[0]
     assert "partner update email" in ideas and "automate this" in ideas
     assert "<b>1</b><span>needs your OK</span>" in html
+
+
+def test_source_with_no_copy_yet_is_a_gentle_reminder(ws, write_tool):
+    (ws / "assistant/sources.yaml").write_text(
+        "- id: faq\n  name: OLM FAQ\n  kind: living\n  where: Drive\n  access: file\n"
+        "- id: unused\n  name: Old Guide\n  kind: living\n  where: Drive\n  access: file\n")
+    write_tool(ws, id="a", name="Answer a question", sources=["faq"])
+    found = upkeep.items(workspace.Paths(ws), date(2026, 10, 28))
+    assert kinds(found) == ["nocopy"]
+    assert found[0].line == "I do not have a copy of OLM FAQ yet. Drop one in the inbox when you next use it."
+    html = dashboard.render(workspace.Paths(ws), today=date(2026, 10, 28))
+    assert "I do not have a copy of OLM FAQ yet." in html and "Old Guide" not in html.split("Ideas")[-1]

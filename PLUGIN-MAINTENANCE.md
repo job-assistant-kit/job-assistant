@@ -137,7 +137,7 @@ Unknown fields are kept on save. An invalid record is reported as `<id>: <field>
 
 ### Other records
 
-- `sources.yaml`: list of {id, name, kind: `living` or `fixed`, where, access: `connector` or `file`, version, exported: YYYY-MM-DD or null, fresh_days (default 7), changed (default false)}. Stale: a living source read from a file whose copy has no export date or is older than `fresh_days`, or any export date in the future.
+- `sources.yaml`: list of {id, name, kind: `living` or `fixed`, where, access: `connector` or `file`, version, exported: YYYY-MM-DD or null, fresh_days (default 7), changed (default false)}. Stale: a living source read from a file whose copy is older than `fresh_days`, or any export date in the future. A file source with no export date has no copy yet: it is not stale, and upkeep lists it once as a reminder (kind `nocopy`, shown under Ideas).
 - `profile.yaml`: {rules: list of {id, text, reason, scope: `everywhere` or list of tool ids, added, state: `pending`, `active`, or `held` (missing means active), held_reason}}. Only active rules are used.
 - `runs.jsonl`: {ts, tool, event: `run`, `accepted`, or `corrected`}. `tasks.jsonl`: {ts, event: `task`, words}. `builds.jsonl`: {ts, tool, recipe, questions, corrections, minutes}. `ledger.jsonl`: {metric, period, value, unit, source, method_notes, approved_on, tool}.
 - Facts step output (printed by `facts.py`): {facts: list of {id, label, value, unit, source, notes}, counts: {name: whole number}, problems: list of sentences}.

@@ -58,10 +58,11 @@ def test_unknown_source_status():
 def test_exactly_at_limit_is_fresh():
     assert status.effective_status(tool(last_check=PASSED), {"faq": src(exported="2026-10-21")}, T) == "working"
 
-def test_living_file_without_export_date_is_stale():
+def test_living_file_without_a_copy_yet_is_not_stale():
     s = {"faq": src(exported=None)}
-    assert status.effective_status(tool(), s, T) == "needs-update"
-    assert status.reasons(tool(), s, T) == ["I do not know how old your copy of OLM FAQ is"]
+    assert status.effective_status(tool(last_check=PASSED), s, T) == "working"
+    assert status.reasons(tool(), s, T) == []
+    assert s["faq"].no_copy_yet
 
 def test_working_tool_has_no_reasons():
     assert status.reasons(tool(), {"faq": src()}, T) == []
