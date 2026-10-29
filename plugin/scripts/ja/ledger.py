@@ -12,6 +12,9 @@ from ja.workspace import Paths
 
 Number = int | float
 
+BIG_CHANGE_PERCENT = 15
+BIG_CHANGE = "This is a big change. Check the method before sending."
+
 
 def _tidy(value: Number) -> Number:
     if isinstance(value, float) and value.is_integer():
@@ -86,10 +89,20 @@ def compare(paths: Paths, metric: str, value: Number) -> dict[str, Any]:
     previous = prev["value"]
     change = _tidy(round(value - previous, 10))
     percent = None if previous == 0 else change / abs(previous) * 100
+    big = change != 0 if percent is None else abs(percent) > BIG_CHANGE_PERCENT
     return {
         "previous": previous, "period": prev.get("period"), "unit": prev.get("unit", ""),
-        "approved_on": prev["approved_on"], "change": change, "percent": percent,
+        "approved_on": prev["approved_on"], "change": change, "percent": percent, "big_change": big,
     }
+
+
+def warning(c: dict[str, Any]) -> str | None:
+    """The big-change warning when the change is over the limit (or any change from zero), else None."""
+    if c.get("previous") is None:
+        return None
+    if c.get("percent") is None:
+        return BIG_CHANGE if c.get("change") else None
+    return BIG_CHANGE if abs(c["percent"]) > BIG_CHANGE_PERCENT else None
 
 
 def _num(n: Number) -> str:

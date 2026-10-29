@@ -76,3 +76,22 @@ def test_parse_number():
     for bad in ("nan", "inf", "-Infinity", "ninety", ""):
         with pytest.raises(ValueError):
             ledger.parse_number(bad)
+
+def test_big_change_warning(ws, cli):
+    p = workspace.Paths(ws)
+    ledger.add(p, metric="ttm-days", period="2026-Q2", value=81, unit="days", source="s", method_notes="m",
+               approved_on="2026-07-10", tool="ttm")
+    assert ledger.BIG_CHANGE_PERCENT == 15
+    assert ledger.compare(p, "ttm-days", 94)["big_change"] is True
+    assert ledger.compare(p, "ttm-days", 90)["big_change"] is False
+    assert ledger.compare(p, "ttm-days", 68)["big_change"] is True
+    r = cli("--workspace", str(ws), "ledger", "compare", "--metric", "ttm-days", "--value", "94")
+    assert r.stdout.splitlines() == ["Last published: 81 days for 2026-Q2. Change: +13 (+16.0%).",
+                                     "This is a big change. Check the method before sending."]
+    r = cli("--workspace", str(ws), "ledger", "compare", "--metric", "ttm-days", "--value", "90")
+    assert "big change" not in r.stdout
+
+def test_change_from_zero_is_big():
+    assert ledger.warning({"previous": 0, "change": 3, "percent": None}) == ledger.BIG_CHANGE
+    assert ledger.warning({"previous": 0, "change": 0, "percent": None}) is None
+    assert ledger.warning({"previous": None}) is None

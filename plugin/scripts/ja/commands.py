@@ -14,7 +14,7 @@ import sys
 from datetime import date, datetime
 from pathlib import Path
 
-from ja import facts, helper, knowledge, profile, index, inputs, init, launcher, ledger, parts, proof, records, registry, role, runbook, settings, sources, status, tools, workspace
+from ja import facts, helper, knowledge, numbers, profile, index, inputs, init, launcher, ledger, parts, proof, records, registry, role, runbook, settings, sources, status, tools, workspace
 from ja.registry import is_date
 from ja.workspace import Paths
 
@@ -330,6 +330,38 @@ def cmd_ledger_compare(args: argparse.Namespace) -> int:
         print(json.dumps(result, indent=2, ensure_ascii=False))
     else:
         _say(ledger.describe(result))
+        if (warn := ledger.warning(result)):
+            _say(warn)
+    return 0
+
+
+@_guard
+def cmd_numbers_note(args: argparse.Namespace) -> int:
+    paths = _paths(args)
+    today = _today(args)
+    try:
+        lines, entry = numbers.note(paths, metric=args.metric, value=args.value, unit=args.unit, period=args.period,
+                                    tool_id=args.tool, method_source=args.method_source, excluded=args.excluded,
+                                    total=args.total, today=today, ts=_stamp(args))
+    except numbers.NumberProblem as exc:
+        raise Stop(str(exc)) from None
+    if args.json:
+        print(json.dumps({**entry, "note": lines}, indent=2, ensure_ascii=False))
+        return 0
+    for line in lines:
+        _say(line)
+    return 0
+
+
+@_guard
+def cmd_numbers_approve(args: argparse.Namespace) -> int:
+    paths = _paths(args)
+    try:
+        numbers.approve(paths, metric=args.metric, period=args.period, method_notes=args.method_notes,
+                        today=_today(args))
+    except numbers.NumberProblem as exc:
+        raise Stop(str(exc)) from None
+    _say(numbers.APPROVED)
     return 0
 
 
