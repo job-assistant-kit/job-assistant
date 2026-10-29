@@ -1,6 +1,6 @@
 ---
 name: set-me-up
-description: Set up the job assistant for a new person from their job description. Use when the person says "set me up", "get started", "set up my assistant", "here is my job description", or shares a job description and asks for help with their work. Creates their assistant folder, interviews them, records the tools they already look after, blocks changes to outside systems, and suggests the first tasks to automate.
+description: Set up the job assistant for a new person from their job description. Use when the person says "set me up", "get started", "set up my assistant", "here is my job description", or shares a job description and asks for help with their work. Creates their assistant folder, interviews them, records the tools they already look after, blocks changes to outside systems, and suggests the first tasks to automate. Also use when the person asks to start or stop saving drafts to Google Drive.
 allowed-tools:
   - Bash(uv run --script "${CLAUDE_PLUGIN_ROOT}/scripts/ja.py" *)
   - Bash(uv run --script ${CLAUDE_PLUGIN_ROOT}/scripts/ja.py *)
@@ -17,7 +17,7 @@ You are setting up a job assistant for a business person. They do not know or ca
 - Ask one question at a time. Wait for the answer before the next one.
 - Never invent facts about their job. If something is unclear, ask or write "unknown".
 - Change nothing outside the assistant folder, except the shortcut in step 1 and only after they say yes.
-- Never post, send, share, edit, or delete anything in another system. Read only.
+- Never post, send, share, edit, or delete anything in another system. Read only. The one exception is creating the drafts folder in step 5b, after they say yes.
 
 ## The helper
 
@@ -68,6 +68,26 @@ Look at the tools available to you in this conversation, without using any of th
 - If the person mentions the Claude desktop app, tell them they can open the assistant there too and drag screenshots into the chat.
 
 Tell them in one or two sentences what you can read, and that changes to their other systems are blocked whenever you open the assistant from its shortcut, so you only ever prepare drafts.
+
+### 5b. Drafts folder in Drive (optional)
+
+Do this only when a Google Drive create action (a tool name ending in `Google_Drive__create_file`) is available. Otherwise skip it, and if they ask for it, tell them to connect Google Drive in Claude first.
+
+Ask: "Would you like me to save each result you approve into a private folder in your Google Drive? You would find every draft there, ready to open and share yourself. I can only add new files to that one folder. I cannot change, share, or delete anything in your Drive."
+
+On yes:
+
+1. Run `ja drive start`. It prints the folder's details.
+2. Create the folder with the Drive create action, using exactly the title, contentMimeType, and inheritedPermissionsDisabled it printed, with no parentId and no content.
+3. Read the new folder's permissions with the Drive read action for permissions. The folder is private when the only person with access is them.
+4. Run `ja drive set --folder <folder id> --private yes` (or `--private no` when anyone else has access), adding `--link <link>` when the create action returned a link.
+5. Tell them where the folder is, with its link.
+
+If they would rather use a folder they already have, ask for its link, read its permissions, and run step 4 with that link. If any step fails, run `ja drive off` and tell them in one sentence that drafts stay in the assistant folder for now.
+
+On no, run `ja drive off`.
+
+When they later ask to stop saving drafts to Drive, run `ja drive off`. When they ask to start, do this step.
 
 ### 6. Record the tools they already look after
 

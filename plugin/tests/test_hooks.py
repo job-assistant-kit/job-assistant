@@ -1,4 +1,4 @@
-"""The two hooks: silent, fast, and never a failure for the session or the tool call."""
+"""The hooks: the two record keepers are silent and never fail; the Drive check decides and blocks on failure."""
 
 import json
 import os
@@ -147,10 +147,14 @@ def hook_commands():
 
 def test_hooks_file_shape():
     config, by_event = hook_commands()
-    assert set(by_event) == {"SessionStart", "PostToolUse"}
+    assert set(by_event) == {"SessionStart", "PostToolUse", "PreToolUse"}
     assert [g.get("matcher") for g in config["hooks"]["PostToolUse"]] == ["Skill"]
     names = {"SessionStart": "hook_session_start.py", "PostToolUse": "hook_record_run.py"}
-    for event, hooks in by_event.items():
+    # The Drive check must print its decision and block when it fails, so it is not quiet.
+    [gate] = by_event["PreToolUse"]
+    assert gate["onFailure"] == "block" and gate["timeout"] <= 30
+    assert gate["command"] == 'uv run --quiet --script "${CLAUDE_PLUGIN_ROOT}/scripts/hook_drive_gate.py"'
+    for event, hooks in ((e, h) for e, h in by_event.items() if e in names):
         assert len(hooks) == 1
         hook = hooks[0]
         assert hook["type"] == "command" and hook["timeout"] <= 5
@@ -172,3 +176,18 @@ def test_hook_commands_run_as_written(ws, write_tool):
                               cwd=ws, env=env, timeout=120)
         assert done.returncode == 0 and done.stdout == "" and done.stderr == "", event
     assert (ws / "data/upkeep.json").is_file() and len(runs(ws)) == 1
+
+
+@pytest.mark.skipif(shutil.which("uv") is None, reason="uv is not installed")
+def test_drive_gate_command_runs_as_written(ws):
+    from ja import drive
+    from ja.workspace import Paths
+    _, by_event = hook_commands()
+    command = by_event["PreToolUse"][0]["command"].replace("${CLAUDE_PLUGIN_ROOT}", str(PLUGIN))
+    payload = json.dumps({"tool_name": drive.CREATE, "cwd": str(ws), "tool_input": {"title": "x", "parentId": "1AbCdEfGhIjKl"}})
+    r = subprocess.run(command, shell=True, input=payload, capture_output=True, text=True, timeout=120)
+    assert r.returncode == 0, r.stderr
+    assert json.loads(r.stdout)["hookSpecificOutput"]["permissionDecision"] == "deny"
+    drive.set_folder(Paths(ws), "1AbCdEfGhIjKl", True, __import__("datetime").date(2026, 10, 29))
+    r = subprocess.run(command, shell=True, input=payload, capture_output=True, text=True, timeout=120)
+    assert json.loads(r.stdout)["hookSpecificOutput"]["permissionDecision"] == "allow"

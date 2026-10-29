@@ -126,6 +126,7 @@ Ask: "Does this look right?"
   5. Run `ja check <id> --result pass --detail "Checked on your first example"`.
   6. Run `ja tool status <id> working`. When the tool's numbers go to leaders, run `ja tool status <id> draft-not-checked` instead, and tell them it stays "Draft, not checked" until they confirm the method on a real run.
   7. Run `ja record build --tool <id> --recipe <recipe> --questions <number asked> --corrections <number of corrections>`.
+  8. Run `ja drive status --tool <id>`. If it says to save a copy, save the accepted result with the Drive create action, using exactly the parentId, title, and contentMimeType it prints and the result as textContent. Give them the link to the new draft. If it says not to save, or the save fails, say in one sentence that the result is in the assistant folder.
 
 ### 8. Tell them how to use it
 

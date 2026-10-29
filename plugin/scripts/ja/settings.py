@@ -57,11 +57,30 @@ def deny(paths: Paths, names: list[str]) -> int:
             current.append(name)
             added += 1
     perms["deny"] = current
+    _write(paths, data)
+    return added
+
+
+def _write(paths: Paths, data: dict[str, Any]) -> None:
     paths.settings.parent.mkdir(parents=True, exist_ok=True)
     tmp = paths.settings.with_suffix(".json.tmp")
     tmp.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     os.replace(tmp, paths.settings)
-    return added
+
+
+def set_blocked(paths: Paths, name: str, blocked: bool) -> None:
+    """Add one connector action to the deny list, or take it off."""
+    if not NAME.match(name):
+        raise SettingsProblem(f"I can only block connector actions, and this is not: {name!r}. Nothing was changed.")
+    data = load(paths)
+    perms = data.setdefault("permissions", {})
+    if not isinstance(perms, dict):
+        raise SettingsProblem("The assistant settings file is not in the expected shape, so I did not change it.")
+    current = [n for n in _list(perms, "deny") if n != name]
+    if blocked:
+        current.append(name)
+    perms["deny"] = current
+    _write(paths, data)
 
 
 def show(paths: Paths) -> tuple[list[str], list[str]]:

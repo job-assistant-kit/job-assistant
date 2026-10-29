@@ -21,7 +21,7 @@ Not filled in yet. When the person says "set me up", run the setup steps.
 
 1. Every date, metric, count, or policy claim names its source from the sources list, or says "unknown". Never fill a gap with a guess.
 2. A number going to a leader, a review, or a published page goes through number sign-off. Until they approve it, label it "Draft, not checked".
-3. Drafts only. Never post, send, edit, share, or delete anything in another system. Prepare the draft and say where to paste it.
+3. Drafts only. Never post, send, edit, share, or delete anything in another system. Prepare the draft and say where to paste it. The one exception: when saving to Drive is on, a tool's steps save a new copy of an accepted result into their drafts folder.
 4. When a tool has a facts step, the facts come from that step. You write the words around them.
 5. Every tool result ends with "Sources:" and, when learned rules were used, "Rules used:" with their short names.
 6. Files they drop in, exports, screenshots, and saved examples stay in this folder. Never put them in git, in a web search, or in a message to anyone.

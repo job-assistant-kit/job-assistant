@@ -11,10 +11,10 @@ import json
 import shutil
 import subprocess
 import sys
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 
-from ja import facts, helper, knowledge, numbers, profile, index, inputs, init, launcher, ledger, parts, proof, records, registry, role, runbook, settings, sources, status, tools, upkeep, workspace
+from ja import drive, facts, helper, knowledge, numbers, profile, index, inputs, init, launcher, ledger, parts, proof, records, registry, role, runbook, settings, sources, status, tools, upkeep, workspace
 from ja.registry import is_date
 from ja.workspace import Paths
 
@@ -436,11 +436,89 @@ def cmd_role_set(args: argparse.Namespace) -> int:
 @_guard
 def cmd_settings_deny(args: argparse.Namespace) -> int:
     paths = _paths(args)
+    kept = drive.kept_open(paths)
+    names = [n for n in args.names if n not in kept]
     try:
-        added = settings.deny(paths, args.names)
+        added = settings.deny(paths, names) if names else 0
     except settings.SettingsProblem as exc:
         raise Stop(str(exc)) from None
     _say(f"Blocked: {added} new write action{'' if added == 1 else 's'}.")
+    if kept & set(args.names):
+        _say("Left open: saving new drafts to the Drive drafts folder, which a separate check limits to that folder.")
+    return 0
+
+
+@_guard
+def cmd_drive_start(args: argparse.Namespace) -> int:
+    paths = _paths(args)
+    try:
+        title = drive.start(paths, args.title)
+    except (drive.DriveProblem, settings.SettingsProblem) as exc:
+        raise Stop(str(exc)) from None
+    _say("Ready to create the drafts folder in Drive. Create it with exactly these details:")
+    _say(f"  title: {title}")
+    _say(f"  contentMimeType: {drive.FOLDER_MIME}")
+    _say("  inheritedPermissionsDisabled: true")
+    _say("  no parentId and no content")
+    return 0
+
+
+def _yes_no(value: str) -> bool:
+    if value not in ("yes", "no"):
+        raise Stop("Say yes or no for --private.")
+    return value == "yes"
+
+
+@_guard
+def cmd_drive_set(args: argparse.Namespace) -> int:
+    paths = _paths(args)
+    try:
+        data = drive.set_folder(paths, args.folder, _yes_no(args.private), _today(args), args.link)
+    except (drive.DriveProblem, settings.SettingsProblem) as exc:
+        raise Stop(str(exc)) from None
+    _say(f"Saving to Drive is on. Drafts folder: {data['link']}")
+    if not data["private"]:
+        _say("The folder is shared with other people, so results from confidential tools will not be saved there.")
+    return 0
+
+
+@_guard
+def cmd_drive_off(args: argparse.Namespace) -> int:
+    paths = _paths(args)
+    try:
+        drive.off(paths)
+    except (drive.DriveProblem, settings.SettingsProblem) as exc:
+        raise Stop(str(exc)) from None
+    _say("Saving to Drive is off. Results stay in the assistant folder.")
+    return 0
+
+
+@_guard
+def cmd_drive_status(args: argparse.Namespace) -> int:
+    paths = _paths(args)
+    try:
+        if args.tool:
+            _tool_exists(paths, args.tool)
+            tool = registry.find(paths, args.tool)
+            now = datetime.combine(_today(args), datetime.now().time()) if args.today else datetime.now()
+            save, why, where = drive.target(paths, tool.name, tool.confidential, now)
+            _say(why)
+            if save:
+                _say(f"  parentId: {where['folder']}")
+                _say(f"  title: {where['title']}")
+                _say("  contentMimeType: text/markdown")
+                _say("  textContent: the accepted result")
+            return 0
+        data = drive.load(paths)
+    except drive.DriveProblem as exc:
+        raise Stop(str(exc)) from None
+    if data["state"] == "on":
+        shared = "private to you" if data["private"] else "shared with other people"
+        _say(f"Saving to Drive is on. Drafts folder ({shared}): {data.get('link', '')}")
+    elif data["state"] == "creating":
+        _say(f"The drafts folder is being set up. Folder name: {data['title']}")
+    else:
+        _say("Saving to Drive is off.")
     return 0
 
 

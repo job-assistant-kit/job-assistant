@@ -330,3 +330,16 @@ def test_pages_that_read_files_forbid_shell_looking():
     for name in ("set-me-up", "automate-this", "fix-tool", "learn", "check-number", "upkeep", "show-tools"):
         assert NO_SHELL_LINE in (root / "skills" / name / "SKILL.md").read_text(encoding="utf-8"), name
     assert NO_SHELL_LINE in (root / "templates" / "workspace" / "CLAUDE.md").read_text(encoding="utf-8")
+
+
+def test_drive_drafts_steps():
+    setup = (PLUGIN / "skills/set-me-up/SKILL.md").read_text(encoding="utf-8")
+    for line in ("ja drive start", "ja drive set --folder", "ja drive off", "inheritedPermissionsDisabled",
+                 "The one exception is creating the drafts folder"):
+        assert line in setup, line
+    assert "start or stop saving drafts to Google Drive" in setup.split("---")[1]
+    for page in ("templates/built-skill.md", "skills/automate-this/SKILL.md"):
+        text = (PLUGIN / page).read_text(encoding="utf-8")
+        assert "ja drive status --tool" in text and "exactly the parentId, title, and contentMimeType" in text, page
+    core = (PLUGIN / "templates/workspace/CLAUDE.md").read_text(encoding="utf-8")
+    assert "when saving to Drive is on" in core

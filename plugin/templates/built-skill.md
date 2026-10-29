@@ -50,3 +50,4 @@ Run `ja rules for {{id}}` before you write the result. Follow every rule it prin
 2. End with "Sources:" naming each source used. When `ja rules for {{id}}` printed rules, add "Rules used:" with the short name of each one you followed.
 3. Ask: "Does this look right?" On corrections, fix the result and show it again.
 4. When they say it looks right, run `ja record accepted {{id}}`. Offer to keep it as an example for future checks. On yes, save the result as `inbox/{{id}}-result.md` and run `ja proof save {{id}} --input <files> --output inbox/{{id}}-result.md`.
+5. Run `ja drive status --tool {{id}}`. If it says to save a copy, save the accepted result with the Drive create action, using exactly the parentId, title, and contentMimeType it prints and the result as textContent. Give them the link to the new draft. If it says not to save, or the save fails, say in one sentence that the result is in the assistant folder.

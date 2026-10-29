@@ -26,6 +26,7 @@ plugin/
   scripts/ja/templates/dashboard.html.j2
   scripts/hook_session_start.py        session start hook
   scripts/hook_record_run.py           after-tool hook on the Skill tool
+  scripts/hook_drive_gate.py           check before each Drive create action
   tests/                               pytest suite and synthetic fixtures
   pyproject.toml, uv.lock              test environment only
 README.md, PLUGIN-MAINTENANCE.md
@@ -59,7 +60,9 @@ Run as `uv run --script plugin/scripts/ja.py <command>`. Every command accepts `
 | `numbers note ...` / `numbers approve --metric M --period P [--method-notes TEXT] [--replace]` | Number sign-off note, then approval into the ledger; the note refuses when the unit differs from the last published number |
 | `check TOOL --result pass\|fail [--detail TEXT]` | Record a check result with today's date; a pass is refused while the tool has no saved example |
 | `role set --file PATH` | Replace the role description between its markers |
-| `settings deny NAME...` / `settings show` | Block connector write actions; list blocked and allowed actions |
+| `settings deny NAME...` / `settings show` | Block connector write actions; list blocked and allowed actions. While saving to Drive is on, the Drive create action is left open |
+| `drive start [--title T]` / `drive set --folder ID_OR_LINK --private yes\|no [--link URL]` / `drive off` | Drafts folder in Drive: get ready to create it, turn saving on for it, turn saving off. `start` and `set` take the Drive create action off the deny list; `off` puts it back |
+| `drive status [--tool TOOL]` | Whether saving is on; with a tool, whether to save its accepted result and the exact parentId and title to use. Confidential tools are not saved to a shared folder |
 | `sources add ...` / `sources exported ID DATE` / `sources list [--json]` | The sources list and export dates |
 | `sources changed ID` / `sources checked ID` | Set or clear a source's changed mark |
 | `tool add --from FILE` | Add a tool from a record file (built tools also get their page and checklist) |
@@ -94,6 +97,7 @@ Keep these names. Later code and the person's existing folders depend on them.
 | `assistant/knowledge.md` | Facts taught, one per line with source and date |
 | `.claude/skills/<id>/` | A tool: `tool.yaml`, `SKILL.md`, `checklist.yaml`, optional `input.yaml` and `facts.py` |
 | `.claude/settings.json` | Write blocks (deny) and the helper allow rule |
+| `.claude/drive-drafts.json` | Drafts folder choice: `{state: off}`, `{state: creating, title}`, or `{state: on, folder_id, private, checked, link}`. Under `.claude/` so only the helper changes it without a prompt |
 | `.claude/settings.local.json` | Allow rules for the helper's exact current path (written by `helper.sync`) |
 | `archive/<id>/` | Retired tools |
 | `parts/<id>/` | Shared parts: `part.yaml` with `part.py` (code) or `part.md` (writer) |
@@ -179,7 +183,9 @@ Limit, stated plainly: an audit hook is strong in-process enforcement for code w
 - SessionStart (no matcher, so every start, resume, clear, and compaction): `hook_session_start.py`. In an assistant folder (the hook input's `cwd` or a parent with the marker file; `JA_WORKSPACE` is ignored), it runs `helper.sync`, writes `data/upkeep.json`, and writes the tools page. It does not rewrite CLAUDE.md.
 - PostToolUse with matcher `Skill`: `hook_record_run.py`. When `tool_input.skill` (a leading `/` removed) is a tool id with a `tool.yaml` in the folder's `.claude/skills/`, it appends a `run` record. Kit pages are named `job-assistant:<name>` and never match.
 
-Both scripts swallow all output and catch every error, then exit 0. Typed slash commands (`/<tool id>`) do not go through the Skill tool, so they are not recorded; the person talks in plain words, so Claude calls the Skill tool.
+- PreToolUse with matcher `mcp__claude_ai_Google_Drive__create_file`: `hook_drive_gate.py`, with a 20 second timeout and `onFailure: block`. Outside an assistant folder it prints nothing. Inside one it prints an allow or deny decision from `drive.decide`: while the folder is being set up it allows only a folder at the top of My Drive with the exact title, inherited permissions off, and no content; once on, it allows only new non-folder files whose parentId is the drafts folder. An unreadable setting denies. The script and `ja.drive` use the standard library only (no dependencies), so it starts fast. The create action is never put on the allow list: without the hook (plugin off), a create asks the person.
+
+The first two scripts swallow all output and catch every error, then exit 0. Typed slash commands (`/<tool id>`) do not go through the Skill tool, so they are not recorded; the person talks in plain words, so Claude calls the Skill tool.
 
 ## Verified Claude Code behaviors
 
@@ -191,12 +197,19 @@ Verified 2026-10-29:
 - SessionStart adds `source` (`startup`, `resume`, `clear`, `compact`, `fork`) and sometimes `model`. Plain text a SessionStart hook prints on stdout with exit 0 is added to Claude's context, which is why the hook prints nothing (hooks reference, "Exit code 0" and "SessionStart input").
 - PostToolUse adds `tool_name`, `tool_input`, `tool_response`, `tool_use_id`, and optionally `duration_ms`, and fires only after a tool succeeds. The matcher is tested against `tool_name`; `Skill` is an exact match (hooks reference, "Matcher patterns" and "PostToolUse input").
 - The Skill tool's input parameter is `skill`, holding the page name; plugin pages are named `<plugin>:<page>`. Source: the permission rule form `Skill(skill:deploy)` in the skills page ("Restrict Claude's skill access") and the parameter form of rules in the permissions page ("Match by input parameter"). The hooks reference has no table for the Skill tool's input, so this is the documented name, not an observed one. Typing `/name` bypasses the tool hooks (hooks reference, "UserPromptExpansion").
-- In a plugin's `hooks/hooks.json`, `${CLAUDE_PLUGIN_ROOT}` is substituted in `command` (and `args`), and is also exported to the hook process as the environment variable `CLAUDE_PLUGIN_ROOT`, with `CLAUDE_PROJECT_DIR`. In shell form the docs ask for the placeholder in double quotes (hooks reference, "Exec form and shell form" and "Reference scripts by path"). The hooks use shell form so the output redirect and `|| true` apply. `onFailure` needs 2.1.295 and is not used.
+- In a plugin's `hooks/hooks.json`, `${CLAUDE_PLUGIN_ROOT}` is substituted in `command` (and `args`), and is also exported to the hook process as the environment variable `CLAUDE_PLUGIN_ROOT`, with `CLAUDE_PROJECT_DIR`. In shell form the docs ask for the placeholder in double quotes (hooks reference, "Exec form and shell form" and "Reference scripts by path"). The hooks use shell form so the output redirect and `|| true` apply. `onFailure` needs 2.1.295 and is used only by the Drive check (see below).
 - Exit codes: 0 is success; 2 blocks on events that can block; any other code or a hook that cannot start is a non-blocking error with a notice. A timed-out hook's output is discarded. Default command timeout is 600 seconds, so the 5 second limit is set per hook.
 - `${CLAUDE_PLUGIN_ROOT}` points at the installed version under the plugins root's `cache/<marketplace>/<plugin>/<version>/` for a marketplace installed from a git address. For a marketplace added from a local path, and for `--plugin-dir`, the plugin loads in place and `${CLAUDE_PLUGIN_ROOT}` points at the source folder. The folder template's allow rule covers the cache path; `helper.sync` adds the exact current path to `.claude/settings.local.json`, which covers the in-place cases (plugins reference, "Environment variables"; plugin loading page, "In-place and copied plugins").
 - Allow rules in a project's `.claude/settings.json` apply only after the person accepts the workspace trust dialog for that folder; deny rules always apply. `claude -p` never shows the dialog (permissions page, "Project allow rules and workspace trust").
 - Writes under a project's `.claude/` folder are protected paths: they prompt in `default` and `acceptEdits` modes even with an allow rule (permission modes page, "Protected paths").
 - The Skill tool needs permission, so a headless `claude -p` run must pass `--allowedTools Skill` (with the helper's Bash rule) for the pages to run without a prompt (tools reference table).
+
+Drive check, verified 2026-10-29:
+
+- PreToolUse fires for connector actions; the matcher is tested against the full `mcp__<server>__<tool>` name (hooks reference, "Matcher patterns").
+- A PreToolUse `permissionDecision: "allow"` skips the prompt but does not override a deny rule, so `drive start` and `drive set` take the create action off the deny list. A PreToolUse `"deny"` blocks even when an allow rule exists (hooks reference, "PreToolUse decision control").
+- `onFailure: "block"` makes a failed or timed-out PreToolUse hook block the call; without it the call goes on through the normal permission flow (hooks reference, "Block the action when a hook fails"). It needs Claude Code 2.1.295. On older versions the key is ignored, and because the create action has no allow rule, a failed check falls back to a prompt.
+- Claude Code reloads settings files when they change, so a deny list change from `drive start` or `drive off` applies in the running session (settings page, "When edits take effect").
 
 First recorded by earlier batches on 2026-10-28, and checked again on 2026-10-29:
 

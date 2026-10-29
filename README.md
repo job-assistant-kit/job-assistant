@@ -8,7 +8,7 @@ It works inside Claude Code, on a Mac or a Linux computer.
 
 ### What the computer needs
 
-- Claude Code, installed and signed in.
+- Claude Code, installed and signed in. Version 2.1.295 or later is best: older versions ask before each save to Drive if the Drive check fails to run.
 - uv, the program that runs the assistant's helper. Install it from https://docs.astral.sh/uv/.
 - git, for version history of the assistant folder. Without git the assistant still works, with no history.
 
@@ -67,10 +67,11 @@ Always open the assistant from the shortcut, so it starts in your folder.
 | "anything I should know?" | Up to three things that need your attention, such as a tool that is due |
 | "clean my inbox" | Lists inbox files older than 30 days and deletes them only on your yes |
 | "retire" or "bring back" with a tool's name | Puts a tool away or brings it back |
+| "save my drafts to Drive" or "stop saving to Drive" | Turns the private drafts folder in your Google Drive on or off |
 
 ### What it never does
 
-- It never posts, sends, edits, shares, or deletes anything in your other systems. Those actions are blocked by the folder's settings, not just by instructions. It prepares drafts and tells you where to paste them.
+- It never posts, sends, edits, shares, or deletes anything in your other systems. Those actions are blocked by the folder's settings, not just by instructions. It prepares drafts and tells you where to paste them. The one exception, if you turn it on during setup: it saves each result you approve as a new file in one private drafts folder in your Google Drive. A separate check refuses any other place, and it still cannot change, share, or delete anything there.
 - It never writes outside your assistant folder, except the shortcut, and only after you say yes.
 - It never puts internal names in a web search. Searches use general role words only, and it shows you the searches before running them.
 - It never puts your data in version history. Files you drop in, exports, saved examples, and run records stay in the folder on your computer and are left out of git.

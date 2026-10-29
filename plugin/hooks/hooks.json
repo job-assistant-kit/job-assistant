@@ -1,5 +1,5 @@
 {
-  "description": "Keeps the tools page and the upkeep notes current at the start of each session, and records each use of a tool.",
+  "description": "Keeps the tools page and the upkeep notes current at the start of each session, records each use of a tool, and allows Drive saves only into the drafts folder.",
   "hooks": {
     "SessionStart": [
       {
@@ -20,6 +20,19 @@
             "type": "command",
             "command": "uv run --quiet --script \"${CLAUDE_PLUGIN_ROOT}/scripts/hook_record_run.py\" >/dev/null 2>&1 || true",
             "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "mcp__claude_ai_Google_Drive__create_file",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --quiet --script \"${CLAUDE_PLUGIN_ROOT}/scripts/hook_drive_gate.py\"",
+            "timeout": 20,
+            "onFailure": "block"
           }
         ]
       }
