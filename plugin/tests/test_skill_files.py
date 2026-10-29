@@ -39,7 +39,7 @@ RECIPE_HEADINGS = ["When it fits", "What to ask", "Inputs and checks", "Facts st
 
 
 def test_there_are_skills():
-    assert [p.parent.name for p in SKILLS] == ["automate-this", "set-me-up"]
+    assert [p.parent.name for p in SKILLS] == ["automate-this", "fix-tool", "set-me-up"]
 
 
 def test_frontmatter_valid():
@@ -173,3 +173,14 @@ def test_every_helper_action_in_the_pages_exists():
             actions = [a for a in sub._actions if isinstance(a, type(parser._subparsers._group_actions[0]))]
             if actions:
                 assert len(words) > 1 and words[1] in actions[0].choices, f"{page.name}: ja {' '.join(words)}"
+
+
+def test_fix_tool_triggers_and_flow():
+    front, body = frontmatter(PLUGIN / "skills/fix-tool/SKILL.md")
+    for phrase in ("this broke", "is not working", "this gave the wrong answer", "pastes an error"):
+        assert phrase in front["description"]
+    order = ["ja tools", "ja input check", "ja proof run", "lives_at", "how_to_run", "ja tool draft", "ja tool files",
+             "ja tool improve", "ja check <id> --result pass"]
+    positions = [body.index(step) for step in order]
+    assert positions == sorted(positions)
+    assert "Never push, deploy, or publish" in body and "RUNBOOK.md" in body
