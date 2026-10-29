@@ -150,3 +150,18 @@ def test_save_refuses_duplicate_names_and_missing_files(ws, write_tool, cli, tmp
     r = cli("--workspace", str(ws), "proof", "save", "faq", "--input", str(tmp_path / "gone.txt"),
             "--output", str(tmp_path / "q.txt"))
     assert r.returncode == 1 and "I could not find the file gone.txt." in r.stderr
+
+
+def test_saved_example_keeps_received_dates(tool, cli, tmp_path):
+    import os
+    from datetime import datetime
+    files = inputs(tmp_path)
+    stamp = datetime.fromisoformat("2026-10-27T10:00:00").timestamp()
+    for f in files:
+        os.utime(f, (stamp, stamp))
+    cli("--workspace", str(tool), "facts", "run", "match", *files)
+    save(cli, tool, files)
+    meta = json.loads((tool / "data/proofs/match/case-1/meta.json").read_text(encoding="utf-8"))
+    assert meta["received"] == {"servicenow-export.csv": "2026-10-27", "inventory.csv": "2026-10-27"}
+    r = cli("--workspace", str(tool), "proof", "run", "match")
+    assert "servicenow-export.csv (received Oct 27, 2026)" in r.stdout

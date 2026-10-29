@@ -34,6 +34,8 @@ Run `ja input check {{id}} <files>` with the files they gave, in the order this 
 
 Run `ja facts run {{id}} <files>`. Use the facts exactly as it prints them, with their sources. Never count, add up, compare dates, or match names yourself. If it says this tool has no facts step, skip this section.
 
+It also prints when each file was received. In the result, give each file's export date if the person told you. Otherwise write "Export date: unknown" and the date it was received.
+
 ## Write the result
 
 <!-- fill: how to write the result. Say what goes in it, in what order, for which reader, and where each fact goes. -->

@@ -15,6 +15,7 @@ import shutil
 import subprocess
 import sys
 from dataclasses import dataclass
+from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
@@ -128,12 +129,34 @@ def run(paths: Paths, tool_id: str, name: str, files: list[Path], timeout: float
     return Result(data)
 
 
+def received(file: Path) -> str:
+    """The date the file was last saved on this computer (YYYY-MM-DD)."""
+    return datetime.fromtimestamp(Path(file).stat().st_mtime).date().isoformat()
+
+
 def fingerprint(files: list[Path]) -> list[dict[str, str]]:
     out = []
     for f in files:
         digest = hashlib.sha256(Path(f).read_bytes()).hexdigest()
-        out.append({"name": Path(f).name, "sha256": digest})
+        out.append({"name": Path(f).name, "sha256": digest, "received": received(f)})
     return out
+
+
+def day_text(day: str) -> str:
+    d = date.fromisoformat(day)
+    return f"{d:%b} {d.day}, {d.year}"
+
+
+RECEIVED_HEAD = "Received (saved on this computer): "
+EXPORT_UNKNOWN = "Export date: unknown unless the person says it."
+
+
+def received_lines(dates: dict[str, str]) -> list[str]:
+    """Plain lines naming when each input file arrived, for results that must say how old the data is."""
+    if not dates:
+        return []
+    listed = "; ".join(f"{name} on {day_text(day)}" for name, day in dates.items())
+    return [RECEIVED_HEAD + listed + ".", EXPORT_UNKNOWN]
 
 
 def last_paths(paths: Paths, tool_id: str) -> tuple[Path, Path]:

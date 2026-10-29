@@ -19,7 +19,7 @@ from typing import Any
 import yaml
 
 from ja import facts
-from ja.registry import Tool
+from ja.registry import Tool, is_date
 from ja.workspace import Paths
 
 CASE = re.compile(r"^case-(\d+)$")
@@ -36,6 +36,7 @@ class Case:
     folder: Path
     saved: str
     inputs: list[Path]
+    received: dict[str, str] = field(default_factory=dict)
 
     @property
     def output(self) -> Path:
@@ -78,8 +79,10 @@ def cases(paths: Paths, tool_id: str) -> list[Case]:
         names = meta.get("inputs") if isinstance(meta.get("inputs"), list) else None
         if names is None:
             names = sorted(p.name for p in (folder / "inputs").glob("*")) if (folder / "inputs").is_dir() else []
+        got = meta.get("received") if isinstance(meta.get("received"), dict) else {}
+        got = {str(k): v for k, v in got.items() if is_date(v)}
         out.append(Case(number=int(m.group(1)), folder=folder, saved=str(meta.get("saved", "unknown")),
-                        inputs=[folder / "inputs" / n for n in names]))
+                        inputs=[folder / "inputs" / n for n in names], received=got))
     return sorted(out, key=lambda c: c.number)
 
 
@@ -121,14 +124,15 @@ def save(paths: Paths, tool: Tool, inputs: list[Path], output: Path, today: date
         shutil.copyfile(output, tmp / "output.md")
         if with_facts:
             shutil.copyfile(facts.last_paths(paths, tool.id)[0], tmp / "facts.json")
-        meta = {"saved": today.isoformat(), "inputs": [Path(f).name for f in ordered]}
+        meta = {"saved": today.isoformat(), "inputs": [Path(f).name for f in ordered],
+                "received": {Path(f).name: facts.received(f) for f in ordered}}
         (tmp / "meta.json").write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8")
         tmp.rename(folder)
     except OSError:
         shutil.rmtree(tmp, ignore_errors=True)
         raise
-    return Case(number=number, folder=folder, saved=today.isoformat(), inputs=[folder / "inputs" / n
-                                                                                for n in meta["inputs"]])
+    return Case(number=number, folder=folder, saved=today.isoformat(),
+                inputs=[folder / "inputs" / n for n in meta["inputs"]], received=meta["received"])
 
 
 def _shown(fact: dict[str, Any]) -> str:

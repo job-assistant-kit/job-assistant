@@ -94,3 +94,28 @@ def test_step_sees_the_workspace(tool, cli):
                "'value': os.environ['JA_WORKSPACE']}]}))\n")
     r = cli("--workspace", str(tool), "facts", "run", "match", *FILES)
     assert f"Where: {tool.resolve()}" in r.stdout
+
+
+def _set_mtime(path, day):
+    import os
+    from datetime import datetime
+    stamp = datetime.fromisoformat(day + "T10:00:00").timestamp()
+    os.utime(path, (stamp, stamp))
+
+
+def test_run_prints_when_each_file_was_received(tool, cli, tmp_path):
+    files = []
+    for name, day in (("servicenow-export.csv", "2026-10-27"), ("inventory.csv", "2026-10-20")):
+        shutil.copyfile(SYN / name, tmp_path / name)
+        _set_mtime(tmp_path / name, day)
+        files.append(str(tmp_path / name))
+    r = cli("--workspace", str(tool), "facts", "run", "match", *files)
+    assert r.returncode == 0, r.text
+    assert ("Received (saved on this computer): servicenow-export.csv on Oct 27, 2026; "
+            "inventory.csv on Oct 20, 2026.") in r.stdout
+    assert 'Export date: unknown unless the person says it.' in r.stdout
+    inputs = json.loads((tool / "data/last/match.inputs.json").read_text(encoding="utf-8"))
+    assert [i["received"] for i in inputs] == ["2026-10-27", "2026-10-20"]
+    data = json.loads(cli("--workspace", str(tool), "facts", "run", "match", *files, "--json").stdout)
+    assert data["received"] == {"servicenow-export.csv": "2026-10-27", "inventory.csv": "2026-10-20"}
+    assert "received" not in json.loads((tool / "data/last/match.json").read_text(encoding="utf-8"))

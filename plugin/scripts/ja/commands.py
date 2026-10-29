@@ -557,10 +557,14 @@ def cmd_facts_run(args: argparse.Namespace) -> int:
     except facts.FactsProblem as exc:
         raise Stop(str(exc)) from None
     facts.save_last(paths, tool.id, result, files)
+    dates = {f.name: facts.received(f) for f in files}
     if args.json:
-        print(json.dumps(result.data, indent=2, ensure_ascii=False))
+        print(json.dumps({**result.data, "received": dates}, indent=2, ensure_ascii=False))
         return 0
     for line in facts.describe(result):
+        _say(line)
+    _say("")
+    for line in facts.received_lines(dates):
         _say(line)
     return 0
 
@@ -616,7 +620,9 @@ def cmd_proof_run(args: argparse.Namespace) -> int:
             _say("  The facts match the saved example.")
         else:
             _say(f"  {outcome.note}")
-        _say("  Input files: " + ", ".join(str(p) for p in case.inputs))
+        _say("  Input files: " + ", ".join(
+            f"{p} (received {facts.day_text(case.received[p.name])})" if p.name in case.received else str(p)
+            for p in case.inputs))
         _say(f"  Saved result: {case.output}")
         _say("  Checklist:")
         for item in items or ["(This tool has no checklist items yet.)"]:
