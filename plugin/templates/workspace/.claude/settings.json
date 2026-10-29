@@ -3,7 +3,9 @@
     "defaultMode": "acceptEdits",
     "allow": [
       "Bash(uv run --script */plugins/cache/job-assistant/job-assistant/*/scripts/ja.py *)",
-      "Bash(uv run --script */plugins/cache/job-assistant/job-assistant/*/scripts/ja.py\" *)"
+      "Bash(uv run --script */plugins/cache/job-assistant/job-assistant/*/scripts/ja.py\" *)",
+      "Bash(git status)",
+      "Bash(git status --short)"
     ],
     "deny": [
       "mcp__claude_ai_Google_Drive__create_file",

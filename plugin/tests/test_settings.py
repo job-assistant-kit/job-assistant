@@ -33,6 +33,9 @@ def test_template_settings(tmp_path):
     assert CACHE_RULE in allow
     assert not any("facts.py" in rule for rule in allow)
     assert "Bash(uv run --script *ja.py*)" not in allow
+    # Checking what version history holds only reads, so it never needs a prompt.
+    assert "Bash(git status)" in allow and "Bash(git status --short)" in allow
+    assert not any(rule.startswith("Bash(git") and "status" not in rule for rule in allow)
 
 
 def test_deny_adds_and_dedupes(ws):
