@@ -131,6 +131,7 @@ def build_parser() -> argparse.ArgumentParser:
     lp.add_argument("--method-notes", dest="method_notes", required=True)
     lp.add_argument("--tool", required=True)
     lp.add_argument("--date", default=None, metavar="YYYY-MM-DD")
+    lp.add_argument("--replace", action="store_true", help="replace the number already saved for this period")
     lp.set_defaults(func=commands.cmd_ledger_add)
     lp = lsub.add_parser("compare", parents=[common], help="compare with the last published value")
     lp.add_argument("--metric", required=True)
@@ -138,6 +139,9 @@ def build_parser() -> argparse.ArgumentParser:
     lp.add_argument("--unit", required=True)
     lp.add_argument("--json", action="store_true", help="output for code")
     lp.set_defaults(func=commands.cmd_ledger_compare)
+    lp = lsub.add_parser("metrics", parents=[common], help="list the metrics already published")
+    lp.add_argument("--json", action="store_true", help="output for code")
+    lp.set_defaults(func=commands.cmd_ledger_metrics)
 
     p = sub.add_parser("numbers", parents=[common], help="sign-off for numbers that go to leaders")
     nsub = p.add_subparsers(dest="action", metavar="action", required=True)
@@ -156,6 +160,7 @@ def build_parser() -> argparse.ArgumentParser:
     np_.add_argument("--metric", required=True)
     np_.add_argument("--period", required=True)
     np_.add_argument("--method-notes", dest="method_notes", default=None, metavar="TEXT")
+    np_.add_argument("--replace", action="store_true", help="replace the number already saved for this period")
     np_.set_defaults(func=commands.cmd_numbers_approve)
 
     p = sub.add_parser("check", parents=[common], help="record the result of a tool check")

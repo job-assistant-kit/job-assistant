@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import json
 import math
+import os
 import re
 from typing import Any
 
@@ -46,15 +48,61 @@ def _check_number(value: Any) -> None:
         raise ValueError(NOT_A_NUMBER)
 
 
+def key(text: Any) -> str:
+    """How names are matched: case does not count, and spaces are trimmed."""
+    return " ".join(str(text or "").split()).casefold()
+
+
+class AlreadyApproved(ValueError):
+    """A number for this metric and period is already in the ledger. The message is plain."""
+
+
+def approved_text(e: dict[str, Any]) -> str:
+    return f"{e.get('period')} was already approved on {e['approved_on']} as {_num(e['value'])}."
+
+
+def known_name(paths: Paths, metric: str) -> str:
+    """The name already used in the ledger for this metric, or the given name trimmed."""
+    found = latest(paths, metric)
+    return str(found["metric"]) if found else " ".join(metric.split())
+
+
+def _replace(paths: Paths, metric: str, period: str, entry: dict[str, Any]) -> None:
+    """Rewrite the ledger in one step: the rows for this metric and period become the new entry.
+
+    Other lines, readable or not, stay as they are.
+    """
+    kept = []
+    for line in paths.ledger.read_text(encoding="utf-8", errors="replace").splitlines():
+        try:
+            item = json.loads(line)
+        except json.JSONDecodeError:
+            item = None
+        if isinstance(item, dict) and key(item.get("metric")) == key(metric) and key(item.get("period")) == key(period):
+            continue
+        kept.append(line)
+    kept.append(json.dumps(entry, ensure_ascii=False))
+    tmp = paths.ledger.with_suffix(".jsonl.tmp")
+    tmp.write_text("".join(f"{line}\n" for line in kept), encoding="utf-8")
+    os.replace(tmp, paths.ledger)
+
+
 def add(paths: Paths, *, metric: str, period: str, value: Number, unit: str, source: str,
-        method_notes: str, approved_on: str, tool: str) -> None:
+        method_notes: str, approved_on: str, tool: str, replace: bool = False) -> None:
+    """Save an approved number. A metric and period already approved is replaced only with replace=True."""
     _check_number(value)
     if not is_date(approved_on):
         raise ValueError("approved_on must be a date like 2026-10-28")
-    append_line(paths.ledger, {
-        "metric": metric, "period": period, "value": _tidy(value), "unit": unit,
-        "source": source, "method_notes": method_notes, "approved_on": approved_on, "tool": tool,
-    })
+    metric = known_name(paths, metric)
+    entry = {"metric": metric, "period": " ".join(period.split()), "value": _tidy(value), "unit": unit,
+             "source": source, "method_notes": method_notes, "approved_on": approved_on, "tool": tool}
+    before = approved(paths, metric, period)
+    if before is None:
+        append_line(paths.ledger, entry)
+    elif replace:
+        _replace(paths, metric, period, entry)
+    else:
+        raise AlreadyApproved(f"{approved_text(before)} I will only replace it if you say so.")
 
 
 def entries(paths: Paths, metric: str | None = None) -> list[dict[str, Any]]:
@@ -65,19 +113,57 @@ def entries(paths: Paths, metric: str | None = None) -> list[dict[str, Any]]:
             continue
         if isinstance(v, float) and not math.isfinite(v):
             continue
-        if metric is not None and e.get("metric") != metric:
+        if metric is not None and key(e.get("metric")) != key(metric):
             continue
         out.append(e)
     return out
 
 
-def latest(paths: Paths, metric: str) -> dict[str, Any] | None:
+def _last(rows: list[tuple[int, dict[str, Any]]]) -> dict[str, Any] | None:
     """The entry with the latest approval date; on a tie, the one written last."""
-    best: dict[str, Any] | None = None
-    for e in entries(paths, metric):
-        if best is None or e["approved_on"] >= best["approved_on"]:
-            best = e
-    return best
+    if not rows:
+        return None
+    return max(rows, key=lambda r: (r[1]["approved_on"], r[0]))[1]
+
+
+def approved(paths: Paths, metric: str, period: str) -> dict[str, Any] | None:
+    """The latest ledger entry for this metric and period, if it was already approved."""
+    return _last([(i, e) for i, e in enumerate(entries(paths, metric)) if key(e.get("period")) == key(period)])
+
+
+def latest(paths: Paths, metric: str, period: str | None = None) -> dict[str, Any] | None:
+    """The latest published entry for the metric.
+
+    With a period, entries for that period are left out. When the period was already
+    approved, only entries approved before its first approval count, so a period noted
+    again is compared with an earlier period.
+    """
+    rows = list(enumerate(entries(paths, metric)))
+    if period is not None:
+        same = [(e["approved_on"], i) for i, e in rows if key(e.get("period")) == key(period)]
+        rows = [(i, e) for i, e in rows if key(e.get("period")) != key(period)]
+        if same:
+            first = min(same)
+            rows = [(i, e) for i, e in rows if (e["approved_on"], i) < first]
+    return _last(rows)
+
+
+def metrics(paths: Paths) -> list[dict[str, Any]]:
+    """Each published metric once, with its unit and its latest period, sorted by name."""
+    names: dict[str, str] = {}
+    for e in entries(paths):
+        names.setdefault(key(e.get("metric")), str(e.get("metric")))
+    out = []
+    for name in names.values():
+        last = latest(paths, name)
+        out.append({"metric": str(last["metric"]), "unit": str(last.get("unit") or ""),
+                    "period": str(last.get("period") or ""), "approved_on": last["approved_on"]})
+    return sorted(out, key=lambda m: key(m["metric"]))
+
+
+def metric_line(m: dict[str, Any]) -> str:
+    unit = f"in {m['unit']}" if m["unit"].strip() else "no unit"
+    return f"{m['metric']}, {unit}. Last published for {m['period']}, approved on {m['approved_on']}."
 
 
 class UnitMismatch(ValueError):
@@ -99,9 +185,10 @@ def check_unit(prev: dict[str, Any], unit: str) -> None:
                        f"{_unit_words(unit or '')}. I cannot compare them. Check which unit is right.")
 
 
-def compare(paths: Paths, metric: str, value: Number, unit: str) -> dict[str, Any]:
+def compare(paths: Paths, metric: str, value: Number, unit: str, period: str | None = None) -> dict[str, Any]:
+    """Compare with the last published number. With a period, see latest() for which one counts."""
     _check_number(value)
-    prev = latest(paths, metric)
+    prev = latest(paths, metric, period)
     if prev is None:
         return {"previous": None}
     check_unit(prev, unit)

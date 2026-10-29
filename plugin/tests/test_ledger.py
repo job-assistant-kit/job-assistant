@@ -1,3 +1,5 @@
+import json
+
 from ja import ledger, workspace
 
 def test_ledger_compare(ws):
@@ -122,3 +124,76 @@ def test_compare_names_a_missing_unit(ws):
     with pytest.raises(ledger.UnitMismatch, match="The last published number has no unit and this one is in days."):
         ledger.compare(p, "m", 2, "days")
     assert ledger.compare(p, "m", 2, "")["previous"] == 1
+
+
+def _add(p, metric, period, value, day, unit="days"):
+    ledger.add(p, metric=metric, period=period, value=value, unit=unit, source="s", method_notes="m",
+               approved_on=day, tool="ttm")
+
+
+def test_metric_names_ignore_case_and_spaces(ws):
+    p = workspace.Paths(ws)
+    _add(p, "ttm-days", "2026-Q2", 81, "2026-07-10")
+    assert ledger.compare(p, "  TTM-Days ", 94, "days")["previous"] == 81
+    _add(p, " TTM-DAYS", "2026-Q3", 94, "2026-10-10")
+    assert [e["metric"] for e in ledger.entries(p, "ttm-days")] == ["ttm-days", "ttm-days"]
+
+
+def test_metrics_lists_published_names(ws, cli):
+    p = workspace.Paths(ws)
+    r = cli("--workspace", str(ws), "ledger", "metrics")
+    assert r.returncode == 0 and r.stdout.strip() == "No numbers have been published yet."
+    _add(p, "ttm-days", "2026-Q2", 81, "2026-07-10")
+    _add(p, "ttm-days", "2026-Q3", 94, "2026-10-10")
+    _add(p, "on-time", "2026-Q3", 92.5, "2026-10-11", unit="%")
+    r = cli("--workspace", str(ws), "ledger", "metrics")
+    assert r.stdout.splitlines() == [
+        "on-time, in %. Last published for 2026-Q3, approved on 2026-10-11.",
+        "ttm-days, in days. Last published for 2026-Q3, approved on 2026-10-10.",
+    ]
+    data = json.loads(cli("--workspace", str(ws), "ledger", "metrics", "--json").stdout)
+    assert data == [
+        {"metric": "on-time", "unit": "%", "period": "2026-Q3", "approved_on": "2026-10-11"},
+        {"metric": "ttm-days", "unit": "days", "period": "2026-Q3", "approved_on": "2026-10-10"},
+    ]
+
+
+def test_same_period_needs_replace(ws, cli):
+    import pytest
+    p = workspace.Paths(ws)
+    _add(p, "ttm-days", "2026-Q2", 81, "2026-07-10")
+    with pytest.raises(ledger.AlreadyApproved) as exc:
+        _add(p, "TTM-days", "2026-Q2", 85, "2026-07-12")
+    assert str(exc.value).startswith("2026-Q2 was already approved on 2026-07-10 as 81.")
+    r = cli("--workspace", str(ws), "ledger", "add", "--metric", "ttm-days", "--period", "2026-Q2", "--value", "85",
+            "--unit", "days", "--source", "s", "--method-notes", "m", "--tool", "ttm", "--date", "2026-07-12")
+    assert r.returncode == 1 and "2026-Q2 was already approved on 2026-07-10 as 81." in r.stderr
+    assert [e["value"] for e in ledger.entries(p, "ttm-days")] == [81]
+    r = cli("--workspace", str(ws), "ledger", "add", "--metric", "ttm-days", "--period", "2026-Q2", "--value", "85",
+            "--unit", "days", "--source", "s", "--method-notes", "m", "--tool", "ttm", "--date", "2026-07-12",
+            "--replace")
+    assert r.returncode == 0, r.text
+    assert [(e["period"], e["value"]) for e in ledger.entries(p, "ttm-days")] == [("2026-Q2", 85)]
+
+
+def test_replace_keeps_other_lines(ws):
+    p = workspace.Paths(ws)
+    _add(p, "ttm-days", "2026-Q1", 90, "2026-04-10")
+    p.ledger.write_text(p.ledger.read_text() + "garbage\n")
+    _add(p, "ttm-days", "2026-Q2", 81, "2026-07-10")
+    ledger.add(p, metric="ttm-days", period="2026-Q2", value=85, unit="days", source="s", method_notes="m",
+               approved_on="2026-07-12", tool="ttm", replace=True)
+    assert "garbage" in p.ledger.read_text()
+    assert [(e["period"], e["value"]) for e in ledger.entries(p, "ttm-days")] == [("2026-Q1", 90), ("2026-Q2", 85)]
+
+
+def test_renoting_a_period_compares_with_an_earlier_one(ws):
+    p = workspace.Paths(ws)
+    _add(p, "ttm-days", "2026-Q1", 90, "2026-04-10")
+    _add(p, "ttm-days", "2026-Q2", 81, "2026-07-10")
+    _add(p, "ttm-days", "2026-Q3", 94, "2026-10-10")
+    c = ledger.compare(p, "ttm-days", 85, "days", period="2026-Q2")
+    assert c["previous"] == 90 and c["period"] == "2026-Q1"
+    assert ledger.approved(p, "ttm-days", "2026-q2 ")["value"] == 81
+    assert ledger.compare(p, "ttm-days", 85, "days", period="2026-Q4")["period"] == "2026-Q3"
+    assert ledger.compare(p, "ttm-days", 85, "days", period="2026-Q1") == {"previous": None}

@@ -325,7 +325,8 @@ def cmd_ledger_add(args: argparse.Namespace) -> int:
         raise Stop("The date must look like 2026-10-28.")
     try:
         ledger.add(paths, metric=args.metric, period=args.period, value=args.value, unit=args.unit,
-                   source=args.source, method_notes=args.method_notes, approved_on=approved, tool=args.tool)
+                   source=args.source, method_notes=args.method_notes, approved_on=approved, tool=args.tool,
+                   replace=args.replace)
     except ValueError as exc:
         raise Stop(str(exc)) from None
     _say(f"Saved {args.value} {args.unit} for {args.period} as the published {args.metric} number.")
@@ -345,6 +346,20 @@ def cmd_ledger_compare(args: argparse.Namespace) -> int:
         _say(ledger.describe(result))
         if (warn := ledger.warning(result)):
             _say(warn)
+    return 0
+
+
+@_guard
+def cmd_ledger_metrics(args: argparse.Namespace) -> int:
+    paths = _paths(args)
+    found = ledger.metrics(paths)
+    if args.json:
+        print(json.dumps(found, indent=2, ensure_ascii=False))
+        return 0
+    if not found:
+        _say("No numbers have been published yet.")
+    for m in found:
+        _say(ledger.metric_line(m))
     return 0
 
 
@@ -371,7 +386,7 @@ def cmd_numbers_approve(args: argparse.Namespace) -> int:
     paths = _paths(args)
     try:
         numbers.approve(paths, metric=args.metric, period=args.period, method_notes=args.method_notes,
-                        today=_today(args))
+                        today=_today(args), replace=args.replace)
     except numbers.NumberProblem as exc:
         raise Stop(str(exc)) from None
     _say(numbers.APPROVED)

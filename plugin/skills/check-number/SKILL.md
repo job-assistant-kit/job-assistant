@@ -33,6 +33,8 @@ Below, `ja <action>` means that line. Run each helper line on its own, from the 
 
 You need: the metric (a short name, such as `ttm-days`), the value, the unit, the period (such as `2026-Q3`), and the tool that made it. When a tool just ran, take them from its facts step: the facts it printed, and its counts of rows used, left out, and in total.
 
+First run `ja ledger metrics`. It lists the numbers already published, each with its name, its unit, and its last period. If this number is one of them, use that exact name and check that the unit is the same. Only make up a new name for a number that was never published.
+
 If the person brings a number no tool made, ask where it came from. Without a tool you can still run `ja ledger compare --metric <metric> --value <value> --unit <unit>` and read the method, but the number cannot be saved as approved. Offer to build a tool for it with the automate-this steps.
 
 ### 2. Find the method document
@@ -70,6 +72,8 @@ If they differ, say exactly what differs. If the facts step can give the number 
 
 If the note says the method copy is old, ask for a fresh copy before relying on the method check.
 
+If the note says the period was already approved, tell the person: a number for this period is already saved, and this one would replace it. The comparison in the note is then with the period before.
+
 End with the label "Draft, not checked". Do not say the number is checked, safe, or approved.
 
 ### 6. Approval
@@ -81,5 +85,7 @@ Only when the person says "approve", "yes, send it", or words that plainly appro
 3. If the tool shows as "Draft, not checked" because its method was not yet confirmed, ask: "Now that you have confirmed the method on a real run, shall I mark <tool name> as working?" On yes, run `ja tool status <id> working`.
 
 If you found a difference in step 5 and they have not said how to handle it, do not approve. Ask first.
+
+If the helper says the period was already approved, ask: "A number for <period> was already approved on <date>. Shall I replace it with this one?" Only on a clear yes, run the same approve line with `--replace` added. Without a yes, leave the saved number as it is.
 
 If they do not approve, leave the number as a draft. It stays waiting until a new note replaces it.

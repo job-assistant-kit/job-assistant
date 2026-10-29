@@ -54,8 +54,9 @@ Run as `uv run --script plugin/scripts/ja.py <command>`. Every command accepts `
 | `record build --tool T --questions N --corrections N [--recipe R] [--minutes N]` | Record a finished build; minutes come from `build start` when not given |
 | `build start --id ID` | Note when a build started |
 | `build unfinished [--json]` | Builds started and not recorded, with the steps done and the next one |
-| `ledger add ...` / `ledger compare --metric M --value V --unit U [--json]` | Published-numbers ledger; compare warns past a 15 percent change and refuses when the unit differs from the last published number |
-| `numbers note ...` / `numbers approve --metric M --period P [--method-notes TEXT]` | Number sign-off note, then approval into the ledger; the note refuses when the unit differs from the last published number |
+| `ledger add ... [--replace]` / `ledger compare --metric M --value V --unit U [--json]` | Published-numbers ledger; compare warns past a 15 percent change and refuses when the unit differs from the last published number |
+| `ledger metrics [--json]` | The metrics already published, each with its unit, last period, and approval date |
+| `numbers note ...` / `numbers approve --metric M --period P [--method-notes TEXT] [--replace]` | Number sign-off note, then approval into the ledger; the note refuses when the unit differs from the last published number |
 | `check TOOL --result pass\|fail [--detail TEXT]` | Record a check result with today's date |
 | `role set --file PATH` | Replace the role description between its markers |
 | `settings deny NAME...` / `settings show` | Block connector write actions; list blocked and allowed actions |
@@ -139,7 +140,7 @@ Unknown fields are kept on save. An invalid record is reported as `<id>: <field>
 
 - `sources.yaml`: list of {id, name, kind: `living` or `fixed`, where, access: `connector` or `file`, version, exported: YYYY-MM-DD or null, fresh_days (default 7), changed (default false)}. Stale: a living source read from a file whose copy is older than `fresh_days`, or any export date in the future. A file source with no export date has no copy yet: it is not stale, and upkeep lists it once as a reminder (kind `nocopy`, shown under Ideas).
 - `profile.yaml`: {rules: list of {id, text, reason, scope: `everywhere` or list of tool ids, added, state: `pending`, `active`, or `held` (missing means active), held_reason}}. Only active rules are used.
-- `runs.jsonl`: {ts, tool, event: `run`, `accepted`, or `corrected`}. `tasks.jsonl`: {ts, event: `task`, words}. `builds.jsonl`: {ts, tool, recipe, questions, corrections, minutes}. `ledger.jsonl`: {metric, period, value, unit, source, method_notes, approved_on, tool}.
+- `runs.jsonl`: {ts, tool, event: `run`, `accepted`, or `corrected`}. `tasks.jsonl`: {ts, event: `task`, words}. `builds.jsonl`: {ts, tool, recipe, questions, corrections, minutes}. `ledger.jsonl`: {metric, period, value, unit, source, method_notes, approved_on, tool}. Metric names and periods match without regard to case or spaces around them; a new number takes the name already in the ledger. One row per metric and period: adding a period already approved is refused unless `--replace` is given, which rewrites the ledger with the new row in place of the old one. Noting a period already approved compares with the latest entry approved before that period's first approval, and the note says when the period was approved and as what.
 - Facts step output (printed by `facts.py`): {facts: list of {id, label, value, unit, source, notes}, counts: {name: whole number}, problems: list of sentences}.
 - `upkeep.json`: {date, items: list of {kind, text, say, tool, name}}. Kinds in order of urgency: `due`, `update`, `unfinished`, `inbox`, `idea`, `stable`, `retire`.
 

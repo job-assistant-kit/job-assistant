@@ -126,3 +126,49 @@ def test_note_refuses_another_unit(ws, write_tool, cli):
     assert r.stderr.strip() == ("The last published number is in days and this one is in %. "
                                 "I cannot compare them. Check which unit is right.")
     assert pending(ws) == []
+
+
+def approve(cli, ws, *extra, period="2026-Q3", metric="ttm-days"):
+    return cli("--workspace", str(ws), "--today", "2026-10-30", "numbers", "approve", "--metric", metric,
+               "--period", period, *extra)
+
+
+def test_note_reuses_the_published_name(ws, write_tool, cli):
+    seed(ws, write_tool)
+    r = cli("--workspace", str(ws), "--today", T, "numbers", "note", "--metric", " TTM-Days ", "--value", "94",
+            "--unit", "days", "--period", "2026-Q3", "--tool", "ttm", "--method-source", "ttm-method")
+    assert r.returncode == 0, r.text
+    assert r.stdout.splitlines()[:2] == ["ttm-days: 94 days for 2026-Q3, from TTM report.",
+                                         "Last published: 81 days for 2026-Q2. Change: +13 (+16.0%)."]
+    assert pending(ws)[0]["metric"] == "ttm-days"
+    assert approve(cli, ws, metric="TTM-DAYS").returncode == 0
+    assert pending(ws) == []
+
+
+def test_renoting_an_approved_period(ws, write_tool, cli):
+    seed(ws, write_tool)
+    note(cli, ws)
+    assert approve(cli, ws).returncode == 0
+    r = cli("--workspace", str(ws), "--today", T, "numbers", "note", "--metric", "ttm-days", "--value", "96",
+            "--unit", "days", "--period", "2026-Q3", "--tool", "ttm", "--method-source", "ttm-method")
+    assert r.returncode == 0, r.text
+    lines = r.stdout.splitlines()
+    assert lines[1] == "2026-Q3 was already approved on 2026-10-30 as 94."
+    assert lines[2] == "Last published: 81 days for 2026-Q2. Change: +15 (+18.5%)."
+
+
+def test_approving_a_period_again_needs_replace(ws, write_tool, cli):
+    seed(ws, write_tool)
+    note(cli, ws)
+    approve(cli, ws)
+    cli("--workspace", str(ws), "--today", T, "numbers", "note", "--metric", "ttm-days", "--value", "96",
+        "--unit", "days", "--period", "2026-Q3", "--tool", "ttm", "--method-source", "ttm-method")
+    r = approve(cli, ws)
+    assert r.returncode == 1
+    assert "2026-Q3 was already approved on 2026-10-30 as 94." in r.stderr
+    assert [p["value"] for p in pending(ws)] == [96]
+    assert [e["value"] for e in ledger.entries(workspace.Paths(ws), "ttm-days")] == [81, 94]
+    r = approve(cli, ws, "--replace")
+    assert r.returncode == 0, r.text
+    assert [e["value"] for e in ledger.entries(workspace.Paths(ws), "ttm-days")] == [81, 96]
+    assert pending(ws) == []

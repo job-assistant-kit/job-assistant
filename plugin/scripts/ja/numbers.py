@@ -101,13 +101,19 @@ def note(paths: Paths, *, metric: str, value: ledger.Number, unit: str, period: 
     src = by_id.get(method_source)
     if src is None:
         raise NumberProblem(f"The method document {method_source} is not on your sources list. Add it first.")
+    metric = ledger.known_name(paths, metric)
+    period = " ".join(period.split())
     try:
-        comparison = ledger.compare(paths, metric, value, unit)
+        comparison = ledger.compare(paths, metric, value, unit, period=period)
     except ledger.UnitMismatch as exc:
         raise NumberProblem(str(exc)) from None
     unit_text = f" {unit}" if unit else ""
     method, reachable = method_line(src, today)
-    lines = [f"{metric}: {_num(value)}{unit_text} for {period}, from {tool.name}.", ledger.describe(comparison)]
+    lines = [f"{metric}: {_num(value)}{unit_text} for {period}, from {tool.name}."]
+    already = ledger.approved(paths, metric, period)
+    if already is not None:
+        lines.append(ledger.approved_text(already))
+    lines.append(ledger.describe(comparison))
     if (warn := ledger.warning(comparison)):
         lines.append(warn)
     lines.append(method)
@@ -118,15 +124,23 @@ def note(paths: Paths, *, metric: str, value: ledger.Number, unit: str, period: 
              "source": _data_source(tool, by_id, src.id), "method_source": src.id, "method_name": src.name,
              "method_reachable": reachable, "excluded": excluded, "total": total,
              "noted_on": today.isoformat(), "ts": ts or stamp(today)}
-    kept = [p for p in _read_pending(paths) if (p.get("metric"), p.get("period")) != (metric, period)]
+    kept = [p for p in _read_pending(paths) if not _same(p, metric, period)]
     _write_pending(paths, [*kept, entry])
-    return lines, {**entry, "comparison": comparison}
+    return lines, {**entry, "comparison": comparison, "already_approved": already}
 
 
-def approve(paths: Paths, *, metric: str, period: str, method_notes: str | None, today: date) -> dict[str, Any]:
-    """Move the waiting number into the ledger with today's date."""
+def _same(item: dict[str, Any], metric: str, period: str) -> bool:
+    return ledger.key(item.get("metric")) == ledger.key(metric) and ledger.key(item.get("period")) == ledger.key(period)
+
+
+def approve(paths: Paths, *, metric: str, period: str, method_notes: str | None, today: date,
+            replace: bool = False) -> dict[str, Any]:
+    """Move the waiting number into the ledger with today's date.
+
+    A metric and period already in the ledger is replaced only with replace=True.
+    """
     items = _read_pending(paths)
-    found = [p for p in items if (p.get("metric"), p.get("period")) == (metric, period)]
+    found = [p for p in items if _same(p, metric, period)]
     if not found:
         raise NumberProblem(f"There is no number for {metric}, {period} waiting for your OK.")
     entry = found[-1]
@@ -136,10 +150,12 @@ def approve(paths: Paths, *, metric: str, period: str, method_notes: str | None,
     if counted and counted not in given:
         notes.append(counted)
     try:
-        ledger.add(paths, metric=metric, period=period, value=entry["value"], unit=entry.get("unit", ""),
-                   source=entry.get("source", ""), method_notes=" ".join(notes), approved_on=today.isoformat(),
-                   tool=entry.get("tool", ""))
-    except (KeyError, ValueError):
+        ledger.add(paths, metric=entry["metric"], period=entry["period"], value=entry["value"],
+                   unit=entry.get("unit", ""), source=entry.get("source", ""), method_notes=" ".join(notes),
+                   approved_on=today.isoformat(), tool=entry.get("tool", ""), replace=replace)
+    except ledger.AlreadyApproved as exc:
+        raise NumberProblem(str(exc)) from None
+    except (KeyError, ValueError, TypeError, AttributeError):
         raise NumberProblem("The waiting number could not be read. Run the sign-off note again.") from None
     _write_pending(paths, [p for p in items if p not in found])
     return entry
