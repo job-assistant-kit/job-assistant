@@ -1,0 +1,7 @@
+# What every result from this tool must have. Each item is one plain statement that is
+# true of a good result. Checks on saved examples go through this list item by item.
+required:
+  - Every date, number, and count names its source, or says unknown.
+  - The result ends with a Sources line.
+# Short names of the learned rules this tool applies.
+rules: []

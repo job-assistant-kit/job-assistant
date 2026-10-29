@@ -110,6 +110,25 @@ class Paths:
         return self.data_dir / "proofs"
 
     @property
+    def drafts_dir(self) -> Path:
+        """Working copies of a tool's files while it is built or changed."""
+        return self.data_dir / "drafts"
+
+    @property
+    def last_dir(self) -> Path:
+        """The most recent facts run for each tool."""
+        return self.data_dir / "last"
+
+    @property
+    def building_dir(self) -> Path:
+        """Start times of builds in progress."""
+        return self.data_dir / "records" / "building"
+
+    @property
+    def parts_dir(self) -> Path:
+        return self.root / "parts"
+
+    @property
     def inbox(self) -> Path:
         return self.root / "inbox"
 

@@ -33,7 +33,7 @@ def test_add_built(ws, tmp_path):
     t, _ = tools.add_from_file(p, write(tmp_path, BUILT), today=T)
     assert t.id == "brief-check" and t.created == "2026-10-28"
     assert (ws / ".claude/skills/brief-check/tool.yaml").is_file()
-    assert not (ws / ".claude/skills/brief-check/SKILL.md").exists()
+    assert (ws / ".claude/skills/brief-check/SKILL.md").is_file()
 
 
 def test_add_from_json(ws, tmp_path):

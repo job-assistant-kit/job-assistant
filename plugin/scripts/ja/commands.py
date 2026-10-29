@@ -102,18 +102,22 @@ def _warn(text: str) -> None:
     print(text, file=sys.stderr)
 
 
-def _in_inbox(paths: Paths, target: Path) -> bool:
+def _inside(folder: Path, target: Path) -> bool:
     try:
-        target.resolve().relative_to(paths.inbox.resolve())
+        target.resolve().relative_to(folder.resolve())
     except (ValueError, OSError):
         return False
     return True
 
 
+def _in_inbox(paths: Paths, target: Path) -> bool:
+    return _inside(paths.inbox, target)
+
+
 def _tidy_inbox(paths: Paths, file: Path) -> None:
-    """Remove a working file the setup or building steps left in the inbox. Other files stay."""
+    """Remove a working file the setup or building steps left in the inbox or a draft folder. Other files stay."""
     target = Path(file).expanduser()
-    if target.is_file() and _in_inbox(paths, target):
+    if target.is_file() and (_in_inbox(paths, target) or _inside(paths.drafts_dir, target)):
         try:
             target.unlink()
         except OSError:
@@ -392,6 +396,23 @@ def cmd_tool_add(args: argparse.Namespace, paths: Paths, today: date) -> str:
     tool, notes = tools.add_from_file(paths, Path(args.file), today=today)
     _tidy_inbox(paths, Path(args.file))
     return "\n".join([f'Added {tool.name} ({_shows_as(paths, tool, today)}). Say "{tool.examples[0]}" to use it.', *notes])
+
+
+@_tool_change
+def cmd_tool_draft(args: argparse.Namespace, paths: Paths, today: date) -> str:
+    folder = tools.draft(paths, args.tool)
+    name = tools.find(paths, args.tool).name
+    return f"Working copies of the files for {name} are in {folder}. Change them there, then put them in place."
+
+
+@_tool_change
+def cmd_tool_files(args: argparse.Namespace, paths: Paths, today: date) -> str:
+    source = Path(args.source).expanduser() if args.source else None
+    tool, names, changed = tools.install_files(paths, args.tool, source)
+    if not changed:
+        return f"The files for {tool.name} were already up to date."
+    return (f"Saved the {', '.join(names)} for {tool.name}. "
+            "Check it on its saved examples before relying on it.")
 
 
 @_tool_change
