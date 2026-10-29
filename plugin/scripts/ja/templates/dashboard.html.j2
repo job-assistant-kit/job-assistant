@@ -165,7 +165,7 @@
 {% if v.learned %}
   <ul class="plain">
 {% for l in v.learned %}
-    <li>{{ l.text }} <span class="why">{{ l.reason }} {{ l.scope }}.</span></li>
+    <li>{{ l.text }} <span class="why">{{ l.reason }} {{ l.scope }}.{% if l.state %} {{ l.state }}{% endif %}</span></li>
 {% endfor %}
   </ul>
   <p class="why">Say "forget that" about any item to remove it.</p>

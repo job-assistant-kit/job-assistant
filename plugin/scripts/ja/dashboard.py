@@ -56,6 +56,7 @@ class Learned:
     text: str
     reason: str
     scope: str
+    state: str = ""
 
 
 @dataclass
@@ -112,6 +113,29 @@ def _check_text(tool: registry.Tool, today: date, effective: str) -> str:
     return text
 
 
+def _rules_used(tool: registry.Tool, rules: list[profile.Rule], by_id: dict[str, profile.Rule]) -> list[str]:
+    """Texts of the active rules the tool follows: its own, then the ones used everywhere."""
+    out = []
+    for rid in tool.rules:
+        rule = by_id.get(rid)
+        if rule is None:
+            out.append(rid)
+        elif rule.applies_to(tool.id):
+            out.append(rule.text)
+    out += [r.text for r in rules if r.everywhere and r.applies_to(tool.id) and r.text not in out]
+    return out
+
+
+def _state_text(rule: profile.Rule) -> str:
+    if rule.state == "pending":
+        return "Waiting for a check on the saved examples."
+    if rule.state == "held":
+        return f"On hold: {rule.held_reason}." if rule.held_reason else "On hold."
+    if rule.held_reason:
+        return f"Not used everywhere: {rule.held_reason}."
+    return ""
+
+
 def build_view(paths: Paths, today: date, ideas: list[str] | None = None,
                now: datetime | None = None) -> View:
     now = now or datetime.now()
@@ -119,7 +143,7 @@ def build_view(paths: Paths, today: date, ideas: list[str] | None = None,
     archived, archive_problems = registry.load_archive(paths)
     by_id, source_problems = sources.load(paths)
     rules, rule_problems = profile.load(paths)
-    rule_text = {r.id: r.text for r in rules}
+    rules_by_id = {r.id: r for r in rules}
     names = {t.id: t.name for t in tools}
     since, until = quarter_start(today), quarter_end(today)
 
@@ -167,7 +191,7 @@ def build_view(paths: Paths, today: date, ideas: list[str] | None = None,
             last_check=_check_text(t, today, eff),
             data_path=t.data_path,
             manual_steps=list(t.manual_steps),
-            rules=[rule_text.get(r, r) for r in t.rules],
+            rules=_rules_used(t, rules, rules_by_id),
             improvements=[
                 {"date": short_date(i["date"], today), "change": i["change"], "reason": i.get("reason", "")}
                 for i in t.improvements
@@ -180,6 +204,7 @@ def build_view(paths: Paths, today: date, ideas: list[str] | None = None,
             reason=r.reason,
             scope="Used everywhere" if r.everywhere
             else "Used by " + ", ".join(names.get(s, s) for s in r.scope),
+            state=_state_text(r),
         )
         for r in rules
     ]

@@ -14,7 +14,7 @@ import sys
 from datetime import date, datetime
 from pathlib import Path
 
-from ja import facts, helper, index, inputs, init, launcher, ledger, parts, proof, records, registry, role, runbook, settings, sources, status, tools, workspace
+from ja import facts, helper, profile, index, inputs, init, launcher, ledger, parts, proof, records, registry, role, runbook, settings, sources, status, tools, workspace
 from ja.registry import is_date
 from ja.workspace import Paths
 
@@ -680,6 +680,133 @@ def cmd_search(args: argparse.Namespace) -> int:
         _say("Nothing similar yet. A new tool is needed.")
     for hit in hits:
         _say(hit.line)
+    return 0
+
+
+def _rule_change(func):
+    """Run a rule change, then refresh the tool list, the tools page, and the backup guide."""
+    @_guard
+    def wrapper(args: argparse.Namespace) -> int:
+        paths = _paths(args)
+        today = _today(args)
+        try:
+            message = func(args, paths, today)
+        except profile.RuleProblem as exc:
+            raise Stop(str(exc)) from None
+        _refresh(paths, today)
+        _say(message)
+        return 0
+    wrapper.__name__ = func.__name__
+    return wrapper
+
+
+def _tool_names(paths: Paths) -> dict[str, str]:
+    active, _ = registry.load_all(paths)
+    archived, _ = registry.load_archive(paths)
+    return {t.id: t.name for t in [*archived, *active]}
+
+
+def _scope_words(rule: profile.Rule, names: dict[str, str]) -> str:
+    if rule.everywhere:
+        return "every tool"
+    return ", ".join(names.get(t, t) for t in rule.scope)
+
+
+@_rule_change
+def cmd_rules_add(args: argparse.Namespace, paths: Paths, today: date) -> str:
+    rule = profile.add(paths, rule_id=args.id, text=args.text, reason=args.reason, scope=args.scope,
+                       pending=args.pending, today=today)
+    where = _scope_words(rule, _tool_names(paths))
+    if rule.state == "pending":
+        return f"Saved the rule for {where}. It is waiting for a check on the saved examples before I use it."
+    return f"Saved the rule. From now on I will follow it for {where}."
+
+
+@_rule_change
+def cmd_rules_confirm(args: argparse.Namespace, paths: Paths, today: date) -> str:
+    rule = profile.confirm(paths, args.id)
+    return f"The rule is now in use for {_scope_words(rule, _tool_names(paths))}: {rule.text}"
+
+
+@_rule_change
+def cmd_rules_hold(args: argparse.Namespace, paths: Paths, today: date) -> str:
+    rule = profile.hold(paths, args.id, args.reason)
+    if rule.active:
+        return (f"Kept the rule for {_scope_words(rule, _tool_names(paths))} only, and not for every tool, "
+                f"because {rule.held_reason}: {rule.text}")
+    return f"Put the rule on hold, because {rule.held_reason}: {rule.text}"
+
+
+@_rule_change
+def cmd_rules_forget(args: argparse.Namespace, paths: Paths, today: date) -> str:
+    return profile.no_longer(profile.forget(paths, args.id))
+
+
+@_rule_change
+def cmd_rules_promote(args: argparse.Namespace, paths: Paths, today: date) -> str:
+    rule = profile.promote(paths, args.id)
+    return ("The rule will apply to every tool once their saved examples are checked with it. "
+            f"Until then it is waiting for a check: {rule.text}")
+
+
+def _rule_row(rule: profile.Rule, names: dict[str, str]) -> dict:
+    return {**rule.to_dict(), "used_by": _scope_words(rule, names)}
+
+
+@_guard
+def cmd_rules_for(args: argparse.Namespace) -> int:
+    paths = _paths(args)
+    tool = _tool(paths, args.tool)
+    found = profile.applying(paths, tool.id)
+    if args.json:
+        print(json.dumps([{"id": r.id, "text": r.text} for r in found], indent=2, ensure_ascii=False))
+        return 0
+    if not found:
+        _say(f"No learned rules apply to {tool.name}.")
+    for r in found:
+        _say(f"{r.id}: {r.text}")
+    return 0
+
+
+@_guard
+def cmd_rules_list(args: argparse.Namespace) -> int:
+    paths = _paths(args)
+    rules, problems = profile.load(paths)
+    names = _tool_names(paths)
+    groups = {state: [r for r in rules if r.state == state] for state in ("active", "pending", "held")}
+    if args.json:
+        print(json.dumps({**{k: [_rule_row(r, names) for r in v] for k, v in groups.items()},
+                          "problems": problems}, indent=2, ensure_ascii=False))
+        return 0
+    if not rules and not problems:
+        _say("No learned rules yet.")
+    first = True
+    for state, found in groups.items():
+        if not found:
+            continue
+        if not first:
+            _say("")
+        first = False
+        _say(profile.STATE_HEADINGS[state] + ":")
+        for r in found:
+            why = f" Why: {r.held_reason}" if r.held_reason else ""
+            _say(f"  {r.id}: {r.text} ({_scope_words(r, names)}){why}")
+    _say_problems("Rules with problems:", problems, gap=bool(rules))
+    return 0
+
+
+@_guard
+def cmd_rules_similar(args: argparse.Namespace) -> int:
+    paths = _paths(args)
+    found = profile.similar(paths, " ".join(args.words))
+    names = _tool_names(paths)
+    if args.json:
+        print(json.dumps([{**_rule_row(r, names), "matched": m} for r, m in found], indent=2, ensure_ascii=False))
+        return 0
+    if not found:
+        _say("No similar rules yet.")
+    for r, matched in found:
+        _say(f"{r.id} ({_scope_words(r, names)}): {r.text} Shared words: {', '.join(matched)}.")
     return 0
 
 
