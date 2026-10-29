@@ -233,7 +233,7 @@ def test_dashboard_shows_upkeep_items(ws, write_tool):
     assert "Monthly digest is due by Oct 31" in ok and "make the digest" in ok
     ideas = html.split(">Ideas</h2>", 1)[1].split("<h2", 1)[0]
     assert "partner update email" in ideas and "automate this" in ideas
-    assert "<b>1</b><span>needs your OK</span>" in html
+    assert "<dt>needs your OK</dt><dd>1</dd>" in html
 
 
 def test_source_with_no_copy_yet_is_a_gentle_reminder(ws, write_tool):

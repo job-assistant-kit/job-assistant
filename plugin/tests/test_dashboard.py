@@ -49,7 +49,7 @@ def test_only_this_quarter_counts(ws, write_tool):
     records.add_run(p, "a", "run", ts="2026-10-02T09:00:00")
     html = dashboard.render(p, today=T)
     assert "1.0 hrs" in html
-    assert re.search(r"<b>1</b><span>times used this quarter</span>", html)
+    assert re.search(r"<dt>times used this quarter</dt><dd>1</dd>", html)
     assert "Used 2 times" in html
 
 def test_needs_your_ok_lists_reasons_and_words(ws, write_tool):
@@ -63,8 +63,8 @@ def test_needs_your_ok_lists_reasons_and_words(ws, write_tool):
     assert "Your copy of OLM FAQ is 18 days old" in ok
     assert "update Answer a question" in ok and "check TTM review" in ok
     assert "Fine tool" not in ok
-    assert re.search(r"<b>2</b><span>needs your OK</span>", html)
-    assert re.search(r"<b>1</b><span>tools working</span>", html)
+    assert re.search(r"<dt>needs your OK</dt><dd>2</dd>", html)
+    assert re.search(r"<dt>tools working</dt><dd>1</dd>", html)
 
 def test_no_needs_section_when_all_working(ws, write_tool):
     write_tool(ws, id="a")
@@ -123,7 +123,7 @@ def test_no_javascript(ws, write_tool):
 def test_empty_workspace(ws):
     html = dashboard.render(workspace.Paths(ws), today=T)
     assert "No tools yet." in html
-    assert re.search(r"<b>0</b><span>tools working</span>", html)
+    assert re.search(r"<dt>tools working</dt><dd>0</dd>", html)
 
 def test_pill_classes(ws, write_tool):
     write_tool(ws, id="a", name="A", status="being-built")
@@ -167,7 +167,7 @@ def test_quarter_has_upper_bound(ws, write_tool):
     records.add_run(p, "a", "run", ts="2026-10-02T09:00:00")
     records.add_run(p, "a", "run", ts="2027-01-05T09:00:00")
     html = dashboard.render(p, today=T)
-    assert re.search(r"<b>1</b><span>times used this quarter</span>", html)
+    assert re.search(r"<dt>times used this quarter</dt><dd>1</dd>", html)
     assert "1.0 hrs" in html
 
 

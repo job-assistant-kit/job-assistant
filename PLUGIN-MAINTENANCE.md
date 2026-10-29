@@ -25,6 +25,7 @@ plugin/
   scripts/ja.py                        helper entry (argument parsing only)
   scripts/ja/*.py                      helper modules
   scripts/ja/templates/dashboard.html.j2
+  scripts/ja/templates/fonts/          Fraunces and Instrument Sans (SIL Open Font License), copied next to the tools page
   scripts/hook_session_start.py        session start hook
   scripts/hook_record_run.py           after-tool hook on the Skill tool
   scripts/hook_drive_gate.py           check before each Drive create action
@@ -50,7 +51,8 @@ Run as `uv run --script plugin/scripts/ja.py <command>`. Every command accepts `
 | `init PATH [--name NAME]` | Create an assistant folder from the template; refuses a non-empty folder; starts git history |
 | `tools [--json]` | List active tools with status and first example words |
 | `index` | Rewrite the tool index between the markers in CLAUDE.md |
-| `dashboard [--open]` | Write `dashboard/index.html`; `--open` opens the browser and never fails without one |
+| `dashboard [--open]` | Write `dashboard/index.html` and its fonts, and print the page's link; `--open` opens the browser and never fails without one |
+| `start set --file PATH` / `start hide` / `start show` | The getting-started section at the top of the tools page: save it from a file (reach, recorded, gaps, first), fold it away, open it again |
 | `record run\|accepted\|corrected TOOL` | Append a run record |
 | `record task --words TEXT` | Note work done without a tool |
 | `record build --tool T --questions N --corrections N [--recipe R] [--minutes N]` | Record a finished build; minutes come from `build start` when not given |
@@ -110,7 +112,8 @@ Keep these names. Later code and the person's existing folders depend on them.
 | `data/last/` | The latest facts run per tool |
 | `data/upkeep.json` | Upkeep items from the last `upkeep --write` |
 | `inbox/` | Files the person drops in |
-| `dashboard/index.html` | The tools page |
+| `dashboard/index.html`, `dashboard/fonts/` | The tools page and its fonts. Static HTML, no JavaScript, no outside requests |
+| `assistant/getting-started.yaml` | The getting-started section: reach, recorded, gaps, first (one to five automations), hidden |
 | `CLAUDE.md` | Assistant notes with the tool index markers. A `RUNBOOK.md` that earlier versions wrote is removed |
 
 `inbox/`, `data/`, `dashboard/`, and `.claude/settings.local.json` are in the folder's `.gitignore`.

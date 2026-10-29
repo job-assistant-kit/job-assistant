@@ -9,10 +9,11 @@ from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader
 
-from ja import profile, records, registry, sources, status, upkeep, workspace
+from ja import start, profile, records, registry, sources, status, upkeep, workspace
 from ja.workspace import Paths
 
 TEMPLATES = Path(__file__).resolve().parent / "templates"
+FONTS = TEMPLATES / "fonts"
 
 WAITING = "Waiting for your OK on the method."
 NOT_CHECKED = "Not checked yet. Confirm it works on a real example."
@@ -77,6 +78,7 @@ class View:
     source_problems: list[str] = field(default_factory=list)
     rule_problems: list[str] = field(default_factory=list)
     questions: str | None = None
+    start: dict | None = None
 
 
 quarter_start = upkeep.quarter_start
@@ -271,6 +273,7 @@ def build_view(paths: Paths, today: date, ideas: list[str] | None = None,
         source_problems=source_problems,
         rule_problems=rule_problems,
         questions=questions_line(paths),
+        start=start.load(paths),
     )
 
 
@@ -285,10 +288,27 @@ def render(paths: Paths, today: date, ideas: list[str] | None = None,
     return _env().get_template("dashboard.html.j2").render(v=view)
 
 
+def _copy_fonts(folder: Path) -> None:
+    """Put the page's fonts and their licences next to it, so the page never loads anything from outside."""
+    target = folder / "fonts"
+    target.mkdir(parents=True, exist_ok=True)
+    for src in FONTS.iterdir():
+        dest = target / src.name
+        data = src.read_bytes()
+        if not dest.is_file() or dest.read_bytes() != data:
+            tmp = dest.with_name(dest.name + ".tmp")
+            tmp.write_bytes(data)
+            os.replace(tmp, dest)
+
+
 def write(paths: Paths, today: date, ideas: list[str] | None = None,
           now: datetime | None = None) -> Path:
     out = paths.dashboard
     out.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        _copy_fonts(out.parent)
+    except OSError:
+        pass  # the page still reads well in the fallback fonts
     tmp = out.with_suffix(".html.tmp")
     tmp.write_text(render(paths, today, ideas=ideas, now=now), encoding="utf-8")
     os.replace(tmp, out)

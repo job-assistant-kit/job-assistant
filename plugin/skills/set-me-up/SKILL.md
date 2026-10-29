@@ -109,12 +109,21 @@ Then ask one question: "Do you look after anything else that someone else built?
 - Add only the documents and data that the first automations in step 7 will read, at most six, with `ja sources add --id <id> --name "<name>" --kind living|fixed --where "<where it lives>" --access connector|file`. Use `living` for documents that change and `fixed` for ones that do not. Use `--access connector` when you read it through a connected service, otherwise `--access file`, with `--exported <date>` only when they gave you a copy. Other documents are added when a tool first reads them.
 - Add facts the job description states that later work depends on with `ja knowledge add --fact "<fact>" --source "job description, <today's date>"`.
 
-### 7. Close with first automations
+### 7. Close with the getting-started page
 
-Rank three to five first automations from the job description: recurring work first, then work that goes to leaders, then what it calls painful or manual. Say in one sentence that you ranked them from the job description and will learn more as you work together. For each give:
+Rank three to five first automations from the job description: recurring work first, then work that goes to leaders, then what it calls painful or manual.
 
-- one plain sentence on what it would do for them,
-- the words to say, such as: "automate this: the weekly status summary",
-- how to give an example: drop the file in the inbox folder, or drag a screenshot into the chat.
+Write `inbox/getting-started.yaml` with these parts, in plain words, and run `ja start set --file inbox/getting-started.yaml`:
 
-Then say: "Pick whichever takes most of your time. Drop an example in the inbox and say 'automate this'. I'll ask the few things I need as we go." Run `ja dashboard` and tell them: "Say 'show my tools' any time to see your tools page." Remind them to open the assistant from the shortcut each time so it starts in their folder.
+- `reach`: one or two sentences on what you can and cannot read, from step 3, and that changes to their other systems are blocked so you only prepare drafts.
+- `recorded`: short lines on what you recorded: the tools they look after (by name), how many sources, the role card, and how many facts.
+- `gaps`: things only they can sort out, such as access, an ownership handover, or a missing document for a tool they look after. Leave it empty if there are none.
+- `first`: the ranked automations. Each has `name`, `does` (one plain sentence), `say` (the words, such as "automate this: the weekly status summary"), and `give` (the example to drop in the inbox, or a screenshot to drag into the chat).
+
+Then close with three short lines, and nothing else:
+
+1. "You're set up. Everything is on your getting-started page: <the link the helper printed>."
+2. "When you're ready, pick whichever first automation takes most of your time, drop an example in the inbox, and say 'automate this'. I'll ask the few things I need as we go."
+3. "Open the assistant from the shortcut each time, so the protections are on."
+
+Do not repeat the page's content in the chat.

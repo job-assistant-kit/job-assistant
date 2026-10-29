@@ -15,6 +15,8 @@ import sys
 from datetime import date, datetime
 from pathlib import Path
 
+import yaml
+
 from ja import drive, facts, helper, knowledge, numbers, profile, index, inputs, init, launcher, ledger, parts, proof, records, registry, role, settings, sources, status, tools, upkeep, workspace
 from ja.registry import is_date
 from ja.workspace import Paths
@@ -209,7 +211,7 @@ def cmd_dashboard(args: argparse.Namespace) -> int:
 
     paths = _paths(args)
     out = dashboard.write(paths, today=_today(args))
-    _say(f"Your tools page is ready: {out}")
+    _say(f"Your tools page is ready: {out.as_uri()}")
     if args.open and not _open_in_browser(out):
         _say("I could not open a browser. Open the page above yourself.")
     return 0
@@ -429,6 +431,53 @@ def cmd_role_set(args: argparse.Namespace) -> int:
     _tidy_inbox(paths, Path(args.file))
     _say("Saved the role description in your assistant notes.")
     return 0
+
+
+@_guard
+def cmd_start_set(args: argparse.Namespace) -> int:
+    from ja import dashboard, start
+
+    paths = _paths(args)
+    try:
+        raw = yaml.safe_load(Path(args.file).expanduser().read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError):
+        raise Stop(f"I could not read {args.file}. Check that the file exists and is plain text.") from None
+    except yaml.YAMLError:
+        raise Stop(f"I could not read {args.file}: it is not laid out as named parts.") from None
+    try:
+        start.save(paths, raw)
+    except start.StartProblem as exc:
+        raise Stop(str(exc)) from None
+    _tidy_inbox(paths, Path(args.file))
+    out = dashboard.write(paths, today=_today(args))
+    _say(f"Saved the getting-started section. It is at the top of the tools page: {out.as_uri()}")
+    return 0
+
+
+def _start_hidden(args: argparse.Namespace, hidden: bool) -> int:
+    from ja import dashboard, start
+
+    paths = _paths(args)
+    try:
+        start.set_hidden(paths, hidden)
+    except start.StartProblem as exc:
+        raise Stop(str(exc)) from None
+    out = dashboard.write(paths, today=_today(args))
+    if hidden:
+        _say(f"Getting started is folded away. Its heading stays at the top of the tools page: {out.as_uri()}")
+    else:
+        _say(f"Getting started is open again at the top of the tools page: {out.as_uri()}")
+    return 0
+
+
+@_guard
+def cmd_start_hide(args: argparse.Namespace) -> int:
+    return _start_hidden(args, True)
+
+
+@_guard
+def cmd_start_show(args: argparse.Namespace) -> int:
+    return _start_hidden(args, False)
 
 
 @_guard

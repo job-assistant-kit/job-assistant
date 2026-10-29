@@ -5,93 +5,241 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{ v.title }}</title>
 <style>
+  @font-face { font-family: "Fraunces"; font-style: normal; font-weight: 100 900; font-display: swap;
+    src: url("fonts/fraunces-latin-wght-normal.woff2") format("woff2"); }
+  @font-face { font-family: "Fraunces"; font-style: italic; font-weight: 100 900; font-display: swap;
+    src: url("fonts/fraunces-latin-wght-italic.woff2") format("woff2"); }
+  @font-face { font-family: "Instrument Sans"; font-style: normal; font-weight: 400 700; font-display: swap;
+    src: url("fonts/instrument-sans-latin-wght-normal.woff2") format("woff2"); }
+
   :root {
-    --bg: #fafaf8; --card: #ffffff; --ink: #1d1d1b; --muted: #5c5c57; --line: #e3e2dc;
-    --ok-bg: #e6f4ea; --ok-ink: #1e6b34;
-    --warn-bg: #fff4d6; --warn-ink: #7a5300;
-    --build-bg: #e7eefc; --build-ink: #24489c;
-    --off-bg: #eeeeec; --off-ink: #55554f;
-    --accent: #b8251d;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      --bg: #171716; --card: #21211f; --ink: #ededea; --muted: #a8a8a1; --line: #3a3a36;
-      --ok-bg: #173822; --ok-ink: #9fdcae; --warn-bg: #3d3010; --warn-ink: #f2cf72;
-      --build-bg: #1b2a4a; --build-ink: #a9c1f5; --off-bg: #2c2c29; --off-ink: #bdbdb6;
-      --accent: #ff7b72;
-    }
+    --paper: #f6f1e7; --sheet: #fffdf8; --ink: #1e1b16; --soft: #5a5246; --rule: #e2d8c5; --rule-strong: #c9bb9f;
+    --mark: #f3dd94;
+    --red: #a8321b; --red-wash: #fbebe4;
+    --green: #2c6449; --green-wash: #e3f0e7;
+    --amber: #7f5200; --amber-wash: #fbefd3;
+    --blue: #2b4c86; --blue-wash: #e6ecf8;
+    --grey: #5a5246; --grey-wash: #ece6da;
+    --serif: "Fraunces", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --sans: "Instrument Sans", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--ink);
-    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
-  main { max-width: 980px; margin: 0 auto; padding: 24px 16px 64px; }
-  h1 { font-size: 28px; margin: 0 0 4px; }
-  h2 { font-size: 20px; margin: 36px 0 12px; }
-  .sub { color: var(--muted); margin: 0 0 20px; }
-  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
-  .stat { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 14px; }
-  .stat b { display: block; font-size: 26px; }
-  .stat span { color: var(--muted); font-size: 14px; }
-  .attention { background: var(--card); border: 1px solid var(--line); border-left: 4px solid var(--accent);
-    border-radius: 8px; padding: 12px 16px; margin-top: 12px; }
-  .attention p { margin: 4px 0; }
-  .attention ul { margin: 4px 0; padding-left: 20px; }
-  .tool { background: var(--card); border: 1px solid var(--line); border-radius: 8px;
-    padding: 16px; margin-bottom: 12px; }
-  .tool-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 12px; }
-  .tool-head h3 { margin: 0; font-size: 18px; flex: 1 1 auto; }
-  .pill { font-size: 13px; font-weight: 600; padding: 2px 10px; border-radius: 999px; white-space: nowrap; }
-  .ok { background: var(--ok-bg); color: var(--ok-ink); }
-  .warn { background: var(--warn-bg); color: var(--warn-ink); }
-  .build { background: var(--build-bg); color: var(--build-ink); }
-  .off { background: var(--off-bg); color: var(--off-ink); }
-  .say { margin: 8px 0; }
-  .say code, .attention code { background: var(--off-bg); padding: 2px 8px; border-radius: 4px; font-size: 15px; }
-  .meta { color: var(--muted); font-size: 14px; display: flex; flex-wrap: wrap; gap: 4px 18px; }
-  .note { font-size: 14px; margin: 8px 0 0; }
-  .steps { font-size: 14px; margin: 8px 0 0; }
+  html { background: var(--paper); }
+  body { margin: 0; color: var(--ink); font: 16.5px/1.55 var(--sans);
+    background:
+      radial-gradient(1200px 500px at 85% -10%, #fbf3df 0%, transparent 60%),
+      radial-gradient(900px 400px at -10% 0%, #f1ead9 0%, transparent 55%),
+      var(--paper); }
+  main { max-width: 1040px; margin: 0 auto; padding: 40px 20px 72px; }
+  a { color: var(--blue); }
+
+  /* Masthead */
+  .eyebrow { font: 600 12px/1 var(--sans); letter-spacing: .16em; text-transform: uppercase; color: var(--red); margin: 0 0 10px; }
+  h1 { font: 600 clamp(34px, 5vw, 50px)/1.05 var(--serif); letter-spacing: -.015em; margin: 0; }
+  .sub { font: italic 400 17px/1.4 var(--serif); color: var(--soft); margin: 10px 0 0; }
+  .masthead { padding-bottom: 22px; border-bottom: 3px double var(--rule-strong); }
+
+  /* Ledger strip */
+  .ledger { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); margin: 0; padding: 0;
+    border-bottom: 1px solid var(--rule); }
+  .ledger div { padding: 18px 18px 16px; border-left: 1px solid var(--rule);
+    display: flex; flex-direction: column-reverse; justify-content: flex-end; }
+  .ledger div:first-child { border-left: 0; padding-left: 0; }
+  .ledger dt { font: 600 11.5px/1.3 var(--sans); letter-spacing: .12em; text-transform: uppercase; color: var(--soft); }
+  .ledger dd { margin: 0 0 4px; font: 500 40px/1 var(--serif); font-variant-numeric: oldstyle-nums proportional-nums; }
+  .ledger .alert dd { color: var(--red); }
+  .ledger .fine { font: 400 13px/1.35 var(--sans); color: var(--soft); margin: 6px 0 0; order: -1; }
+
+  h2 { font: 600 26px/1.2 var(--serif); margin: 48px 0 6px; letter-spacing: -.01em; }
+  .lede, .why { color: var(--soft); }
+  .why { font-size: 14.5px; }
+
+  /* Words to say: the way the person drives the assistant, so they are set large */
+  .say { margin: 10px 0 12px; font: italic 400 19px/1.35 var(--serif); }
+  .say .verb { font: 600 11px/1 var(--sans); letter-spacing: .14em; text-transform: uppercase; font-style: normal;
+    color: var(--soft); margin-right: 8px; vertical-align: 2px; }
+  .say q { quotes: "\201C" "\201D"; padding: 0 2px;
+    background: linear-gradient(transparent 58%, var(--mark) 58%, var(--mark) 92%, transparent 92%); }
+
+  /* Getting started */
+  details.start { margin: 28px 0 0; background: var(--sheet); border: 1px solid var(--rule); border-radius: 4px;
+    box-shadow: 0 1px 0 var(--rule), 0 18px 40px -28px rgba(60, 40, 10, .35); }
+  details.start > summary { list-style: none; cursor: pointer; display: flex; align-items: baseline; gap: 14px;
+    padding: 18px 24px; border-bottom: 1px solid transparent; }
+  details.start > summary::-webkit-details-marker { display: none; }
+  details.start[open] > summary { border-bottom-color: var(--rule); }
+  details.start > summary h2 { margin: 0; font-size: 24px; }
+  details.start > summary .hint { margin-left: auto; font: 600 12px/1 var(--sans); letter-spacing: .12em;
+    text-transform: uppercase; color: var(--blue); }
+  details.start > summary .hint::after { content: "Open"; }
+  details.start[open] > summary .hint::after { content: "Fold away"; }
+  summary:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+  .start-body { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); }
+  .start-body > section { padding: 22px 24px 26px; }
+  .start-body > section + section { border-left: 1px solid var(--rule); background: #fbf8f1; }
+  .start h3 { font: 600 11.5px/1.3 var(--sans); letter-spacing: .14em; text-transform: uppercase; color: var(--soft);
+    margin: 22px 0 8px; }
+  .start h3:first-child { margin-top: 0; }
+  .start section > p { margin: 0; }
+  .start ul { margin: 0; padding-left: 18px; }
+  .start li { margin: 5px 0; }
+  .start .gaps li::marker { color: var(--red); }
+  ol.first { list-style: none; counter-reset: first; margin: 0; padding: 0; }
+  ol.first > li { counter-increment: first; position: relative; padding: 0 0 18px 46px; margin: 0 0 18px;
+    border-bottom: 1px solid var(--rule); }
+  ol.first > li:last-child { border-bottom: 0; margin-bottom: 0; padding-bottom: 0; }
+  ol.first > li::before { content: counter(first); position: absolute; left: 0; top: -6px;
+    font: 500 34px/1 var(--serif); color: var(--red); font-variant-numeric: oldstyle-nums; }
+  ol.first h4 { font: 600 19px/1.3 var(--serif); margin: 0 0 4px; }
+  ol.first p { margin: 4px 0; }
+  ol.first .say { margin: 8px 0 6px; font-size: 18px; }
+  .give { font-size: 14.5px; color: var(--soft); }
+  .give b { color: var(--ink); font-weight: 600; }
+  .start-foot { margin: 0; padding: 12px 24px 16px; border-top: 1px solid var(--rule); font-size: 14px; color: var(--soft); }
+
+  /* Needs your OK */
+  .attention { background: var(--sheet); border: 1px solid var(--rule); border-left: 4px solid var(--red);
+    border-radius: 4px; padding: 14px 20px; margin-top: 12px; }
+  .attention h3 { font: 600 19px/1.3 var(--serif); margin: 0 0 4px; }
+  .attention ul { margin: 4px 0; padding-left: 18px; }
+  .attention .say { font-size: 17px; margin: 8px 0 0; }
+
+  /* Tools */
+  .tools { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 18px; margin-top: 14px; }
+  .tool { background: var(--sheet); border: 1px solid var(--rule); border-top: 4px solid var(--grey); border-radius: 4px;
+    padding: 18px 20px 16px; display: flex; flex-direction: column; }
+  .tool.ok { border-top-color: var(--green); }
+  .tool.warn { border-top-color: var(--amber); }
+  .tool.build { border-top-color: var(--blue); }
+  .tool-head { display: flex; align-items: flex-start; gap: 10px; }
+  .tool-head h3 { margin: 0; flex: 1 1 auto; font: 600 21px/1.25 var(--serif); letter-spacing: -.005em; }
+  .pill { font: 600 11.5px/1 var(--sans); letter-spacing: .06em; text-transform: uppercase; padding: 6px 9px;
+    border-radius: 3px; white-space: nowrap; margin-top: 3px; }
+  .pill.ok { background: var(--green-wash); color: var(--green); }
+  .pill.warn { background: var(--amber-wash); color: var(--amber); }
+  .pill.build { background: var(--blue-wash); color: var(--blue); }
+  .pill.off { background: var(--grey-wash); color: var(--grey); }
+  .does { margin: 0 0 12px; }
+  .meta { list-style: none; margin: auto 0 0; padding: 12px 0 0; border-top: 1px dashed var(--rule-strong);
+    display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 13.5px; color: var(--soft); }
+  .meta li { margin: 0; }
+  .card-note { font-size: 14.5px; margin: 0 0 10px; }
+  .guess { background: var(--amber-wash); color: #5c3c00; padding: 8px 10px; border-radius: 3px; }
+  .steps { font-size: 14.5px; margin: 0 0 10px; }
   .steps ol { margin: 4px 0 0; padding-left: 20px; }
-  details { margin-top: 10px; }
-  summary { cursor: pointer; color: var(--muted); font-size: 14px; }
-  ul.history { margin: 8px 0 0; padding-left: 20px; font-size: 14px; }
+  .tool details { margin: 0 0 10px; font-size: 14.5px; }
+  .tool summary { cursor: pointer; color: var(--blue); font-weight: 600; font-size: 13.5px; }
+  ul.history { margin: 8px 0 0; padding-left: 18px; }
   ul.history li { margin: 4px 0; }
-  ul.plain { padding-left: 20px; }
+  .empty { background: var(--sheet); border: 1px dashed var(--rule-strong); border-radius: 4px; padding: 18px 20px; }
+
+  /* Learned, ideas, retired */
+  ul.notes { list-style: none; padding: 0; margin: 12px 0 0; }
+  ul.notes li { border-left: 2px solid var(--rule-strong); padding: 4px 0 4px 16px; margin: 0 0 12px; }
+  ul.notes .why { display: block; }
+  ul.plain { padding-left: 18px; }
   ul.plain li { margin: 6px 0; }
-  .why { color: var(--muted); font-size: 14px; }
+  .measure { margin-top: 14px; font: italic 400 16px/1.45 var(--serif); color: var(--soft); }
+
+  footer { margin-top: 56px; padding-top: 16px; border-top: 3px double var(--rule-strong); font-size: 13.5px; color: var(--soft); }
+
+  /* One calm entrance */
+  @media (prefers-reduced-motion: no-preference) {
+    .rise { animation: rise .55s cubic-bezier(.2, .7, .2, 1) both; }
+    .r2 { animation-delay: .06s; } .r3 { animation-delay: .12s; } .r4 { animation-delay: .18s; } .r5 { animation-delay: .24s; }
+    @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  }
+  @media (max-width: 760px) {
+    .start-body { grid-template-columns: 1fr; }
+    .start-body > section + section { border-left: 0; border-top: 1px solid var(--rule); }
+    .ledger div:nth-child(odd) { border-left: 0; padding-left: 0; }
+  }
+  @media print {
+    body { background: #fff; }
+    details.start, .tool, .attention { box-shadow: none; }
+    .rise { animation: none; }
+  }
 </style>
 </head>
 <body>
 <main>
-  <h1>{{ v.title }}</h1>
-  <p class="sub">Updated {{ v.updated }}. Say "show my tools" to open this page.</p>
+  <header class="masthead rise">
+    <p class="eyebrow">Tools page</p>
+    <h1>{{ v.title }}</h1>
+    <p class="sub">Updated {{ v.updated }}. Say "show my tools" to open this page.</p>
+  </header>
 
-  <div class="stats">
-    <div class="stat"><b>{{ v.working }}</b><span>tools working</span></div>
-    <div class="stat"><b>{{ v.needs_ok }}</b><span>needs your OK</span></div>
-    <div class="stat"><b>{{ v.uses_quarter }}</b><span>times used this quarter</span></div>
-{% if v.estimate_hours %}
-    <div class="stat"><b>{{ v.estimate_hours }}</b><span>Your time estimate: what this quarter's uses would take by hand (your estimate, not measured)</span></div>
+  <dl class="ledger rise r2">
+    <div><dt>tools working</dt><dd>{{ v.working }}</dd></div>
+    <div{% if v.needs_ok %} class="alert"{% endif %}><dt>needs your OK</dt><dd>{{ v.needs_ok }}</dd></div>
+    <div><dt>times used this quarter</dt><dd>{{ v.uses_quarter }}</dd></div>
+{% if v.estimate_hours and v.uses_quarter %}
+    <div><dt>by hand this quarter</dt><dd>{{ v.estimate_hours }}</dd><p class="fine">Your time estimate: what this quarter's uses would take by hand (your estimate, not measured)</p></div>
 {% endif %}
-  </div>
+  </dl>
+{% if v.start %}
+
+  <details class="start rise r3"{% if not v.start.hidden %} open{% endif %}>
+    <summary><h2>Getting started</h2><span class="hint" aria-hidden="true"></span></summary>
+    <div class="start-body">
+      <section>
+        <h3>What I can reach</h3>
+        <p>{{ v.start.reach }}</p>
+{% if v.start.recorded %}
+        <h3>What I recorded</h3>
+        <ul>
+{% for r in v.start.recorded %}
+          <li>{{ r }}</li>
+{% endfor %}
+        </ul>
+{% endif %}
+{% if v.start.gaps %}
+        <h3>Only you can sort these out</h3>
+        <ul class="gaps">
+{% for g in v.start.gaps %}
+          <li>{{ g }}</li>
+{% endfor %}
+        </ul>
+{% endif %}
+      </section>
+      <section>
+        <h3>First things to automate</h3>
+        <ol class="first">
+{% for f in v.start.first %}
+          <li>
+            <h4>{{ f.name }}</h4>
+            <p>{{ f.does }}</p>
+            <p class="say"><span class="verb">Say</span><q>{{ f.say }}</q></p>
+            <p class="give"><b>Give me:</b> {{ f.give }}</p>
+          </li>
+{% endfor %}
+        </ol>
+      </section>
+    </div>
+    <p class="start-foot">Click the heading to fold this away. Say "hide getting started" to keep it folded, or "show getting started" to bring it back.</p>
+  </details>
+{% endif %}
 {% if v.attention %}
 
-  <h2>Needs your OK</h2>
+  <section class="rise r4">
+    <h2>Needs your OK</h2>
 {% for a in v.attention %}
-  <div class="attention">
-    <p><strong>{{ a.name }}</strong></p>
-    <ul>
+    <div class="attention">
+      <h3>{{ a.name }}</h3>
+      <ul>
 {% for r in a.reasons %}
-      <li>{{ r }}</li>
+        <li>{{ r }}</li>
 {% endfor %}
-    </ul>
-    <p>Say <code>{{ a.say }}</code> and I will take care of it.</p>
-  </div>
+      </ul>
+      <p class="say"><span class="verb">Say</span><q>{{ a.say }}</q> and I will take care of it.</p>
+    </div>
 {% endfor %}
+  </section>
 {% endif %}
 {% if v.problems %}
 
   <h2>Tools with problems</h2>
-  <p class="why">I skipped these because their records have a mistake. Say "fix my tools" and I will look at them.</p>
+  <p class="lede">I skipped these because their records have a mistake. Say "fix my tools" and I will look at them.</p>
   <ul class="plain">
 {% for p in v.problems %}
     <li>{{ p }}</li>
@@ -101,7 +249,7 @@
 {% if v.source_problems %}
 
   <h2>Sources with problems</h2>
-  <p class="why">Your list of sources has a mistake in these entries. Tools that use them need an update.</p>
+  <p class="lede">Your list of sources has a mistake in these entries. Tools that use them need an update.</p>
   <ul class="plain">
 {% for p in v.source_problems %}
     <li>{{ p }}</li>
@@ -111,7 +259,7 @@
 {% if v.rule_problems %}
 
   <h2>Learned rules with problems</h2>
-  <p class="why">I could not read these learned rules, so I am not using them.</p>
+  <p class="lede">I could not read these learned rules, so I am not using them.</p>
   <ul class="plain">
 {% for p in v.rule_problems %}
     <li>{{ p }}</li>
@@ -119,65 +267,72 @@
   </ul>
 {% endif %}
 
-  <h2>My tools</h2>
+  <section class="rise r5">
+    <h2>My tools</h2>
 {% if not v.cards %}
-  <p>No tools yet. Say "automate this" and show me a task you do by hand.</p>
-{% endif %}
+    <p class="empty">No tools yet. Say "automate this" and show me a task you do by hand.</p>
+{% else %}
+    <div class="tools">
 {% for c in v.cards %}
-  <div class="tool">
-    <div class="tool-head"><h3>{{ c.name }}</h3><span class="pill {{ c.pill }}">{{ c.label }}</span></div>
-    <p class="say">Say <code>{{ c.say }}</code></p>
-    <p class="note">{{ c.does }}</p>
-    <div class="meta">
-      <span>{{ c.rhythm }}</span>
-      <span>{{ c.uses }}</span>
-{% if c.last_used %}
-      <span>{{ c.last_used }}</span>
-{% endif %}
-      <span>{{ c.last_check }}</span>
-      <span>Data: {{ c.data_path }}</span>
-    </div>
-{% if c.manual_steps %}
-    <div class="steps">You do:
-      <ol>
-{% for s in c.manual_steps %}
-        <li>{{ s }}</li>
-{% endfor %}
-      </ol>
-    </div>
-{% endif %}
+      <article class="tool {{ c.pill }}">
+        <div class="tool-head"><h3>{{ c.name }}</h3><span class="pill {{ c.pill }}">{{ c.label }}</span></div>
+        <p class="say"><span class="verb">Say</span><q>{{ c.say }}</q></p>
+        <p class="does">{{ c.does }}</p>
 {% if c.assumed %}
-    <p class="note why">{{ c.assumed }}</p>
+        <p class="card-note guess">{{ c.assumed }}</p>
+{% endif %}
+{% if c.manual_steps %}
+        <div class="steps">You do:
+          <ol>
+{% for s in c.manual_steps %}
+            <li>{{ s }}</li>
+{% endfor %}
+          </ol>
+        </div>
 {% endif %}
 {% if c.rules %}
-    <p class="note why">Rules applied: {{ c.rules | join("; ") }}</p>
+        <p class="card-note why">Rules applied: {{ c.rules | join("; ") }}</p>
 {% endif %}
 {% if c.improvements %}
-    <details><summary>Improvements ({{ c.improvements | length }})</summary>
-      <ul class="history">
+        <details><summary>Improvements ({{ c.improvements | length }})</summary>
+          <ul class="history">
 {% for i in c.improvements %}
-        <li>{{ i.date }}: {{ i.change }}{% if i.reason %} <span class="why">{{ i.reason }}</span>{% endif %}</li>
+            <li>{{ i.date }}: {{ i.change }}{% if i.reason %} <span class="why">{{ i.reason }}</span>{% endif %}</li>
 {% endfor %}
-      </ul>
-    </details>
+          </ul>
+        </details>
 {% endif %}
-  </div>
+        <ul class="meta">
+          <li>{{ c.rhythm }}</li>
+          <li>{{ c.uses }}</li>
+{% if c.last_used %}
+          <li>{{ c.last_used }}</li>
+{% endif %}
+          <li>{{ c.last_check }}</li>
+          <li>Data: {{ c.data_path }}</li>
+        </ul>
+      </article>
 {% endfor %}
+    </div>
+{% endif %}
+  </section>
 
-  <h2>What I have learned about how you work</h2>
+  <section>
+    <h2>What I have learned about how you work</h2>
 {% if v.learned %}
-  <ul class="plain">
+    <ul class="notes">
 {% for l in v.learned %}
-    <li>{{ l.text }} <span class="why">{{ l.reason }} {{ l.scope }}.{% if l.state %} {{ l.state }}{% endif %}</span></li>
+      <li>{{ l.text }} <span class="why">{{ l.reason }} {{ l.scope }}.{% if l.state %} {{ l.state }}{% endif %}</span></li>
 {% endfor %}
-  </ul>
-  <p class="why">Say "forget that" about any item to remove it.</p>
+    </ul>
+    <p class="why">Say "forget that" about any item to remove it.</p>
 {% else %}
-  <p class="why">Nothing yet. When you correct my work, I keep the lesson here.</p>
+    <p class="lede">Nothing yet. When you correct my work, I keep the lesson here.</p>
 {% endif %}
 {% if v.questions %}
-  <p class="why">{{ v.questions }} Fewer questions with no more corrections means I know more of your work.</p>
+    <p class="measure">{{ v.questions }} Fewer questions with no more corrections means I know more of your work.</p>
 {% endif %}
+  </section>
 {% if v.ideas %}
 
   <h2>Ideas</h2>
@@ -196,6 +351,8 @@
 {% endfor %}
   </ul>
 {% endif %}
+
+  <footer>This page lives in your assistant folder and updates each time you open your assistant. It makes no outside connections.</footer>
 </main>
 </body>
 </html>

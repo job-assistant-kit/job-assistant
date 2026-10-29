@@ -183,6 +183,16 @@ def build_parser() -> argparse.ArgumentParser:
     sp = ssub.add_parser("show", parents=[common], help="list blocked and allowed actions")
     sp.set_defaults(func=commands.cmd_settings_show)
 
+    p = sub.add_parser("start", parents=[common], help="the getting-started section of the tools page")
+    gsub = p.add_subparsers(dest="action", metavar="action", required=True)
+    gp = gsub.add_parser("set", parents=[common], help="save the getting-started section from a file")
+    gp.add_argument("--file", required=True, metavar="PATH")
+    gp.set_defaults(func=commands.cmd_start_set)
+    gp = gsub.add_parser("hide", parents=[common], help="fold the section away")
+    gp.set_defaults(func=commands.cmd_start_hide)
+    gp = gsub.add_parser("show", parents=[common], help="open the section again")
+    gp.set_defaults(func=commands.cmd_start_show)
+
     p = sub.add_parser("drive", parents=[common], help="saving accepted results to a drafts folder in Drive")
     dsub = p.add_subparsers(dest="action", metavar="action", required=True)
     dp = dsub.add_parser("start", parents=[common], help="get ready to create the drafts folder")

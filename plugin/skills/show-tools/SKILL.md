@@ -1,6 +1,6 @@
 ---
 name: show-tools
-description: Show the person their tools page and a plain list of their tools with the words that start each one, and retire or bring back a tool when they ask. Use when the person says "show my tools", "what can you do for me", "what tools do I have", "open my tools page", "retire" followed by a tool's name, or "bring back" followed by a tool's name. Only in a job assistant folder (one that has assistant/.job-assistant); in any other folder, do not use this.
+description: Show the person their tools page and a plain list of their tools with the words that start each one, and retire or bring back a tool when they ask. Use when the person says "show my tools", "what can you do for me", "what tools do I have", "open my tools page", "retire" followed by a tool's name, or "bring back" followed by a tool's name, or "hide getting started" or "show getting started". Only in a job assistant folder (one that has assistant/.job-assistant); in any other folder, do not use this.
 allowed-tools:
   - Bash(uv run --script "${CLAUDE_PLUGIN_ROOT}/scripts/ja.py" *)
   - Bash(uv run --script ${CLAUDE_PLUGIN_ROOT}/scripts/ja.py *)
@@ -46,3 +46,7 @@ When they say "retire" and a tool's name: run `ja tools` to find the tool's id. 
 ### 4. Bring back a tool
 
 When they say "bring back" and a tool's name: the retired tools are in the `archive/` folder, one folder per tool named by its id. Read the `name` line of each `archive/<id>/tool.yaml` to find the one they mean. Then run `ja tool restore <id>` and tell them in one sentence how it shows now.
+
+### 5. Hide or show getting started
+
+When they say "hide getting started" (or that they no longer need it), run `ja start hide`. When they say "show getting started", run `ja start show`. Tell them in one sentence what it printed, with the link.

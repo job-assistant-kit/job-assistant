@@ -67,6 +67,7 @@ Always open the assistant from the shortcut, so it starts in your folder.
 | "what have you learned?" or "forget that" | Shows or removes what it learned |
 | "is this number safe to send?" | Number sign-off: compared with the last published number and checked against the method |
 | "show my tools" or "what can you do for me?" | Opens your tools page and lists your tools |
+| "hide getting started" or "show getting started" | Folds the getting-started section on your tools page away, or brings it back |
 | "anything I should know?" | Up to three things that need your attention, such as a tool that is due |
 | "clean my inbox" | Lists inbox files older than 30 days and deletes them only on your yes |
 | "retire" or "bring back" with a tool's name | Puts a tool away or brings it back |
@@ -87,7 +88,7 @@ Inside your assistant folder:
 | Place | What it holds |
 |---|---|
 | `inbox/` | Files you drop in for the assistant |
-| `dashboard/index.html` | Your tools page |
+| `dashboard/index.html` | Your tools page, with the getting-started section at the top |
 | `CLAUDE.md` | The assistant's notes about your role and your tools |
 | `assistant/` | Your role, sources, learned rules, and what you taught it |
 | `.claude/skills/` | Your tools |
