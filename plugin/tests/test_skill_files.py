@@ -198,7 +198,7 @@ def test_fix_tool_triggers_and_flow():
              "ja tool improve", "ja check <id> --result pass"]
     positions = [body.index(step) for step in order]
     assert positions == sorted(positions)
-    assert "Never push, deploy, or publish" in body and "RUNBOOK.md" in body
+    assert "Never push, deploy, or publish" in body and "RUNBOOK.md" not in body
 
 
 def _banned_in_quotes(text):

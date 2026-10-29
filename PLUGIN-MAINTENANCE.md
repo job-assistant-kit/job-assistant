@@ -78,7 +78,6 @@ Run as `uv run --script plugin/scripts/ja.py <command>`. Every command accepts `
 | `knowledge add --fact TEXT --source TEXT` / `knowledge list` / `knowledge forget TEXT` | Facts the person taught, with sources |
 | `upkeep [--write] [--json]` | What needs attention, most urgent first; `--write` saves `data/upkeep.json` |
 | `inbox clean [--yes]` | List inbox files more than 30 days old; delete them with `--yes` |
-| `runbook` | Write `RUNBOOK.md` for a backup person |
 | `launcher [--yes] [--bin-dir D] [--apps-dir D] [--desktop-dir D]` | The shortcut; shows what it would write unless `--yes` |
 | `env [--json]` | Which needed programs are installed |
 
@@ -112,7 +111,7 @@ Keep these names. Later code and the person's existing folders depend on them.
 | `data/upkeep.json` | Upkeep items from the last `upkeep --write` |
 | `inbox/` | Files the person drops in |
 | `dashboard/index.html` | The tools page |
-| `RUNBOOK.md`, `CLAUDE.md` | Backup guide; assistant notes with the tool index markers |
+| `CLAUDE.md` | Assistant notes with the tool index markers. A `RUNBOOK.md` that earlier versions wrote is removed |
 
 `inbox/`, `data/`, `dashboard/`, and `.claude/settings.local.json` are in the folder's `.gitignore`.
 

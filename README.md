@@ -88,7 +88,6 @@ Inside your assistant folder:
 |---|---|
 | `inbox/` | Files you drop in for the assistant |
 | `dashboard/index.html` | Your tools page |
-| `RUNBOOK.md` | How a backup person runs each tool |
 | `CLAUDE.md` | The assistant's notes about your role and your tools |
 | `assistant/` | Your role, sources, learned rules, and what you taught it |
 | `.claude/skills/` | Your tools |

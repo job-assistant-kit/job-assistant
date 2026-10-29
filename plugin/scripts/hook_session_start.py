@@ -30,6 +30,8 @@ def work(data: dict) -> None:
         return
     paths = Paths(root)
     helper.sync(paths)
+    from ja.workspace import remove_old_backup_guide
+    remove_old_backup_guide(paths)
     today = date.today()
     try:
         upkeep.write(paths, upkeep.items(paths, today), today)

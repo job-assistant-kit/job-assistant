@@ -15,7 +15,7 @@ import sys
 from datetime import date, datetime
 from pathlib import Path
 
-from ja import drive, facts, helper, knowledge, numbers, profile, index, inputs, init, launcher, ledger, parts, proof, records, registry, role, runbook, settings, sources, status, tools, upkeep, workspace
+from ja import drive, facts, helper, knowledge, numbers, profile, index, inputs, init, launcher, ledger, parts, proof, records, registry, role, settings, sources, status, tools, upkeep, workspace
 from ja.registry import is_date
 from ja.workspace import Paths
 
@@ -76,7 +76,7 @@ def _stamp(args: argparse.Namespace) -> str:
 
 
 def _refresh(paths: Paths, today: date) -> None:
-    """After a change: rewrite the tool index, the tools page, and the backup guide. Never fails the change."""
+    """After a change: rewrite the tool index and the tools page. Never fails the change."""
     from ja import dashboard  # loaded here so other commands start faster
 
     try:
@@ -93,10 +93,7 @@ def _refresh(paths: Paths, today: date) -> None:
         dashboard.write(paths, today=today)
     except OSError:
         _warn("Saved, but I could not update your tools page.")
-    try:
-        runbook.write(paths, today=today)
-    except OSError:
-        _warn("Saved, but I could not update the backup guide.")
+    workspace.remove_old_backup_guide(paths)
 
 
 def _warn(text: str) -> None:
@@ -890,7 +887,7 @@ def cmd_search(args: argparse.Namespace) -> int:
 
 
 def _rule_change(func):
-    """Run a rule change, then refresh the tool list, the tools page, and the backup guide."""
+    """Run a rule change, then refresh the tool list and the tools page."""
     @_guard
     def wrapper(args: argparse.Namespace) -> int:
         paths = _paths(args)
@@ -1062,13 +1059,6 @@ def cmd_knowledge_forget(args: argparse.Namespace) -> int:
     _say(f"I will no longer use this: {found[0]}.")
     return 0
 
-
-@_guard
-def cmd_runbook(args: argparse.Namespace) -> int:
-    paths = _paths(args)
-    out = runbook.write(paths, today=_today(args))
-    _say(f"The backup guide is ready: {out}")
-    return 0
 
 
 @_guard

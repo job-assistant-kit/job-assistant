@@ -146,7 +146,7 @@ class Paths:
         return self.root / "dashboard" / "index.html"
 
     @property
-    def runbook(self) -> Path:
+    def old_backup_guide(self) -> Path:
         return self.root / "RUNBOOK.md"
 
     @property
@@ -156,3 +156,21 @@ class Paths:
     @property
     def claude_md(self) -> Path:
         return self.root / "CLAUDE.md"
+
+
+OLD_GUIDE_HEADING = "# How to run "
+OLD_GUIDE_ENDING = "'s tools when they are away"
+
+
+def remove_old_backup_guide(paths: "Paths") -> None:
+    """Earlier versions wrote RUNBOOK.md, a backup guide. Remove it once, and only when the kit wrote it."""
+    guide = paths.old_backup_guide
+    try:
+        first = guide.read_text(encoding="utf-8").split("\n", 1)[0]
+    except (OSError, UnicodeDecodeError):
+        return
+    if first.startswith(OLD_GUIDE_HEADING) and first.endswith(OLD_GUIDE_ENDING):
+        try:
+            guide.unlink()
+        except OSError:
+            pass

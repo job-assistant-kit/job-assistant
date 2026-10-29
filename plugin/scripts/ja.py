@@ -363,8 +363,6 @@ def build_parser() -> argparse.ArgumentParser:
     ip.add_argument("--yes", action="store_true", help="delete them (without it, only list them)")
     ip.set_defaults(func=commands.cmd_inbox_clean)
 
-    p = sub.add_parser("runbook", parents=[common], help="write the backup person's guide")
-    p.set_defaults(func=commands.cmd_runbook)
 
     p = sub.add_parser("launcher", parents=[common], help="add a shortcut that opens the assistant")
     p.add_argument("--yes", action="store_true", help="write the files (without it, only show them)")

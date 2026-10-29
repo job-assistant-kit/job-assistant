@@ -22,7 +22,7 @@ Useful for a health check: read its latest output and check the counts, dates, a
 ## The result
 
 - A health check: what was checked, what passed, and what looks wrong.
-- The runbook: where it lives, how to run it, inputs, outputs, and who to ask.
+- The record: where it lives, how to run it, inputs, outputs, and who to ask.
 - The "this broke" path: what to check first and the plain steps to get it running again.
 - Never change where the tool lives. Prepare the change and the steps instead.
 - End with "Sources:" naming the output checked.

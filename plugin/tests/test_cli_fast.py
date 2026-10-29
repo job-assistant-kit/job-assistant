@@ -182,13 +182,16 @@ def test_tool_commands_refresh_index_and_page(ws, tmp_path, write_tool, cli):
     assert r.returncode == 0 and "Check a brief (Working)" in notes()
 
 
-def test_runbook_cli_and_refresh(ws, write_tool, cli):
+def test_old_backup_guide_is_removed_only_when_the_kit_wrote_it(ws, write_tool, cli):
     write_tool(ws, id="a", name="Answer a question")
-    r = cli("runbook", *TODAY, cwd=ws)
-    assert r.returncode == 0 and "RUNBOOK.md" in r.stdout
-    assert "Answer a question" in (ws / "RUNBOOK.md").read_text(encoding="utf-8")
-    cli("tool", "retire", "a", *TODAY, cwd=ws)
-    assert "Answer a question" not in (ws / "RUNBOOK.md").read_text(encoding="utf-8")
+    guide = ws / "RUNBOOK.md"
+    guide.write_text("# How to run Sam's Assistant's tools when they are away\n\nold\n", encoding="utf-8")
+    assert cli("tool", "retire", "a", *TODAY, cwd=ws).returncode == 0
+    assert not guide.exists()
+    guide.write_text("# My own notes\n", encoding="utf-8")
+    cli("tool", "restore", "a", *TODAY, cwd=ws)
+    assert guide.read_text(encoding="utf-8") == "# My own notes\n"
+    assert cli("runbook", *TODAY, cwd=ws).returncode != 0
 
 
 def test_launcher_cli_preview_and_yes(ws, tmp_path, cli):

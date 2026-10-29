@@ -33,7 +33,7 @@ The tool's own folder (`.claude/skills/<id>/`) is protected: never write there y
 
 ### 1. Find the tool
 
-Run `ja tools`. Match what the person said to one tool by its name or example words. If two could fit, ask which one. Read its record, `.claude/skills/<id>/tool.yaml`, and its section of `RUNBOOK.md`.
+Run `ja tools`. Match what the person said to one tool by its name or example words. If two could fit, ask which one. Read its record, `.claude/skills/<id>/tool.yaml`.
 
 ### 2. Look for the cause
 
