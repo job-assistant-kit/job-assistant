@@ -121,6 +121,16 @@ def _ordered_like_last_run(paths: Paths, tool_id: str, files: list[Path]) -> lis
     return [given[h] for h in hashes]
 
 
+def _last_roles(paths: Paths, tool_id: str) -> list[str] | None:
+    """The input name each file had in the latest facts run, in the same order, or None."""
+    try:
+        used = json.loads(facts.last_paths(paths, tool_id)[1].read_text(encoding="utf-8"))
+        roles = [u.get("role") for u in used]
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError, AttributeError, TypeError):
+        return None
+    return roles if roles and all(isinstance(r, str) and r for r in roles) else None
+
+
 def save(paths: Paths, tool: Tool, inputs: list[Path], output: Path, today: date) -> Case:
     for f in [*inputs, output]:
         if not Path(f).is_file():
@@ -145,6 +155,9 @@ def save(paths: Paths, tool: Tool, inputs: list[Path], output: Path, today: date
             shutil.copyfile(facts.last_paths(paths, tool.id)[0], tmp / "facts.json")
         meta = {"saved": today.isoformat(), "inputs": [Path(f).name for f in ordered],
                 "received": {Path(f).name: facts.received(f) for f in ordered}}
+        roles = _last_roles(paths, tool.id) if with_facts else None
+        if roles and len(roles) == len(ordered):
+            meta["roles"] = {Path(f).name: r for f, r in zip(ordered, roles)}
         (tmp / "meta.json").write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8")
         tmp.rename(folder)
     except OSError:
@@ -222,8 +235,14 @@ def check_case(paths: Paths, tool: Tool, case: Case) -> Outcome:
     missing = [p.name for p in case.inputs if not p.is_file()]
     if missing:
         return Outcome(case=case, compared=True, differences=[f"The saved file {missing[0]} is missing"])
+    roles = _meta(case.folder) or {}
+    roles = roles.get("roles") if isinstance(roles.get("roles"), dict) else None
+    if roles and all(p.name in roles for p in case.inputs):
+        files, named = [], [(roles[p.name], p) for p in case.inputs]
+    else:
+        files, named = case.inputs, []
     try:
-        result = facts.run(paths, tool.id, tool.name, case.inputs)
+        result = facts.run(paths, tool.id, tool.name, files, named=named)
     except facts.FactsProblem as exc:
         return Outcome(case=case, compared=True, differences=[str(exc).rstrip(".")])
     return Outcome(case=case, compared=True, differences=compare(saved["facts"], result.facts, saved["counts"],

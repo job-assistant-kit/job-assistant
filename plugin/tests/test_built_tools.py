@@ -165,9 +165,16 @@ def test_facts_template_runs(tmp_path):
     out = subprocess.run([sys.executable, str(tools.FACTS_TEMPLATE), str(SYN / "inventory.csv"), str(SYN / "faq.md")],
                          capture_output=True, text=True, timeout=60, env={"JA_WORKSPACE": str(tmp_path)})
     data = json.loads(out.stdout)
-    assert data["facts"][0] == {"id": "rows-1", "label": "Rows in inventory.csv", "value": 42, "unit": "rows",
+    assert data["facts"][0] == {"id": "rows-1", "label": "Rows in the 1 file", "value": 42, "unit": "rows",
                                 "source": "inventory.csv", "notes": ""}
     assert data["counts"] == {"rows_1": 42} and data["problems"] == ["I do not know how to read faq.md yet."]
+
+
+def test_facts_template_reads_inputs_by_name(tmp_path):
+    out = subprocess.run([sys.executable, str(tools.FACTS_TEMPLATE), "--input", f"inventory={SYN / 'inventory.csv'}"],
+                         capture_output=True, text=True, timeout=60, env={"JA_WORKSPACE": str(tmp_path)})
+    data = json.loads(out.stdout)
+    assert data["facts"][0]["id"] == "rows-inventory" and data["facts"][0]["label"] == "Rows in the inventory file"
 
 
 def test_facts_template_is_allowed():

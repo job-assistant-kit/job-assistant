@@ -98,6 +98,20 @@ def _hook(event: str, args: tuple) -> None:
             _refuse(what)
 
 
+def _given_paths(args: list[str]) -> list[str]:
+    """The files the step was given: plain paths, and the path part of --input name=path."""
+    out, after_flag = [], False
+    for arg in args:
+        if after_flag:
+            out.append(arg.partition("=")[2])
+            after_flag = False
+        elif arg == "--input":
+            after_flag = True
+        else:
+            out.append(arg)
+    return out
+
+
 def _roots(workspace: str) -> tuple[str, ...]:
     roots = {workspace, sys.prefix, sys.base_prefix, sys.exec_prefix, "/usr/share/zoneinfo", "/etc/localtime"}
     roots.update(p for p in sys.path if p)
@@ -121,7 +135,7 @@ def main(argv: list[str]) -> int:
     sys.path[:] = [p for p in sys.path if not p or os.path.realpath(p) != here]
     sys.dont_write_bytecode = True
     _READ_ROOTS = _roots(os.path.realpath(workspace))
-    _READ_FILES = frozenset(r for r in (_real(f) for f in [script, *files]) if r)
+    _READ_FILES = frozenset(r for r in (_real(f) for f in [script, *_given_paths(files)]) if r)
     sys.argv = [script, *files]
     # Load the system's harmless lookup tables now, so libraries that read them on import
     # (openpyxl reads the file type table) do not need wider read access later.

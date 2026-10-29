@@ -21,6 +21,7 @@ TTM = ("import json, sys\n"
 def tool(ws, write_tool):
     write_tool(ws, id="match", name="Match the lists", status="working", last_check=None)
     shutil.copyfile(RECONCILE, ws / ".claude/skills/match/facts.py")
+    shutil.copyfile(RECONCILE.with_name("reconcile-input.yaml"), ws / ".claude/skills/match/input.yaml")
     (ws / ".claude/skills/match/checklist.yaml").write_text(
         yaml.safe_dump({"required": ["Lists every unmatched offering.", "Counts the blank rows."], "rules": []}),
         encoding="utf-8")
@@ -265,3 +266,41 @@ def test_compare_counts_sentences():
     assert proof.compare([], [], {"a": 1, "b": 2}, {"a": 1, "c": 3}) == [
         "The count b: was 2, now no longer given", "The count c: new, now 3"]
     assert proof.compare([], [], {"a": 1}, {"a": 1}) == []
+
+
+MONTHS_STEP = (
+    "import csv, json, sys\n"
+    "args = sys.argv[1:]\n"
+    "given = {args[i + 1].partition('=')[0]: args[i + 1].partition('=')[2] for i in range(0, len(args), 2)}\n"
+    "now = len(list(csv.DictReader(open(given['this month']))))\n"
+    "before = len(list(csv.DictReader(open(given['last month']))))\n"
+    "print(json.dumps({'facts': [{'id': 'growth', 'label': 'New offerings', 'value': now - before}]}))\n")
+
+
+def test_same_shape_inputs_keep_their_roles(ws, write_tool, cli, tmp_path):
+    write_tool(ws, id="growth", name="Monthly growth", status="working", last_check=None)
+    folder = ws / ".claude/skills/growth"
+    (folder / "facts.py").write_text(MONTHS_STEP, encoding="utf-8")
+    (folder / "input.yaml").write_text(yaml.safe_dump([
+        {"name": "this month", "types": ["csv"], "required_columns": ["Offering"]},
+        {"name": "last month", "types": ["csv"], "required_columns": ["Offering"]}]), encoding="utf-8")
+    (folder / "checklist.yaml").write_text(yaml.safe_dump({"required": ["Says the change."], "rules": []}),
+                                           encoding="utf-8")
+    october, september = tmp_path / "a-october.csv", tmp_path / "b-september.csv"
+    october.write_text("Offering\nA\nB\nC\n", encoding="utf-8")
+    september.write_text("Offering\nA\n", encoding="utf-8")
+    r = cli("--workspace", str(ws), "facts", "run", "growth", str(october))
+    assert r.returncode == 1 and "Say which file is which." in r.stderr
+    r = cli("--workspace", str(ws), "facts", "run", "growth",
+            "--input", f"this month={october}", "--input", f"last month={september}")
+    assert r.returncode == 0, r.text
+    assert "New offerings: 2" in r.stdout
+    result = ws / "inbox" / "growth.md"
+    result.parent.mkdir(exist_ok=True)
+    result.write_text("Two new offerings.\n", encoding="utf-8")
+    r = cli("--workspace", str(ws), "proof", "save", "growth", "--input", str(september), str(october),
+            "--output", str(result))
+    assert r.returncode == 0, r.text
+    r = cli("--workspace", str(ws), "proof", "run", "growth")
+    assert r.returncode == 0, r.text
+    assert "The facts match the saved example." in r.stdout

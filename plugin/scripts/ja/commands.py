@@ -646,13 +646,22 @@ def cmd_facts_run(args: argparse.Namespace) -> int:
         _say(facts.NO_STEP)
         return 0
     files = _files(args.files)
-    missing = [f.name for f in files if not f.is_file()]
+    named = []
+    for pair in args.named:
+        name, sep, file = pair.partition("=")
+        if not sep or not name.strip() or not file.strip():
+            raise Stop('Give a named file as "name=file", for example "last month=export.csv".')
+        named.append((name.strip(), _files([file.strip()])[0]))
+    if not files and not named:
+        raise Stop("Give at least one file.")
+    missing = [f.name for f in [*files, *(p for _, p in named)] if not f.is_file()]
     if missing:
         raise Stop(f"I could not find the file {missing[0]}.")
     try:
-        result = facts.run(paths, tool.id, tool.name, files)
+        result = facts.run(paths, tool.id, tool.name, files, named=named)
     except facts.FactsProblem as exc:
         raise Stop(str(exc)) from None
+    files = [p for _, p in result.assigned] or files
     facts.save_last(paths, tool.id, result, files)
     dates = {f.name: facts.received(f) for f in files}
     if args.json:

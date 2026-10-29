@@ -108,3 +108,81 @@ def test_broken_spec_is_plain(tool, cli):
 def test_unknown_tool(ws, cli):
     r = cli("--workspace", str(ws), "input", "check", "nope", "x.csv")
     assert r.returncode == 1 and "There is no tool called nope." in r.stderr
+
+
+MONTHS = inputs.parse_spec([
+    {"name": "this month", "types": ["csv"], "required_columns": ["Offering", "Stage"]},
+    {"name": "last month", "types": ["csv"], "required_columns": ["Offering", "Stage"]},
+])
+
+
+def two_months(tmp_path):
+    a, b = tmp_path / "october.csv", tmp_path / "september.csv"
+    a.write_text("Offering,Stage\nA,Intake\nB,Review\n", encoding="utf-8")
+    b.write_text("Offering,Stage\nA,Intake\n", encoding="utf-8")
+    return a, b
+
+
+def test_assign_matches_by_columns_in_list_order():
+    spec = inputs.parse_spec(SPEC)
+    got = inputs.assign(spec, [SYN / "inventory.csv", SYN / "servicenow-export.csv"])
+    assert got == [("offering export", SYN / "servicenow-export.csv"), ("inventory", SYN / "inventory.csv")]
+
+
+def test_assign_refuses_a_file_two_inputs_could_take(tmp_path):
+    a, b = two_months(tmp_path)
+    with pytest.raises(inputs.MatchProblem) as err:
+        inputs.assign(MONTHS, [a, b])
+    assert str(err.value) == ("The file october.csv could be the this month file or the last month file. "
+                              "Say which file is which.")
+
+
+def test_assign_uses_names_given_for_same_shape_files(tmp_path):
+    a, b = two_months(tmp_path)
+    got = inputs.assign(MONTHS, [], named=[("Last Month", a), ("this month", b)])
+    assert got == [("this month", b), ("last month", a)]
+    got = inputs.assign(MONTHS, [a], named=[("last month", b)])
+    assert got == [("this month", a), ("last month", b)]
+
+
+def test_assign_refuses_a_file_that_fits_no_input(tmp_path):
+    with pytest.raises(inputs.MatchProblem) as err:
+        inputs.assign(inputs.parse_spec(SPEC), [SYN / "faq.md", SYN / "inventory.csv"])
+    assert str(err.value) == ("The file faq.md does not fit any input this tool takes: offering export, inventory.")
+
+
+def test_assign_refuses_two_files_for_one_input(tmp_path):
+    spec = inputs.parse_spec(SPEC)
+    copy = tmp_path / "inventory-2.csv"
+    shutil.copyfile(SYN / "inventory.csv", copy)
+    with pytest.raises(inputs.MatchProblem) as err:
+        inputs.assign(spec, [SYN / "inventory.csv", copy])
+    assert str(err.value) == ("The files inventory.csv and inventory-2.csv both look like the inventory file. "
+                              "Say which file is which.")
+
+
+@pytest.mark.parametrize("files, named, message", [
+    (["inventory.csv"], [], "I still need the offering export file (CSV or Excel)."),
+    ([], [("stock list", "inventory.csv")], "This tool has no input called stock list. Its inputs are: "
+                                            "offering export, inventory."),
+    ([], [("inventory", "inventory.csv"), ("Inventory", "inventory.csv")], "The inventory file was given twice."),
+    ([], [("offering export", "inventory.csv")], "The file inventory.csv is missing the column Stage, so it "
+                                                 "cannot be the offering export file."),
+    ([], [("inventory", "faq.md")], "The file faq.md is not a CSV or Excel file, so it cannot be the "
+                                    "inventory file."),
+    (["gone.csv"], [], "I could not find the file gone.csv."),
+])
+def test_assign_problems(files, named, message):
+    spec = inputs.parse_spec(SPEC)
+    with pytest.raises(inputs.MatchProblem) as err:
+        inputs.assign(spec, [SYN / f for f in files], named=[(n, SYN / f) for n, f in named])
+    assert str(err.value) == message
+
+
+@pytest.mark.parametrize("spec, message", [
+    ([{"name": "a=b", "types": ["csv"]}], "cannot contain an equals sign"),
+    ([{"name": "inventory", "types": ["csv"]}, {"name": "Inventory ", "types": ["csv"]}], "two expected files named"),
+])
+def test_input_names_must_be_usable(spec, message):
+    with pytest.raises(inputs.SpecProblem, match=message):
+        inputs.parse_spec(spec)

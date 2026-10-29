@@ -67,7 +67,7 @@ Run as `uv run --script plugin/scripts/ja.py <command>`. Every command accepts `
 | `tool improve ID --change TEXT --reason TEXT` | Note an improvement |
 | `tool status ID STATUS` / `tool retire ID` / `tool restore ID` | Declared status, archive, restore |
 | `input check TOOL FILE...` | Check files against the tool's `input.yaml` |
-| `facts run TOOL FILE... [--json]` | Run the tool's facts step with a time limit and check its output |
+| `facts run TOOL [FILE...] [--input NAME=FILE]... [--json]` | Run the tool's facts step with a time limit and check its output. When the tool lists its inputs (`input.yaml`), each file is matched to one input by type and required columns, or by the name given with `--input`; anything unclear is refused ("Say which file is which."). The step then receives `--input "<name>=<path>"` pairs in the order of the input list |
 | `proof save TOOL --input FILE... --output FILE` / `proof run TOOL [--case N]` / `proof list TOOL` | Saved examples and checks against them; `proof run` compares facts and counts exactly, and fails (and records a failed check) for an example missing its result, missing or unreadable facts on a tool with a facts step, or unreadable details |
 | `part add --from FILE` / `parts [--json]` / `search WORD... [--json]` | Parts library and word search over tools and parts |
 | `rules add\|for\|confirm\|hold\|forget\|promote\|list\|similar ...` | Learned rules with staging; `confirm` takes only a rule waiting for a check; `promote ID` adds a waiting copy `ID-everywhere` and leaves the original in use until the copy is confirmed (it replaces the original) or held (the copy is removed) |
@@ -101,7 +101,7 @@ Keep these names. Later code and the person's existing folders depend on them.
 | `data/records/building/<id>.json` | Start times of builds in progress |
 | `data/ledger.jsonl` | Published numbers |
 | `data/numbers/pending.jsonl` | Numbers waiting for approval |
-| `data/proofs/<id>/case-N/` | Saved examples: `inputs/`, the accepted output `output.md`, `facts.json` (tools with a facts step), `meta.json` ({saved, inputs: file names in run order, received}). The input order comes only from `meta.json`; when it cannot be read the example is damaged and its inputs are never guessed from the folder |
+| `data/proofs/<id>/case-N/` | Saved examples: `inputs/`, the accepted output `output.md`, `facts.json` (tools with a facts step), `meta.json` ({saved, inputs: file names in run order, received, roles: {file name: input name} when the tool lists its inputs}). The input order comes only from `meta.json`; when it cannot be read the example is damaged and its inputs are never guessed from the folder |
 | `data/drafts/<id>/` | Working copies of a tool's files |
 | `data/last/` | The latest facts run per tool |
 | `data/upkeep.json` | Upkeep items from the last `upkeep --write` |
@@ -162,7 +162,7 @@ First match wins: a declared `retired`, `paused`, or `being-built`; a failed las
 
 A tool's facts step is code the assistant wrote, and it runs without asking. The boundary is `scripts/ja/runner.py`:
 
-- `ja facts run` starts the step as `uv run --no-project --with openpyxl python runner.py <folder> <facts.py> <files>`, in its own process group. On the time limit the whole group is killed.
+- `ja facts run` starts the step as `uv run --no-project --with openpyxl python runner.py <folder> <facts.py> <inputs>` (inputs as `--input name=path` pairs, or plain paths when the tool lists none; the runner may read only the path part, never a path hidden in a name), in its own process group. On the time limit the whole group is killed.
 - The runner installs a Python audit hook before the step runs. The hook refuses, at the moment it happens: network use (`socket.*` and the protocol client events), starting programs (`subprocess.*`, `os.system`, `os.exec*`, `os.spawn*`, `os.posix_spawn`, `os.fork*`, `os.kill*`), native code (`ctypes.*`, importing `ctypes`, `_ctypes`, `cffi`), any file write or change (`open` in a write mode or with write flags, `os.remove`, `os.rename`, `os.mkdir`, `shutil.*`, and the rest in `_PREFIXES`), reading files outside the assistant folder, the Python install, and the input files given, and adding another hook. A refused action ends the run with exit code 3 and `JA-BLOCKED: <what>`; the helper turns that into a plain sentence.
 - Only `openpyxl` may be added as extra software. `ja tool files` and `ja facts run` refuse an inline dependency header that names anything else.
 - The source check in `safety.py` stays only as an early, friendly refusal.

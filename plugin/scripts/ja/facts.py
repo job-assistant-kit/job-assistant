@@ -15,12 +15,12 @@ import shutil
 import signal
 import subprocess
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
-from ja import safety
+from ja import inputs, safety
 from ja.workspace import Paths
 
 TIMEOUT_SECONDS = 120
@@ -35,6 +35,8 @@ class FactsProblem(Exception):
 @dataclass
 class Result:
     data: dict[str, Any]
+    # (input name, file) in the order of the tool's input list; empty when it names no inputs
+    assigned: list[tuple[str, Path]] = field(default_factory=list)
 
     @property
     def facts(self) -> list[dict[str, Any]]:
@@ -54,12 +56,30 @@ BLOCKED_EXIT = 3
 BLOCKED_MARKER = "JA-BLOCKED: "
 
 
-def _command(root: Path, script: Path, files: list[Path]) -> list[str]:
+def _arguments(script: Path, files: list[Path], named) -> tuple[list[str], list[tuple[str, Path]]]:
+    """The step's arguments: each input as --input "<name>=<path>" when the tool lists its inputs."""
+    try:
+        spec = inputs.load_spec(script.parent)
+    except inputs.SpecProblem as exc:
+        raise FactsProblem(str(exc)) from None
+    if spec is None:
+        if named:
+            raise FactsProblem("This tool does not name its inputs, so give the files without names.")
+        return [str(f) for f in files], []
+    try:
+        assigned = inputs.assign(spec, list(files), named=list(named))
+    except inputs.MatchProblem as exc:
+        raise FactsProblem(str(exc)) from None
+    args = [part for name, path in assigned for part in ("--input", f"{name}={path}")]
+    return args, assigned
+
+
+def _command(root: Path, script: Path, args: list[str]) -> list[str]:
     """Run the step under the runner, with only the approved libraries available."""
     uv = shutil.which("uv")
     with_libs = [arg for lib in safety.ALLOWED_LIBRARIES for arg in ("--with", lib)]
     head = [uv, "run", "--quiet", "--no-project", *with_libs, "python"] if uv else [sys.executable]
-    return [*head, str(RUNNER), str(root), str(script), *[str(f) for f in files]]
+    return [*head, str(RUNNER), str(root), str(script), *args]
 
 
 def _stop_group(proc: subprocess.Popen) -> None:
@@ -124,15 +144,16 @@ def _parse(stdout: str) -> Any:
 
 
 def run(paths: Paths, tool_id: str, name: str, files: list[Path], timeout: float = TIMEOUT_SECONDS,
-        script: Path | None = None) -> Result:
+        script: Path | None = None, named: list[tuple[str, Path]] | tuple = ()) -> Result:
     """Run the facts step on the files. Raises FactsProblem with a plain message."""
     script = script or script_for(paths, tool_id)
     refused = safety.problem(script)
     if refused:
         raise FactsProblem(refused)
+    args, assigned = _arguments(script, files, named)
     env = {**os.environ, "JA_WORKSPACE": str(paths.root), "PYTHONDONTWRITEBYTECODE": "1"}
     try:
-        proc = subprocess.Popen(_command(paths.root, script, files), cwd=paths.root, env=env, text=True,
+        proc = subprocess.Popen(_command(paths.root, script, args), cwd=paths.root, env=env, text=True,
                                 stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                 start_new_session=True)
     except OSError:
@@ -153,7 +174,7 @@ def run(paths: Paths, tool_id: str, name: str, files: list[Path], timeout: float
     except (json.JSONDecodeError, ValueError) as exc:
         reason = "it did not print results" if isinstance(exc, json.JSONDecodeError) else str(exc)
         raise FactsProblem(f"The facts step for {name} gave results I could not use: {reason}.") from None
-    return Result(data)
+    return Result(data, assigned)
 
 
 def received(file: Path) -> str:
@@ -161,11 +182,14 @@ def received(file: Path) -> str:
     return datetime.fromtimestamp(Path(file).stat().st_mtime).date().isoformat()
 
 
-def fingerprint(files: list[Path]) -> list[dict[str, str]]:
+def fingerprint(files: list[Path], roles: list[str] | None = None) -> list[dict[str, str]]:
     out = []
-    for f in files:
+    for i, f in enumerate(files):
         digest = hashlib.sha256(Path(f).read_bytes()).hexdigest()
-        out.append({"name": Path(f).name, "sha256": digest, "received": received(f)})
+        entry = {"name": Path(f).name, "sha256": digest, "received": received(f)}
+        if roles:
+            entry["role"] = roles[i]
+        out.append(entry)
     return out
 
 
@@ -192,10 +216,14 @@ def last_paths(paths: Paths, tool_id: str) -> tuple[Path, Path]:
 
 def save_last(paths: Paths, tool_id: str, result: Result, files: list[Path]) -> Path:
     """Keep the latest facts and which files they came from, for saving an example later."""
-    out, inputs = last_paths(paths, tool_id)
+    out, used = last_paths(paths, tool_id)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(result.data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    inputs.write_text(json.dumps(fingerprint(files), indent=2) + "\n", encoding="utf-8")
+    if result.assigned:
+        files, roles = [p for _, p in result.assigned], [n for n, _ in result.assigned]
+    else:
+        roles = None
+    used.write_text(json.dumps(fingerprint(files, roles), indent=2) + "\n", encoding="utf-8")
     return out
 
 

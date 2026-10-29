@@ -98,7 +98,7 @@ If none fits, build from the closest one and note in the tool record's `does` wh
    - `parts`: the ids of parts it reuses, if any
 3. Run `ja tool add --from data/drafts/<id>/tool.yaml`. This creates the tool and puts working copies of its files in `data/drafts/<id>/`.
 4. Edit `data/drafts/<id>/SKILL.md`. Replace each `<!-- fill: ... -->` note with the real instructions for this tool, following the recipe. Remove the notes. Keep the other sections as they are.
-5. If the task involves anything countable or comparable (counts, totals, dates, durations, matches, changes from last time), write `data/drafts/<id>/facts.py`, starting from `facts-template.py` in the same folder. Give each fact a short, stable id and a plain label, and name the file each fact comes from. It may read only the files it is given: no internet, no other programs. To reuse a code part, call `load_part("<part id>")`.
+5. If the task involves anything countable or comparable (counts, totals, dates, durations, matches, changes from last time), write `data/drafts/<id>/facts.py`, starting from `facts-template.py` in the same folder. Give each fact a short, stable id and a plain label, and name the file each fact comes from. Read each input by its name from `input.yaml` (`files["inventory"]`), never by position; the helper hands each file over by name. It may read only the files it is given: no internet, no other programs, no changing files; the helper blocks those while it runs. To reuse a code part, call `load_part("<part id>")`.
 6. Edit `data/drafts/<id>/checklist.yaml`: add the recipe's checklist items, made specific to this tool, as plain statements that are true of a good result.
 7. Write `data/drafts/<id>/input.yaml`: one entry per file the tool expects, each with `name`, `types` (csv, xlsx, json, md, txt, pdf, or png), `required_columns`, and `min_rows`.
 8. Run `ja tool files <id>`. If it reports a problem, fix that file in the draft folder and run it again.
@@ -107,7 +107,7 @@ If none fits, build from the closest one and note in the tool record's `does` wh
 ### 6. Run it on their example now
 
 1. Run `ja input check <id> <files>`. If it reports a problem with their file, tell them plainly and show the steps it prints.
-2. Run `ja facts run <id> <files>` when the tool has a facts step.
+2. Run `ja facts run <id> <files>` when the tool has a facts step. When two files look alike (for example this month and last month), the helper asks which is which; then give each with its input name: `ja facts run <id> --input "<input name>=<file>" --input "<input name>=<file>"`.
 3. Write the result the way the tool's page now says, using the facts exactly as printed. Check it against every checklist item.
 4. When the tool's numbers go to leaders, follow the check-number steps for each number before you show it, and label each number "Draft, not checked". Do not call any number checked.
 5. Show them the result.

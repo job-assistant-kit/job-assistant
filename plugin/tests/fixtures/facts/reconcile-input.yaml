@@ -1,0 +1,6 @@
+- name: offering export
+  types: [csv]
+  required_columns: [Offering, Stage, Governance Completed]
+- name: inventory
+  types: [csv]
+  required_columns: [Offering, Awareness Date]

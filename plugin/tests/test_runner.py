@@ -98,6 +98,25 @@ def test_changing_files_is_blocked(ws: Path, body: str) -> None:
     assert not (ws / "inbox" / "new.txt").exists() and (ws / "inbox").is_dir()
 
 
+def test_named_input_outside_the_folder_is_allowed(ws: Path, tmp_path: Path) -> None:
+    data = tmp_path / "last month.csv"
+    data.write_text("A\n1\n", encoding="utf-8")
+    body = ("import sys\nassert sys.argv[1:] == ['--input', 'last month=' + " + repr(str(data)) + "]\n"
+            "open(sys.argv[2].partition('=')[2]).read()\n" + OK)
+    r = run_step(ws, body, "--input", f"last month={data}")
+    assert r.returncode == 0, r.stderr
+
+
+def test_input_flag_and_name_do_not_widen_reads(ws: Path, tmp_path: Path) -> None:
+    secret = tmp_path / "secret.txt"
+    secret.write_text("private", encoding="utf-8")
+    given = tmp_path / "given.csv"
+    given.write_text("A\n1\n", encoding="utf-8")
+    r = run_step(ws, f"print(open({str(secret)!r}).read())\n", "--input", f"{secret}={given}")
+    assert blocked(r, "read a file outside the assistant folder")
+    assert "private" not in r.stdout
+
+
 def test_reading_outside_the_folder_is_blocked(ws: Path, tmp_path: Path) -> None:
     secret = tmp_path / "secret.txt"
     secret.write_text("private", encoding="utf-8")

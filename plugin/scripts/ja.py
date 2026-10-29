@@ -248,7 +248,9 @@ def build_parser() -> argparse.ArgumentParser:
     fsub = p.add_subparsers(dest="action", metavar="action", required=True)
     fp = fsub.add_parser("run", parents=[common], help="run the facts step on the files")
     fp.add_argument("tool", metavar="TOOL")
-    fp.add_argument("files", nargs="+", metavar="FILE")
+    fp.add_argument("files", nargs="*", metavar="FILE")
+    fp.add_argument("--input", dest="named", action="append", default=[], metavar="NAME=FILE",
+                    help="give a file for one named input, when two files look alike")
     fp.add_argument("--json", action="store_true", help="output for code")
     fp.set_defaults(func=commands.cmd_facts_run)
 

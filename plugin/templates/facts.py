@@ -5,13 +5,20 @@
 # ///
 """Facts step for one tool.
 
-Reads the input files named on the command line and prints one JSON object:
+Reads its input files and prints one JSON object:
     {"facts": [{"id", "label", "value", "unit", "source", "notes"}],
      "counts": {name: whole number}, "problems": [plain sentences]}
 
 Use the standard library only. When an input is an Excel file, add "openpyxl" to the
 dependencies above. This step must not reach other systems or start programs; the
 assistant refuses to run a step that tries.
+
+When the tool lists its inputs (input.yaml), the helper passes each file by its input
+name, so main() receives {"<input name>": path}. Read each file by its name, never by its
+position. Without an input list, the files arrive as {"1": path, "2": path, ...}.
+
+The step may read only the files it is given and files in the assistant folder. It may not
+reach other systems, start programs, or change files: the helper blocks those while it runs.
 
 Shared parts from the assistant folder load with load_part("<part id>").
 """
@@ -47,20 +54,36 @@ def read_csv(path: Path) -> list[dict[str, str]]:
         return list(csv.DictReader(fh))
 
 
-def main(paths: list[Path]) -> dict:
+def given_inputs(args: list[str]) -> dict[str, Path]:
+    """The input files by name: --input "<name>=<path>" pairs, or numbered when unnamed."""
+    named: dict[str, Path] = {}
+    plain: list[Path] = []
+    rest = iter(args)
+    for arg in rest:
+        if arg == "--input":
+            name, _, path = next(rest, "").partition("=")
+            named[name] = Path(path)
+        else:
+            plain.append(Path(arg))
+    return named or {str(n): p for n, p in enumerate(plain, start=1)}
+
+
+def main(files: dict[str, Path]) -> dict:
     facts: list[dict] = []
     counts: dict[str, int] = {}
     problems: list[str] = []
-    # Replace this example with the facts this tool needs.
-    for n, path in enumerate(paths, start=1):
+    # Replace this example with the facts this tool needs. Read each input by its name,
+    # for example files["inventory"].
+    for name, path in files.items():
+        key = name.replace(" ", "-")
         if path.suffix.lower() == ".csv":
             rows = read_csv(path)
-            facts.append(fact(f"rows-{n}", f"Rows in {path.name}", len(rows), "rows", path.name))
-            counts[f"rows_{n}"] = len(rows)
+            facts.append(fact(f"rows-{key}", f"Rows in the {name} file", len(rows), "rows", path.name))
+            counts[f"rows_{key}"] = len(rows)
         else:
             problems.append(f"I do not know how to read {path.name} yet.")
     return {"facts": facts, "counts": counts, "problems": problems}
 
 
 if __name__ == "__main__":
-    print(json.dumps(main([Path(a) for a in sys.argv[1:]]), ensure_ascii=False))
+    print(json.dumps(main(given_inputs(sys.argv[1:])), ensure_ascii=False))

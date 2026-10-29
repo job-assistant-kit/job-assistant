@@ -17,6 +17,7 @@ FILES = [str(SYN / "servicenow-export.csv"), str(SYN / "inventory.csv")]
 def tool(ws, write_tool):
     write_tool(ws, id="match", name="Match the lists")
     shutil.copyfile(RECONCILE, ws / ".claude/skills/match/facts.py")
+    shutil.copyfile(RECONCILE.with_name("reconcile-input.yaml"), ws / ".claude/skills/match/input.yaml")
     return ws
 
 

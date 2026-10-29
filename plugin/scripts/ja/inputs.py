@@ -18,6 +18,10 @@ class SpecProblem(ValueError):
     """The tool's input checks cannot be used. The message is plain."""
 
 
+class MatchProblem(ValueError):
+    """The given files cannot be matched to the tool's inputs. The message is plain."""
+
+
 @dataclass
 class Expected:
     name: str
@@ -46,6 +50,10 @@ def parse_spec(data: Any) -> list[Expected]:
             rows = 0
         if isinstance(rows, bool) or not isinstance(rows, int) or rows < 0:
             raise SpecProblem(f"The smallest number of rows for {name} must be a whole number.")
+        if "=" in name:
+            raise SpecProblem(f"The input name {name} cannot contain an equals sign.")
+        if any(_key(e.name) == _key(name) for e in out):
+            raise SpecProblem(f"The input checks list two expected files named {name}.")
         out.append(Expected(name=name, types=list(types), required_columns=[c.strip() for c in columns],
                             min_rows=rows))
     return out
@@ -190,3 +198,60 @@ def check(spec: list[Expected] | None, files: list[Path]) -> Report:
             problems.append(f"The file {best.path.name} has {best.rows} rows, but this needs at least "
                             f"{expected.min_rows}.")
     return Report(problems=problems, matched=matched, unused=[s.path.name for s in usable])
+
+
+def _fits(expected: Expected, seen: Seen) -> bool:
+    return seen.kind in expected.types and not _missing(expected, seen)
+
+
+def assign(spec: list[Expected], files: list[Path], named: list[tuple[str, Path]] | tuple = ()) -> list[tuple[str, Path]]:
+    """Match each expected input to one file, in the order of the input list.
+
+    Files given with a name go to that input. Each other file must fit exactly one input
+    that is still open (its type and required columns), and each input may take only one
+    file. Anything unclear is refused, so a facts step never gets two files swapped.
+    Raises MatchProblem with a plain message.
+    """
+    by_key = {_key(e.name): e for e in spec}
+    listed = ", ".join(e.name for e in spec)
+    chosen: dict[str, Path] = {}
+    for name, path in named:
+        expected = by_key.get(_key(name))
+        if expected is None:
+            raise MatchProblem(f"This tool has no input called {name}. Its inputs are: {listed}.")
+        if expected.name in chosen:
+            raise MatchProblem(f"The {expected.name} file was given twice.")
+        seen = look(Path(path))
+        if seen.problem:
+            raise MatchProblem(seen.problem)
+        if seen.kind not in expected.types:
+            raise MatchProblem(f"The file {Path(path).name} is not a {_kinds(expected.types)} file, "
+                               f"so it cannot be the {expected.name} file.")
+        missing = _missing(expected, seen)
+        if missing:
+            raise MatchProblem(f"The file {Path(path).name} is missing the column {missing[0]}, "
+                               f"so it cannot be the {expected.name} file.")
+        chosen[expected.name] = Path(path)
+    open_inputs = [e for e in spec if e.name not in chosen]
+    seen_files = [look(Path(f)) for f in files]
+    for seen in seen_files:
+        if seen.problem:
+            raise MatchProblem(seen.problem)
+    fits = [(seen, [e for e in open_inputs if _fits(e, seen)]) for seen in seen_files]
+    for seen, options in fits:
+        if not options:
+            raise MatchProblem(f"The file {seen.path.name} does not fit any input this tool takes: {listed}.")
+        if len(options) > 1:
+            raise MatchProblem(f"The file {seen.path.name} could be the {options[0].name} file or the "
+                               f"{options[1].name} file. Say which file is which.")
+    for expected in open_inputs:
+        takers = [seen for seen, options in fits if options[0] is expected]
+        if len(takers) > 1:
+            raise MatchProblem(f"The files {takers[0].path.name} and {takers[1].path.name} both look like "
+                               f"the {expected.name} file. Say which file is which.")
+        if takers:
+            chosen[expected.name] = takers[0].path
+    for expected in spec:
+        if expected.name not in chosen:
+            raise MatchProblem(f"I still need the {expected.name} file ({_kinds(expected.types)}).")
+    return [(e.name, chosen[e.name]) for e in spec]
