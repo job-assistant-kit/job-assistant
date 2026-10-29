@@ -33,8 +33,13 @@ def prose(text):
     return re.sub(r"`[^`\n]*`", "", text)
 
 
+RECIPES = sorted((PLUGIN / "skills/automate-this/recipes").glob("*.md"))
+RECIPE_HEADINGS = ["When it fits", "What to ask", "Inputs and checks", "Facts step", "The result",
+                   "Checklist items to include", "Numbers", "Watch out for", "Example requests"]
+
+
 def test_there_are_skills():
-    assert [p.parent.name for p in SKILLS] == ["set-me-up"]
+    assert [p.parent.name for p in SKILLS] == ["automate-this", "set-me-up"]
 
 
 def test_frontmatter_valid():
@@ -75,8 +80,8 @@ def test_no_double_hyphen_punctuation_in_prose():
 
 
 def test_quoted_phrases_use_plain_words():
-    pages = [*SKILLS, *(PLUGIN / "skills").glob("*/*.md"), PLUGIN / "templates/adopted-skill.md",
-             PLUGIN / "templates/workspace/CLAUDE.md"]
+    pages = [*SKILLS, *(PLUGIN / "skills").glob("*/*.md"), *RECIPES, PLUGIN / "templates/adopted-skill.md",
+             PLUGIN / "templates/built-skill.md", PLUGIN / "templates/workspace/CLAUDE.md"]
     bad = []
     for page in set(pages):
         for phrase in re.findall(r'"([^"\n]+)"', prose(page.read_text(encoding="utf-8"))):
@@ -98,3 +103,73 @@ def test_set_me_up_flow():
     assert not re.search(r"\brm\b", text) and "delete the file" not in text
     assert "close this window" in text and "whenever you open the assistant from its shortcut" in text
     assert "${CLAUDE_PLUGIN_ROOT}/scripts/ja.py" in text
+
+
+def test_automate_this_triggers():
+    front, _ = frontmatter(PLUGIN / "skills/automate-this/SKILL.md")
+    for phrase in ("automate this", "make this automatic", "can you do this for me every time", "build me a tool",
+                   "screenshot"):
+        assert phrase in front["description"]
+
+
+def test_recipes_have_every_heading():
+    names = [p.stem for p in RECIPES]
+    assert names == sorted(["answer-from-sources", "data-to-story", "reconcile-two-lists", "check-against-template",
+                            "meeting-to-actions", "recurring-digest", "tailor-for-audience", "carry-a-change",
+                            "keep-it-running"])
+    for recipe in RECIPES:
+        text = recipe.read_text(encoding="utf-8")
+        assert text.startswith("# Recipe: "), recipe.name
+        assert re.findall(r"^## (.+)$", text, flags=re.M) == RECIPE_HEADINGS, recipe.name
+        for heading in RECIPE_HEADINGS:
+            body = text.split(f"## {heading}\n", 1)[1].split("\n## ", 1)[0]
+            assert body.strip(), f"{recipe.name}: {heading} is empty"
+
+
+def test_automate_this_names_every_recipe():
+    text = (PLUGIN / "skills/automate-this/SKILL.md").read_text(encoding="utf-8")
+    for recipe in RECIPES:
+        assert f"`{recipe.name}`" in text, recipe.name
+
+
+def test_automate_this_flow():
+    text = (PLUGIN / "skills/automate-this/SKILL.md").read_text(encoding="utf-8")
+    order = ["ja build start", "ja search", "Does this contain anything confidential, such as unannounced "
+             "offerings, partners, or pricing?", "ja tool add --from data/drafts/", "ja tool files",
+             "ja input check", "ja facts run", "Does this look right?", "ja proof save", "ja proof run",
+             "ja check <id> --result pass", "ja tool status <id> working", "ja record build"]
+    positions = [text.index(step) for step in order]
+    assert positions == sorted(positions)
+    assert "never write there yourself" in text and "Draft, not checked" in text
+
+
+def _helper_actions(text):
+    """Every `ja <words>` example in a page, as the words up to the first detail."""
+    out = []
+    for span in re.findall(r"`ja ([^`]+)`", text):
+        span = re.sub(r'^--workspace "[^"]*" ', "", span)
+        words = []
+        for w in span.split():
+            if w.startswith(("-", "<", '"')) or not re.fullmatch(r"[a-z-]+", w):
+                break
+            words.append(w)
+        if not span.startswith("<"):
+            out.append(words)
+    return out
+
+
+def test_every_helper_action_in_the_pages_exists():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("ja_cli_check", PLUGIN / "scripts/ja.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    parser = module.build_parser()
+    commands = parser._subparsers._group_actions[0].choices
+    pages = [*SKILLS, *RECIPES, PLUGIN / "templates/built-skill.md", PLUGIN / "templates/adopted-skill.md"]
+    for page in pages:
+        for words in _helper_actions(page.read_text(encoding="utf-8")):
+            assert words and words[0] in commands, f"{page.name}: ja {' '.join(words)}"
+            sub = commands[words[0]]
+            actions = [a for a in sub._actions if isinstance(a, type(parser._subparsers._group_actions[0]))]
+            if actions:
+                assert len(words) > 1 and words[1] in actions[0].choices, f"{page.name}: ja {' '.join(words)}"
