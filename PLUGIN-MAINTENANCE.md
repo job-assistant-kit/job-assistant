@@ -210,6 +210,7 @@ Drive check, verified 2026-10-29:
 - A PreToolUse `permissionDecision: "allow"` skips the prompt but does not override a deny rule, so `drive start` and `drive set` take the create action off the deny list. A PreToolUse `"deny"` blocks even when an allow rule exists (hooks reference, "PreToolUse decision control").
 - `onFailure: "block"` makes a failed or timed-out PreToolUse hook block the call; without it the call goes on through the normal permission flow (hooks reference, "Block the action when a hook fails"). It needs Claude Code 2.1.295. On older versions the key is ignored, and because the create action has no allow rule, a failed check falls back to a prompt.
 - Claude Code reloads settings files when they change, so a deny list change from `drive start` or `drive off` applies in the running session (settings page, "When edits take effect").
+- Observed live on 2026-10-29 with Claude Code 2.1.280 and the claude.ai Google Drive connector: a denied action is hidden from Claude's tool list, so setup checks for any Drive tool before offering the folder. After `drive start`, the create action appeared in the same session. With no allow rule, the hook's allow let the folder and a draft through in `claude -p`; a second folder, a file outside the folder, and a folder inside it were refused with the hook's reason. A `text/markdown` upload became a Google Doc.
 
 First recorded by earlier batches on 2026-10-28, and checked again on 2026-10-29:
 

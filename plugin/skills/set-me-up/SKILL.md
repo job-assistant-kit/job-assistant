@@ -71,13 +71,13 @@ Tell them in one or two sentences what you can read, and that changes to their o
 
 ### 5b. Drafts folder in Drive (optional)
 
-Do this only when a Google Drive create action (a tool name ending in `Google_Drive__create_file`) is available. Otherwise skip it, and if they ask for it, tell them to connect Google Drive in Claude first.
+Do this only when Google Drive is connected: some tool names contain `Google_Drive`. The Drive create action is blocked, and so hidden from you, until step 1 below unblocks it, so do not judge by whether you can see it. If no Drive tools are connected, skip this step, and if they ask for it, tell them to connect Google Drive in Claude first.
 
 Ask: "Would you like me to save each result you approve into a private folder in your Google Drive? You would find every draft there, ready to open and share yourself. I can only add new files to that one folder. I cannot change, share, or delete anything in your Drive."
 
 On yes:
 
-1. Run `ja drive start`. It prints the folder's details.
+1. Run `ja drive start`. It prints the folder's details, and the Drive create action becomes available.
 2. Create the folder with the Drive create action, using exactly the title, contentMimeType, and inheritedPermissionsDisabled it printed, with no parentId and no content.
 3. Read the new folder's permissions with the Drive read action for permissions. The folder is private when the only person with access is them.
 4. Run `ja drive set --folder <folder id> --private yes` (or `--private no` when anyone else has access), adding `--link <link>` when the create action returned a link.
