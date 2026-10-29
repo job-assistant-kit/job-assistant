@@ -149,7 +149,7 @@ def save_last(paths: Paths, tool_id: str, result: Result, files: list[Path]) -> 
     return out
 
 
-def _value(v: Any) -> str:
+def value_text(v: Any) -> str:
     if v is None:
         return "unknown"
     if isinstance(v, bool):
@@ -160,7 +160,7 @@ def _value(v: Any) -> str:
 def fact_line(fact: dict[str, Any]) -> str:
     unit = f" {fact['unit']}" if fact.get("unit") else ""
     source = fact.get("source") or "unknown"
-    return f"{fact['label']}: {_value(fact['value'])}{unit} (source: {source})"
+    return f"{fact['label']}: {value_text(fact['value'])}{unit} (source: {source})"
 
 
 def describe(result: Result) -> list[str]:

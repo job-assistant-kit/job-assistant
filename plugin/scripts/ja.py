@@ -209,6 +209,21 @@ def build_parser() -> argparse.ArgumentParser:
     fp.add_argument("--json", action="store_true", help="output for code")
     fp.set_defaults(func=commands.cmd_facts_run)
 
+    p = sub.add_parser("proof", parents=[common], help="saved examples a tool is checked against")
+    psub = p.add_subparsers(dest="action", metavar="action", required=True)
+    pp = psub.add_parser("save", parents=[common], help="save an accepted result as an example")
+    pp.add_argument("tool", metavar="TOOL")
+    pp.add_argument("--input", dest="inputs", nargs="+", required=True, metavar="FILE")
+    pp.add_argument("--output", required=True, metavar="FILE")
+    pp.set_defaults(func=commands.cmd_proof_save)
+    pp = psub.add_parser("run", parents=[common], help="check the tool against its saved examples")
+    pp.add_argument("tool", metavar="TOOL")
+    pp.add_argument("--case", type=whole, default=None, metavar="N")
+    pp.set_defaults(func=commands.cmd_proof_run)
+    pp = psub.add_parser("list", parents=[common], help="list the saved examples")
+    pp.add_argument("tool", metavar="TOOL")
+    pp.set_defaults(func=commands.cmd_proof_list)
+
     p = sub.add_parser("runbook", parents=[common], help="write the backup person's guide")
     p.set_defaults(func=commands.cmd_runbook)
 

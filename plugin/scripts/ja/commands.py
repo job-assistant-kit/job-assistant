@@ -14,7 +14,7 @@ import sys
 from datetime import date
 from pathlib import Path
 
-from ja import facts, helper, index, inputs, init, launcher, ledger, records, registry, role, runbook, settings, sources, status, tools, workspace
+from ja import facts, helper, index, inputs, init, launcher, ledger, proof, records, registry, role, runbook, settings, sources, status, tools, workspace
 from ja.registry import is_date
 from ja.workspace import Paths
 
@@ -263,6 +263,12 @@ def cmd_ledger_compare(args: argparse.Namespace) -> int:
     return 0
 
 
+def _record_check(paths: Paths, tool: registry.Tool, result: str, detail: str, today: date) -> None:
+    tool.last_check = {"date": today.isoformat(), "result": result, "detail": detail}
+    registry.save(paths, tool)
+    _refresh(paths, today)
+
+
 @_guard
 def cmd_check(args: argparse.Namespace) -> int:
     paths = _paths(args)
@@ -273,9 +279,7 @@ def cmd_check(args: argparse.Namespace) -> int:
         raise Stop(f"There is no tool called {args.tool}.") from None
     except registry.InvalidTool as exc:
         raise Stop(f"I could not read this tool's record: {exc}") from None
-    tool.last_check = {"date": today.isoformat(), "result": args.result, "detail": args.detail or ""}
-    registry.save(paths, tool)
-    _refresh(paths, today)
+    _record_check(paths, tool, args.result, args.detail or "", today)
     word = "passed" if args.result == "pass" else "failed"
     _say(f"Saved: the check of {tool.name} {word} today.")
     return 0
@@ -498,6 +502,72 @@ def cmd_facts_run(args: argparse.Namespace) -> int:
         return 0
     for line in facts.describe(result):
         _say(line)
+    return 0
+
+
+@_guard
+def cmd_proof_save(args: argparse.Namespace) -> int:
+    paths = _paths(args)
+    tool = _tool(paths, args.tool)
+    try:
+        case = proof.save(paths, tool, _files(args.inputs), Path(args.output).expanduser(), today=_today(args))
+    except proof.ProofProblem as exc:
+        raise Stop(str(exc)) from None
+    _say(f"Saved example {case.number} for {tool.name}. Later changes will be checked against it.")
+    return 0
+
+
+@_guard
+def cmd_proof_list(args: argparse.Namespace) -> int:
+    paths = _paths(args)
+    tool = _tool(paths, args.tool)
+    found = proof.cases(paths, tool.id)
+    if not found:
+        _say(f"There are no saved examples for {tool.name} yet.")
+    for case in found:
+        n = len(case.inputs)
+        _say(f"Example {case.number}, saved {case.saved}, {n} input file{'' if n == 1 else 's'}.")
+    return 0
+
+
+@_guard
+def cmd_proof_run(args: argparse.Namespace) -> int:
+    paths = _paths(args)
+    today = _today(args)
+    tool = _tool(paths, args.tool)
+    found = proof.cases(paths, tool.id)
+    if args.case is not None:
+        found = [c for c in found if c.number == args.case]
+        if not found:
+            raise Stop(f"There is no example {args.case} for {tool.name}.")
+    if not found:
+        raise Stop(f"There are no saved examples for {tool.name} yet, so there is nothing to check against.")
+    items = proof.checklist(paths, tool.id)
+    outcomes = []
+    for case in found:
+        outcome = proof.check_case(paths, tool, case)
+        outcomes.append(outcome)
+        _say(f"Example {case.number} (saved {case.saved}):")
+        if outcome.failed:
+            _say("  The facts changed:")
+            for d in outcome.differences:
+                _say(f"  {d}")
+        elif outcome.compared:
+            _say("  The facts match the saved example.")
+        else:
+            _say(f"  {outcome.note}")
+        _say("  Input files: " + ", ".join(str(p) for p in case.inputs))
+        _say(f"  Saved result: {case.output}")
+        _say("  Checklist:")
+        for item in items or ["(This tool has no checklist items yet.)"]:
+            _say(f"  - {item}")
+        _say(f"  {proof.REWRITE}")
+    failed = [o for o in outcomes if o.failed]
+    if failed:
+        _record_check(paths, tool, "fail", proof.failure_detail(outcomes), today)
+        _say("")
+        _say(f"Saved: the check of {tool.name} failed because the facts changed.")
+        return 1
     return 0
 
 
