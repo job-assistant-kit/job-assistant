@@ -153,7 +153,7 @@ def test_hooks_file_shape():
     # The Drive check must print its decision and block when it fails, so it is not quiet.
     [gate] = by_event["PreToolUse"]
     assert gate["onFailure"] == "block" and gate["timeout"] <= 30
-    assert gate["command"] == 'uv run --quiet --script "${CLAUDE_PLUGIN_ROOT}/scripts/hook_drive_gate.py"'
+    assert gate["command"] == 'sh "${CLAUDE_PLUGIN_ROOT}/scripts/run-uv.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/hook_drive_gate.py"'
     for event, hooks in ((e, h) for e, h in by_event.items() if e in names):
         assert len(hooks) == 1
         hook = hooks[0]
@@ -179,6 +179,29 @@ def test_hook_commands_run_as_written(ws, write_tool):
 
 
 @pytest.mark.skipif(shutil.which("uv") is None, reason="uv is not installed")
+def test_hooks_find_uv_without_it_on_the_search_path(ws, tmp_path):
+    """An app started from the Dock may lack uv's folder on PATH; the runner adds the usual ones."""
+    uv = shutil.which("uv")
+    home = tmp_path / "home"
+    (home / ".local/bin").mkdir(parents=True)
+    (home / ".local/bin/uv").symlink_to(uv)
+    _, by_event = hook_commands()
+    command = by_event["SessionStart"][0]["command"].replace("${CLAUDE_PLUGIN_ROOT}", str(PLUGIN))
+    only_sh = tmp_path / "only-sh"
+    only_sh.mkdir()
+    (only_sh / "sh").symlink_to(shutil.which("sh"))
+    env = {"HOME": str(home), "PATH": str(only_sh), "UV_PYTHON": shutil.which("python3"),
+           "UV_CACHE_DIR": os.environ.get("UV_CACHE_DIR", str(Path.home() / ".cache/uv"))}
+    bare = command.replace(" >/dev/null 2>&1 || true", "")
+    r = subprocess.run([str(only_sh / "sh"), "-c", bare], input=json.dumps({"cwd": str(ws)}),
+                       capture_output=True, text=True, timeout=120, cwd=ws, env=env)
+    assert r.returncode == 0, r.stderr
+    (home / ".local/bin/uv").unlink()
+    r = subprocess.run([str(only_sh / "sh"), "-c", bare], input="{}", capture_output=True, text=True, timeout=60,
+                       cwd=ws, env=env)
+    assert r.returncode == 127
+
+
 def test_drive_gate_command_runs_as_written(ws):
     from ja import drive
     from ja.workspace import Paths

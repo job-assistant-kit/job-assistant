@@ -2,10 +2,12 @@
 # Installs Job Assistant, creates the assistant folder and its shortcut, and opens the
 # first session. Run it again at any time to update: it keeps the folder as it is.
 #
-#   bash install.sh [--folder PATH] [--source PATH] [--no-start] [--yes]
+#   bash install.sh [--folder PATH] [--source PATH] [--app desktop|terminal] [--no-start] [--yes]
 #
 #   --folder PATH   where to keep the assistant folder (default: ~/job-assistant)
 #   --source PATH   install from a local copy of the kit instead of GitHub
+#   --app WHERE     open the assistant in the Claude desktop app or in a terminal
+#                   (default: ask on a Mac with the Claude app, else terminal)
 #   --no-start      stop when everything is ready, without opening the first session
 #   --yes           answer yes to every question (the first name stays the default)
 set -euo pipefail
@@ -19,6 +21,7 @@ folder="$HOME/job-assistant"
 source_dir=""
 start=1
 assume_yes=0
+app=""
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -26,10 +29,13 @@ while [ $# -gt 0 ]; do
     --source) source_dir="${2:?--source needs a path}"; shift 2 ;;
     --no-start) start=0; shift ;;
     --yes) assume_yes=1; shift ;;
-    -h|--help) sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    --app) app="${2:?--app needs desktop or terminal}"; shift 2 ;;
+    -h|--help) sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "Unknown option: $1. Run with --help to see the options." >&2; exit 2 ;;
   esac
 done
+
+case "$app" in ""|desktop|terminal) ;; *) echo "--app must be desktop or terminal." >&2; exit 2 ;; esac
 
 # shellcheck disable=SC2088  # matches a literal ~ the person typed in quotes
 case "$folder" in "~"|"~/"*) folder="$HOME${folder#\~}" ;; esac
@@ -168,7 +174,35 @@ for example: bash install.sh --folder ~/my-assistant"
   if [ -n "$first" ]; then ja init "$folder" --name "$first's Assistant"; else ja init "$folder"; fi
 fi
 
-step "6 of 6: the shortcut"
+step "6 of 6: how you open your assistant"
+has_desktop_app() {
+  [ "$(uname -s)" = Darwin ] && { [ -d /Applications/Claude.app ] || [ -d "$HOME/Applications/Claude.app" ]; }
+}
+if [ -z "$app" ]; then
+  app=terminal
+  if has_desktop_app && ask_yes "You have the Claude desktop app. Use your assistant there? (No uses a terminal window.)"; then
+    app=desktop
+  fi
+fi
+
+if [ "$app" = desktop ]; then
+  if [ "$start" = 1 ] && [ "$(uname -s)" = Darwin ]; then
+    open -a Claude 2>/dev/null || true
+  fi
+  say ""
+  if [ "$new_folder" = 1 ]; then
+    say "Everything is installed. In the Claude app:"
+    say "  1. Open Code and choose Open folder."
+    say "  2. Pick $folder."
+    say "  3. If it asks whether you trust the folder, choose Yes."
+    say "  4. Say \"set up my job assistant\" and paste your job description."
+  else
+    say "Everything is up to date. In the Claude app, open Code with $folder as usual."
+    say "If the app was open during the update, start a new session so it uses the new version."
+  fi
+  exit 0
+fi
+
 open_it="from the shortcut"
 if ask_yes "Add a shortcut that opens your assistant with one click? It adds two small files and changes nothing else."; then
   ja --workspace "$folder" launcher --yes

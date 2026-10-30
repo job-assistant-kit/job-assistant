@@ -11,8 +11,8 @@ MARKER = Path("assistant") / ".job-assistant"
 DEFAULT_NAME = "My Job Assistant"
 
 NOT_FOUND_MESSAGE = (
-    "I could not find your assistant folder. Open the assistant from its shortcut, "
-    "or run this inside your assistant folder."
+    "I could not find your assistant folder. Open your assistant folder in Claude (in the desktop app: "
+    "Code, then Open folder), or use its shortcut."
 )
 
 

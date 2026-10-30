@@ -267,6 +267,18 @@ def test_env_reports_whether_connectors_can_appear(ws, cli, monkeypatch, env, ro
         assert "claude.ai connectors: available" in out
 
 
+@pytest.mark.parametrize("entry, where, words", [
+    ("claude-desktop", "desktop", "the Claude desktop app"),
+    ("cli", "terminal", "Claude Code in a terminal"),
+    ("claude-vscode", "other", "another Claude Code app"),
+    ("", "other", "another Claude Code app"),
+])
+def test_env_reports_where_claude_runs(ws, cli, monkeypatch, entry, where, words):
+    monkeypatch.setenv("CLAUDE_CODE_ENTRYPOINT", entry)
+    assert json.loads(cli("env", "--json", cwd=ws).stdout)["running_in"] == where
+    assert f"Running in: {words}." in cli("env", cwd=ws).stdout
+
+
 def test_file_errors_are_plain(ws, write_tool, cli, monkeypatch):
     from ja import registry
     write_tool(ws, id="t1")

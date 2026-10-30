@@ -30,6 +30,7 @@ plugin/
   scripts/hook_session_start.py        session start hook
   scripts/hook_record_run.py           after-tool hook on the Skill tool
   scripts/hook_drive_gate.py           check before each Drive create action
+  scripts/run-uv.sh                    runs the hook scripts with uv, adding uv's usual folders to the search path (apps started from the Dock may lack them)
   tests/                               pytest suite and synthetic fixtures
   pyproject.toml, uv.lock              test environment only
 README.md, PLUGIN-MAINTENANCE.md
@@ -82,7 +83,7 @@ Run as `uv run --script plugin/scripts/ja.py <command>`. Every command accepts `
 | `upkeep [--write] [--json]` | What needs attention, most urgent first; `--write` saves `data/upkeep.json` |
 | `inbox clean [--yes]` | List inbox files more than 30 days old; delete them with `--yes` |
 | `launcher [--yes] [--bin-dir D] [--apps-dir D] [--desktop-dir D]` | The shortcut; shows what it would write unless `--yes` |
-| `env [--json]` | Which needed programs are installed |
+| `env [--json]` | Which needed programs are installed, whether claude.ai connectors can appear, and where Claude Code runs (desktop app, terminal, or other, from `CLAUDE_CODE_ENTRYPOINT`) |
 
 `uv run --script plugin/scripts/ja.py <command> --help` gives the full options of each.
 

@@ -5,8 +5,8 @@ from pathlib import Path
 
 JA = Path(__file__).parents[1] / "scripts" / "ja.py"
 TODAY = ("--today", "2026-10-28")
-NOT_FOUND = ("I could not find your assistant folder. Open the assistant from its shortcut, "
-             "or run this inside your assistant folder.")
+NOT_FOUND = ("I could not find your assistant folder. Open your assistant folder in Claude (in the desktop app: "
+             "Code, then Open folder), or use its shortcut.")
 
 
 def run(*a, cwd=None):

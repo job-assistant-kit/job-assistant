@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run --quiet --script \"${CLAUDE_PLUGIN_ROOT}/scripts/hook_session_start.py\" >/dev/null 2>&1 || true",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/run-uv.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/hook_session_start.py\" >/dev/null 2>&1 || true",
             "timeout": 5
           }
         ]
@@ -18,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run --quiet --script \"${CLAUDE_PLUGIN_ROOT}/scripts/hook_record_run.py\" >/dev/null 2>&1 || true",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/run-uv.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/hook_record_run.py\" >/dev/null 2>&1 || true",
             "timeout": 5
           }
         ]
@@ -30,7 +30,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run --quiet --script \"${CLAUDE_PLUGIN_ROOT}/scripts/hook_drive_gate.py\"",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/run-uv.sh\" \"${CLAUDE_PLUGIN_ROOT}/scripts/hook_drive_gate.py\"",
             "timeout": 20,
             "onFailure": "block"
           }

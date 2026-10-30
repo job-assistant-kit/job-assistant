@@ -2,7 +2,7 @@
 
 Job Assistant turns the repeated parts of a job into tools you can use by asking in plain words. You show it one real example of a task, it builds a tool for that task, checks the tool on your example, and keeps it for next time. It learns from your corrections, and it keeps every result a draft until you send it yourself.
 
-It works inside Claude Code, on a Mac or a Linux computer.
+It works inside Claude Code, on a Mac or a Linux computer: in a terminal, or in the Code section of the Claude desktop app. It does not work in Cowork, which does not load locally installed plugins.
 
 ## For the person who installs it
 
@@ -15,7 +15,7 @@ It works inside Claude Code, on a Mac or a Linux computer.
 
 ### Install
 
-One script does the whole install and opens the first session. It checks for Claude Code and git, installs uv if it is missing, signs in to GitHub if needed (the repository is private), installs the plugin, creates the assistant folder, adds the shortcut, and starts Claude Code there with "set up my job assistant".
+One script does the whole install and opens the first session. It checks for Claude Code and git, installs uv if it is missing, signs in to GitHub if needed (the repository is private), installs the plugin, and creates the assistant folder. On a Mac with the Claude desktop app, it asks whether to use the assistant there; if so, it opens the app and lists the steps to open the folder. Otherwise it adds a shortcut and starts Claude Code in the folder with "set up my job assistant". The Claude Code command line must be installed either way: the script uses it to install the plugin.
 
 Get the script one of two ways:
 
@@ -26,7 +26,7 @@ Get the script one of two ways:
   gh api -H "Accept: application/vnd.github.raw" repos/job-assistant-kit/job-assistant/contents/install.sh | bash
   ```
 
-The script asks at most three things: your first name (to name the assistant), whether to add the shortcut, and whether to install uv if it is missing. Options: `--folder PATH` keeps the assistant somewhere other than `~/job-assistant`, `--source PATH` installs from a local copy of the kit, `--no-start` stops before opening Claude Code, and `--yes` answers yes to every question.
+The script asks at most four things: your first name (to name the assistant), whether to use the desktop app, whether to add the shortcut, and whether to install uv if it is missing. Options: `--folder PATH` keeps the assistant somewhere other than `~/job-assistant`, `--source PATH` installs from a local copy of the kit, `--app desktop` or `--app terminal` answers the desktop app question, `--no-start` stops before opening Claude Code, and `--yes` answers yes to every question.
 
 ### Install by hand
 
@@ -61,7 +61,15 @@ Then start a new session, or run `/reload-plugins` in an open one. An update nev
 
 ### The first session
 
-After the install script:
+After the install script, in the Claude desktop app:
+
+1. Open Code, choose Open folder, and pick your assistant folder (`job-assistant` in your home folder).
+2. If it asks whether you trust the folder, answer yes.
+3. Say "set up my job assistant" and paste or share your job description. Then continue at step 3 below.
+
+Each time after that, start a session in Code with the assistant folder open. The protections apply only there.
+
+After the install script, in a terminal:
 
 1. Claude Code opens in your assistant folder and asks whether you trust this folder. Answer yes. The folder's settings, including the blocks on changes to your other systems and the permission for the assistant's own steps to run without asking, apply only after you say yes.
 2. Paste or share your job description when the assistant asks for it.

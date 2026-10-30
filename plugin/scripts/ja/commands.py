@@ -1141,6 +1141,18 @@ def sign_in_route() -> str | None:
     return None
 
 
+RUNNING_IN = {"desktop": "the Claude desktop app", "terminal": "Claude Code in a terminal",
+              "other": "another Claude Code app"}
+
+
+def running_in() -> str:
+    """Where Claude Code runs: "desktop" (the Claude desktop app), "terminal", or "other"."""
+    entry = os.environ.get("CLAUDE_CODE_ENTRYPOINT", "").strip().lower()
+    if "desktop" in entry:
+        return "desktop"
+    return "terminal" if entry == "cli" else "other"
+
+
 @_guard
 def cmd_env(args: argparse.Namespace) -> int:
     """Which programs the assistant relies on are installed, and whether claude.ai connectors can appear."""
@@ -1149,6 +1161,7 @@ def cmd_env(args: argparse.Namespace) -> int:
     if args.json:
         found["claude_ai_connectors"] = route is None
         found["sign_in_route"] = route
+        found["running_in"] = running_in()
         print(json.dumps(found, indent=2))
         return 0
     for name in PROGRAMS:
@@ -1158,4 +1171,5 @@ def cmd_env(args: argparse.Namespace) -> int:
              "Google Drive cannot be added.")
     else:
         _say("claude.ai connectors: available when connected in claude.ai.")
+    _say(f"Running in: {RUNNING_IN[running_in()]}.")
     return 0

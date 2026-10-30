@@ -43,8 +43,8 @@ If it answers that it could not find the assistant folder, this conversation is 
 
 1. Say: "I'll keep your assistant in a folder called job-assistant in your home folder. Tell me if you want it somewhere else." Use their answer if they give one.
 2. Run `ja init <folder> --name "<First name>'s Assistant"` (use the plain default if you do not know their name yet). Say where the folder is in one sentence.
-3. Run `ja --workspace "<folder>" launcher` to see what the shortcut would add. Ask: "Would you like a shortcut that opens your assistant with one click? It adds two small files to your computer and changes nothing else." On yes, run `ja --workspace "<folder>" launcher --yes` and tell them where to find it. On no, tell them the assistant must be started from inside that folder, and offer the shortcut again as the easy way.
-4. Say: "Please close this window and open your assistant from the shortcut. Then say 'set up my job assistant' again and we will continue from here." The protections for their work only apply inside the assistant folder, so do not continue setup in this window.
+3. Run `ja env`. If it says you are running in the Claude desktop app, skip the shortcut (it opens a terminal, not the app) and go to step 4. Otherwise run `ja --workspace "<folder>" launcher` to see what the shortcut would add. Ask: "Would you like a shortcut that opens your assistant with one click? It adds two small files to your computer and changes nothing else." On yes, run `ja --workspace "<folder>" launcher --yes` and tell them where to find it. On no, tell them the assistant must be started from inside that folder, and offer the shortcut again as the easy way.
+4. In the desktop app, say: "Please start a new session in Code: choose Open folder, pick the <folder name> folder, and say 'set up my job assistant' again. We will continue from here." Elsewhere, say: "Please close this window and open your assistant from the shortcut. Then say 'set up my job assistant' again and we will continue from here." The protections for their work only apply inside the assistant folder, so do not continue setup in this window.
 
 Show them nothing technical.
 
@@ -65,9 +65,9 @@ Look at the tools available to you in this conversation, without using any of th
 - Connected services (tool names that start with `mcp__`). Sort each one into read actions (search, get, list, read, download, fetch) and write actions (create, update, edit, copy, move, share, trash, delete, send, post, comment, transition, upload, invite, or anything else that changes data or reaches another person). When unsure, treat it as a write action.
 - Pass every write action name to `ja settings deny <name> <name> ...`. The settings file blocks them; this is what keeps the assistant to drafts only.
 - Run `ja env` to see which needed programs are installed. Install nothing. If one is missing, tell them in one plain sentence what will not work yet.
-- If the person mentions the Claude desktop app, tell them they can open the assistant there too and drag screenshots into the chat.
+- If `ja env` says you are not running in the Claude desktop app and the person mentions it, tell them they can open the assistant there too (Code, then Open folder) and drag screenshots into the chat.
 
-Tell them in one or two sentences what you can read, and that changes to their other systems are blocked whenever you open the assistant from its shortcut, so you only ever prepare drafts.
+Tell them in one or two sentences what you can read, and that changes to their other systems are blocked whenever you open the assistant in its folder, so you only ever prepare drafts.
 
 ### 4. Drafts folder in Drive (optional)
 
@@ -124,6 +124,6 @@ Then close with three short lines, and nothing else:
 
 1. "You're set up. Everything is on your getting-started page: <the link the helper printed>."
 2. "When you're ready, pick whichever first automation takes most of your time, drop an example in the inbox, and say 'automate this'. I'll ask the few things I need as we go."
-3. Run `ja launcher`. If it says the shortcut is already in place: "Open the assistant from the shortcut each time, so the protections are on." If not: "Start Claude Code inside your assistant folder each time, so the protections are on. Would you like a shortcut that opens it with one click? It adds two small files to your computer and changes nothing else." On yes, run `ja launcher --yes`.
+3. If `ja env` said you are running in the Claude desktop app: "Each time, start a session in Code with your assistant folder open, so the protections are on." Otherwise run `ja launcher`. If it says the shortcut is already in place: "Open the assistant from the shortcut each time, so the protections are on." If not: "Start Claude Code inside your assistant folder each time, so the protections are on. Would you like a shortcut that opens it with one click? It adds two small files to your computer and changes nothing else." On yes, run `ja launcher --yes`.
 
 Do not repeat the page's content in the chat.

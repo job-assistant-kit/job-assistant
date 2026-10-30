@@ -116,7 +116,8 @@ def test_set_me_up_flow():
     text = (PLUGIN / "skills/set-me-up/SKILL.md").read_text(encoding="utf-8")
     assert "command -v" not in text and "ja env" in text
     assert not re.search(r"\brm\b", text) and "delete the file" not in text
-    assert "close this window" in text and "whenever you open the assistant from its shortcut" in text
+    assert "close this window" in text and "whenever you open the assistant in its folder" in text
+    assert "skip the shortcut (it opens a terminal, not the app)" in text and "Code, then Open folder" in text
     assert "${CLAUDE_PLUGIN_ROOT}/scripts/ja.py" in text
 
 
