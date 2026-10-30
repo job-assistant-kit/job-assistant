@@ -187,12 +187,21 @@ if [ "$start" = 0 ]; then
   exit 0
 fi
 
+# Claude Code must inherit the terminal as it is. Handing it a newly opened /dev/tty crashes it
+# on macOS, so when this script arrived through a pipe, say how to open it instead.
+if [ ! -t 0 ]; then
+  say ""
+  say "Everything is ready. To start, run: cd \"$folder\" && claude"
+  [ "$new_folder" = 1 ] && say "Then say \"set up my job assistant\" and paste your job description."
+  exit 0
+fi
+
 say ""
 cd "$folder"
 if [ "$new_folder" = 0 ]; then
   say "Everything is up to date. Claude Code now opens in your assistant folder."
-  exec claude <"$tty_in"
+  exec claude
 fi
 say "Everything is installed. Claude Code now opens in your assistant folder."
 say "When it asks whether you trust this folder, choose Yes. Then paste your job description."
-exec claude "set up my job assistant" <"$tty_in"
+exec claude "set up my job assistant"
