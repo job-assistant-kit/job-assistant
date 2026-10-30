@@ -39,6 +39,15 @@ def test_preview_writes_nothing(ws, tmp_path):
     assert not (tmp_path / "bin").exists() and not (tmp_path / "apps").exists()
 
 
+def test_preview_says_when_shortcut_is_in_place(ws, tmp_path):
+    paths = workspace.Paths(ws)
+    assert launcher.IN_PLACE not in launcher.run(paths, yes=False, system="Linux", **dirs(tmp_path))
+    launcher.run(paths, yes=True, system="Linux", **dirs(tmp_path))
+    assert launcher.run(paths, yes=False, system="Linux", **dirs(tmp_path)) == launcher.IN_PLACE
+    (tmp_path / "apps/job-assistant.desktop").unlink()
+    assert launcher.IN_PLACE not in launcher.run(paths, yes=False, system="Linux", **dirs(tmp_path))
+
+
 def test_yes_writes_executable_files(ws, tmp_path):
     launcher.run(workspace.Paths(ws), yes=True, system="Linux", **dirs(tmp_path))
     script = tmp_path / "bin/job-assistant"

@@ -94,7 +94,20 @@ def _ours(path: Path) -> bool:
         return False
 
 
+IN_PLACE = "The shortcut is already in place and opens this assistant folder."
+
+
+def in_place(items: list[Item]) -> bool:
+    """Every shortcut file exists with exactly the content this folder would write."""
+    try:
+        return all(item.path.read_text(encoding="utf-8") == item.content for item in items)
+    except (OSError, UnicodeDecodeError):
+        return False
+
+
 def preview(items: list[Item]) -> str:
+    if in_place(items):
+        return IN_PLACE
     lines = ["I can add a shortcut that opens your assistant. Nothing has been written yet.",
              "These files would be written:", ""]
     for item in items:

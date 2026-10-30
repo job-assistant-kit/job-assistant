@@ -91,7 +91,7 @@ When they later ask to stop saving drafts to Drive, run `ja drive off`. When the
 
 ### 5. Record the tools they already look after
 
-For each tool the job description says they look after or are taking over from someone else (a program, a pipeline, a spreadsheet with formulas, an app, a scheduled report), write a record file in the inbox folder (for example `inbox/setup-<id>.yaml`) and run `ja tool add --from <file>`. Use what the job description says, and write "unknown" for what it does not say:
+For each tool the job description says they look after or are taking over from someone else (a program, a pipeline, an app, a scheduled report, or a spreadsheet whose formulas or scripts do the work). A spreadsheet or document that only holds information is a source for step 6, not a tool, write a record file in the inbox folder (for example `inbox/setup-<id>.yaml`) and run `ja tool add --from <file>`. Use what the job description says, and write "unknown" for what it does not say:
 
 - `id` (lowercase words joined by hyphens), `name` (their words), `does` (one sentence)
 - `examples`: two or three plain phrases they might say to run it
@@ -106,7 +106,7 @@ Then ask one question: "Do you look after anything else that someone else built?
 ### 6. Write the role card, sources, and starting knowledge
 
 - Fill `role-card-template.md` from the job description. Keep it under 250 words. Write "unknown, I will fill this in as we work" for parts it does not cover. Show it and ask: "Did I get your role right?" Make their changes, save it to a file in the inbox folder, and run `ja role set --file <file>`.
-- Add only the documents and data that the first automations in step 7 will read, at most six, with `ja sources add --id <id> --name "<name>" --kind living|fixed --where "<where it lives>" --access connector|file`. Use `living` for documents that change and `fixed` for ones that do not. Use `--access connector` when you read it through a connected service, otherwise `--access file`, with `--exported <date>` only when they gave you a copy. Other documents are added when a tool first reads them.
+- Add only the documents and data that the first automations in step 7 will read, at most six, with `ja sources add --id <id> --name "<name>" --kind living|fixed --where "<where it lives>" --access connector|file`. Use `living` for documents that change and `fixed` for ones that do not. Use `--access connector` only when you found that document through a connected service in this session (you searched for it and saw it); otherwise `--access file`, with `--exported <date>` only when they gave you a copy. Other documents are added when a tool first reads them.
 - Add facts the job description states that later work depends on with `ja knowledge add --fact "<fact>" --source "job description, <today's date>"`.
 
 ### 7. Close with the getting-started page
@@ -124,6 +124,6 @@ Then close with three short lines, and nothing else:
 
 1. "You're set up. Everything is on your getting-started page: <the link the helper printed>."
 2. "When you're ready, pick whichever first automation takes most of your time, drop an example in the inbox, and say 'automate this'. I'll ask the few things I need as we go."
-3. "Open the assistant from the shortcut each time, so the protections are on."
+3. Run `ja launcher`. If it says the shortcut is already in place: "Open the assistant from the shortcut each time, so the protections are on." If not: "Start Claude Code inside your assistant folder each time, so the protections are on. Would you like a shortcut that opens it with one click? It adds two small files to your computer and changes nothing else." On yes, run `ja launcher --yes`.
 
 Do not repeat the page's content in the chat.
