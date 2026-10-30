@@ -158,6 +158,13 @@ def test_automate_this_flow():
     assert "never write there yourself" in text and "Draft, not checked" in text
 
 
+def test_automate_this_shows_saved_facts_and_counts_only_asked_questions():
+    text = (PLUGIN / "skills/automate-this/SKILL.md").read_text(encoding="utf-8")
+    assert text.index("ja knowledge add") < text.index("I'll remember these for all your work")
+    assert "Never save a fact without that line." in text
+    assert "A check you settled from the notes, a guess, and the read-out of saved facts are not questions." in text
+
+
 def _helper_actions(text):
     """Every `ja <words>` example in a page, as the words up to the first detail."""
     out = []

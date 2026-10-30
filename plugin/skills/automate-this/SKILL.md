@@ -62,9 +62,9 @@ This is where you learn their work: just in time, about the task in front of you
    - Confidential. Treat the task as confidential, and say so in one sentence ("I'll treat this as confidential, like <tool name>"), when `ja sources list --json` shows a confidential tool already reads one of its sources, or the notes say this kind of document is confidential. Otherwise ask: "Does this contain anything confidential, such as unannounced offerings, partners, or pricing?" Never save a "not confidential" answer for later.
    - Numbers for leaders. When the result has numbers and the notes do not say who reads them, ask: "Do these numbers go to leaders, a review, or a published page?"
 4. For anything else still unknown, use your best guess. In step 5, list each guessed field in the tool record's `assumed`, and tell them in one sentence what you guessed so they can correct it.
-5. Answers that are true of their job and not only this task are worth keeping: the source of truth for a kind of data, who reads a kind of report, a deadline, a word that must be written a certain way, a kind of document that is confidential. Read them back in one line before saving: "I'll remember these for all your work: <facts>. Say if any is only for this task." Then save each with `ja knowledge add --fact "<fact>" --source "per <their name>, <today's date>"`.
+5. Answers that are true of their job and not only this task are worth keeping: the source of truth for a kind of data, who reads a kind of report, a deadline, a word that must be written a certain way, a kind of document that is confidential. Save each with `ja knowledge add --fact "<fact>" --source "per <their name>, <today's date>"`, then always tell them in one line what you saved, in your next message: "I'll remember these for all your work: <facts>. Say if any is only for this task and I'll forget it." Never save a fact without that line.
 
-Count every question you asked, including the two checks; the build record needs the number.
+Count the questions you put to them in this step and waited for an answer to, including either of the two checks when you asked it. A check you settled from the notes, a guess, and the read-out of saved facts are not questions. The build record needs the number.
 
 ### 4. Pick the recipe
 
