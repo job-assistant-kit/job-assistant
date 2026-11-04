@@ -73,7 +73,7 @@ After the install script, in a terminal:
 
 1. Claude Code opens in your assistant folder and asks whether you trust this folder. Answer yes. The folder's settings, including the blocks on changes to your other systems and the permission for the assistant's own steps to run without asking, apply only after you say yes.
 2. Paste or share your job description when the assistant asks for it.
-3. The assistant asks two or three questions, notes the tools you already look after, and gives you a link to your tools page with your first steps. It learns the rest as you work: when you ask it to automate something, it asks only what it does not know yet, and remembers the answers.
+3. The assistant asks two or three questions, notes the tools you already look after, and opens your tools page in your browser, with your first steps at the top. The browser window may open behind Claude. To open the page again at any time, say "show my tools". It learns the rest as you work: when you ask it to automate something, it asks only what it does not know yet, and remembers the answers.
 
 After an install by hand:
 
@@ -105,7 +105,7 @@ Always open the assistant from the shortcut, so it starts in your folder.
 
 - It never posts, sends, edits, shares, or deletes anything in your other systems. Those actions are blocked by the folder's settings, not just by instructions. It prepares drafts and tells you where to paste them. The one exception, if you turn it on during setup: it saves each result you approve as a new file in one private drafts folder in your Google Drive. A separate check refuses any other place, and it still cannot change, share, or delete anything there.
 - It never writes outside your assistant folder, except the shortcut, and only after you say yes.
-- It never puts internal names in a web search. Searches use general role words only, and it shows you the searches before running them.
+- It never puts your files, exports, screenshots, or saved examples in a web search.
 - It never puts your data in version history. Files you drop in, exports, saved examples, and run records stay in the folder on your computer and are left out of git.
 - It never calls a number checked. A number for leaders stays "Draft, not checked" until you approve it.
 
@@ -122,5 +122,7 @@ Inside your assistant folder:
 | `.claude/skills/` | Your tools |
 | `archive/` | Retired tools, ready to bring back |
 | `data/` | Run records, saved examples, and working files (never in git) |
+
+For how it protects your work and confidential information, and where those protections stop, see [`SECURITY-OVERVIEW.md`](SECURITY-OVERVIEW.md).
 
 For maintainers: see `PLUGIN-MAINTENANCE.md`.
