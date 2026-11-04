@@ -371,7 +371,8 @@ def test_drive_drafts_steps():
 
 def test_setup_ends_on_the_getting_started_page():
     text = (PLUGIN / "skills/set-me-up/SKILL.md").read_text(encoding="utf-8")
-    assert "ja start set --file inbox/getting-started.yaml" in text
+    assert "ja start set --file inbox/getting-started.yaml --open" in text
+    assert "say 'show my tools'" in text
     assert "Do not repeat the page's content in the chat." in text
     front, body = frontmatter(PLUGIN / "skills/show-tools/SKILL.md")
     assert "hide getting started" in front["description"] and "ja start hide" in body and "ja start show" in body

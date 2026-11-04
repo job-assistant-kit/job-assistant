@@ -187,6 +187,7 @@ def build_parser() -> argparse.ArgumentParser:
     gsub = p.add_subparsers(dest="action", metavar="action", required=True)
     gp = gsub.add_parser("set", parents=[common], help="save the getting-started section from a file")
     gp.add_argument("--file", required=True, metavar="PATH")
+    gp.add_argument("--open", action="store_true", help="open the tools page in the browser")
     gp.set_defaults(func=commands.cmd_start_set)
     gp = gsub.add_parser("hide", parents=[common], help="fold the section away")
     gp.set_defaults(func=commands.cmd_start_hide)

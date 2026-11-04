@@ -54,7 +54,7 @@ Run as `uv run --script plugin/scripts/ja.py <command>`. Every command accepts `
 | `tools [--json]` | List active tools with status and first example words |
 | `index` | Rewrite the tool index between the markers in CLAUDE.md |
 | `dashboard [--open]` | Write `dashboard/index.html` and its fonts, and print the page's link; `--open` opens the browser and never fails without one |
-| `start set --file PATH` / `start hide` / `start show` | The getting-started section at the top of the tools page: save it from a file (reach, recorded, gaps, first), fold it away, open it again |
+| `start set --file PATH [--open]` / `start hide` / `start show` | The getting-started section at the top of the tools page: save it from a file (reach, recorded, gaps, first) and, with `--open`, open the page in the browser; fold it away; open it again |
 | `record run\|accepted\|corrected TOOL` | Append a run record |
 | `record task --words TEXT` | Note work done without a tool |
 | `record build --tool T --questions N --corrections N [--recipe R] [--minutes N]` | Record a finished build; minutes come from `build start` when not given |

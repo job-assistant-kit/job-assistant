@@ -450,7 +450,14 @@ def cmd_start_set(args: argparse.Namespace) -> int:
         raise Stop(str(exc)) from None
     _tidy_inbox(paths, Path(args.file))
     out = dashboard.write(paths, today=_today(args))
-    _say(f"Saved the getting-started section. It is at the top of the tools page: {out.as_uri()}")
+    if not args.open:
+        _say(f"Saved the getting-started section. It is at the top of the tools page: {out.as_uri()}")
+    elif _open_in_browser(out):
+        _say(f"Saved the getting-started section and opened the tools page in the browser: {out.as_uri()}")
+    else:
+        _say(f"Saved the getting-started section. It is at the top of the tools page: {out.as_uri()}")
+        _say("I could not open a browser. The page is dashboard/index.html in the assistant folder; "
+             "double-click it to open it.")
     return 0
 
 

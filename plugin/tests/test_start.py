@@ -1,8 +1,10 @@
 """The getting-started section at the top of the tools page."""
 
+import os
 import re
 import subprocess
 import sys
+import time
 from datetime import date
 from pathlib import Path
 
@@ -80,3 +82,44 @@ def test_page_has_its_fonts_and_reaches_nothing_outside(ws):
         assert (out.parent / "fonts" / name).is_file(), name
     assert not re.search(r"(src|href)=\"?https?:", html)
     assert "url(\"http" not in html and "<script" not in html
+
+
+def _fake_opener(tmp_path):
+    """A stand-in for the system's browser opener that notes the page it was asked to open."""
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    seen = tmp_path / "opened.txt"
+    for name in ("xdg-open", "open"):
+        f = bin_dir / name
+        f.write_text(f'#!/bin/sh\nprintf "%s" "$1" > "{seen}"\n', encoding="utf-8")
+        f.chmod(0o755)
+    return bin_dir, seen
+
+
+def _set_with_open(ws, path_value):
+    (ws / "inbox").mkdir(exist_ok=True)
+    f = ws / "inbox" / "getting-started.yaml"
+    f.write_text(yaml.safe_dump(GOOD), encoding="utf-8")
+    env = {**os.environ, "PATH": path_value}
+    return subprocess.run([sys.executable, str(JA), "--workspace", str(ws), "start", "set", "--file", str(f),
+                           "--open", "--today", "2026-10-29"], capture_output=True, text=True, env=env)
+
+
+def test_set_with_open_opens_the_tools_page(ws, tmp_path):
+    bin_dir, seen = _fake_opener(tmp_path)
+    r = _set_with_open(ws, str(bin_dir) + os.pathsep + os.environ.get("PATH", ""))
+    assert r.returncode == 0, r.stderr
+    assert "file://" in r.stdout and "opened" in r.stdout
+    deadline = time.monotonic() + 5
+    while not seen.exists() and time.monotonic() < deadline:
+        time.sleep(0.05)
+    assert seen.read_text(encoding="utf-8") == str(ws / "dashboard" / "index.html")
+
+
+def test_set_with_open_and_no_browser_says_where_the_page_is(ws, tmp_path):
+    empty = tmp_path / "empty"
+    empty.mkdir()
+    r = _set_with_open(ws, str(empty))
+    assert r.returncode == 0, r.stderr
+    assert "file://" in r.stdout and "could not open a browser" in r.stdout
+    assert "dashboard/index.html" in r.stdout

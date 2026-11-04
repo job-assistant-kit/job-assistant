@@ -113,7 +113,7 @@ Then ask one question: "Do you look after anything else that someone else built?
 
 Rank three to five first automations from the job description: recurring work first, then work that goes to leaders, then what it calls painful or manual.
 
-Write `inbox/getting-started.yaml` with these parts, in plain words, and run `ja start set --file inbox/getting-started.yaml`:
+Write `inbox/getting-started.yaml` with these parts, in plain words, and run `ja start set --file inbox/getting-started.yaml --open`. It opens the tools page in their browser:
 
 - `reach`: one or two sentences on what you can and cannot read, from step 3, and that changes to their other systems are blocked so you only prepare drafts.
 - `recorded`: short lines on what you recorded: the tools they look after (by name), how many sources, the role card, and how many facts.
@@ -122,7 +122,7 @@ Write `inbox/getting-started.yaml` with these parts, in plain words, and run `ja
 
 Then close with three short lines, and nothing else:
 
-1. "You're set up. Everything is on your getting-started page: <the link the helper printed>."
+1. When the helper says it opened the page: "You're set up. I opened your getting-started page in your browser; it may be behind this window. It is also here: <the link the helper printed>. To open it again any time, say 'show my tools'." When it says it could not open a browser: "You're set up. Your getting-started page is dashboard/index.html in your assistant folder; double-click it to open it. To open it again any time, say 'show my tools'."
 2. "When you're ready, pick whichever first automation takes most of your time, drop an example in the inbox, and say 'automate this'. I'll ask the few things I need as we go."
 3. If `ja env` said you are running in the Claude desktop app: "Each time, start a session in Code with your assistant folder open, so the protections are on." Otherwise run `ja launcher`. If it says the shortcut is already in place: "Open the assistant from the shortcut each time, so the protections are on." If not: "Start Claude Code inside your assistant folder each time, so the protections are on. Would you like a shortcut that opens it with one click? It adds two small files to your computer and changes nothing else." On yes, run `ja launcher --yes`.
 
