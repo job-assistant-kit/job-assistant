@@ -1,5 +1,7 @@
 # Job Assistant
 
+> **Status:** Version 0.2.3 runs end to end from a fresh clone, with 563 passing tests. The kit is in real user testing with one tester; findings from that testing are open and the interface will change. Maintained.
+
 Job Assistant turns the repeated parts of a job into tools you can use by asking in plain words. You show it one real example of a task, it builds a tool for that task, checks the tool on your example, and keeps it for next time. It learns from your corrections, and it keeps every result a draft until you send it yourself.
 
 It works inside Claude Code, on a Mac or a Linux computer: in a terminal, or in the Code section of the Claude desktop app. It does not work in Cowork, which does not load locally installed plugins.
