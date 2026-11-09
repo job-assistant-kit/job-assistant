@@ -17,7 +17,7 @@ It works inside Claude Code, on a Mac or a Linux computer: in a terminal, or in 
 
 ### Install
 
-One script does the whole install and opens the first session. It checks for Claude Code and git, installs uv if it is missing, signs in to GitHub if needed (the repository is private), installs the plugin, and creates the assistant folder. On a Mac with the Claude desktop app, it asks whether to use the assistant there; if so, it opens the app and lists the steps to open the folder. Otherwise it adds a shortcut and starts Claude Code in the folder with "set up my job assistant". The Claude Code command line must be installed either way: the script uses it to install the plugin.
+One script does the whole install and opens the first session. It checks for Claude Code and git, installs uv if it is missing, signs in to GitHub if needed, installs the plugin, and creates the assistant folder. On a Mac with the Claude desktop app, it asks whether to use the assistant there; if so, it opens the app and lists the steps to open the folder. Otherwise it adds a shortcut and starts Claude Code in the folder with "set up my job assistant". The Claude Code command line must be installed either way: the script uses it to install the plugin.
 
 Get the script one of two ways:
 
@@ -38,7 +38,7 @@ The script asks at most four things: your first name (to name the assistant), wh
    claude plugin marketplace add job-assistant-kit/job-assistant
    ```
 
-   The repository is private. The person needs read access to it, and git on their computer must be signed in to GitHub (for example with `gh auth login` and `gh auth setup-git`). To use a local copy instead, run `claude plugin marketplace add /path/to/job-assistant` and keep the folder where it is.
+   The repository is public, so this step needs no GitHub sign-in. To use a local copy instead, run `claude plugin marketplace add /path/to/job-assistant` and keep the folder where it is.
 
 2. Install it:
 
